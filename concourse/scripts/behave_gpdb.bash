@@ -77,7 +77,7 @@ function _main() {
         time gpcheck_setup
     fi
 
-    time run_test
+    #time run_test
 }
 
 _main "$@"
