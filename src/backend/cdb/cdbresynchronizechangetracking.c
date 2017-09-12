@@ -1264,7 +1264,7 @@ void ChangeTracking_FsyncDataIntoLog(CTFType ftype)
 	
 #ifdef FAULT_INJECTOR
 	if (FaultInjector_InjectFaultIfSet(
-										   ChangeTrackingDisable,
+										   "change_tracking_disable",
 										   DDLNotSpecified,
 										   "" /* databaseName */,
 										   "" /* tableName */) == FaultInjectorTypeSkip)

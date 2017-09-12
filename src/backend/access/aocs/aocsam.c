@@ -847,7 +847,7 @@ aocs_insert_values(AOCSInsertDesc idesc, Datum *d, bool *null, AOTupleId *aoTupl
 
 #ifdef FAULT_INJECTOR
 	FaultInjector_InjectFaultIfSet(
-								   AppendOnlyInsert,
+								   "appendonly_insert",
 								   DDLNotSpecified,
 								   "",	/* databaseName */
 								   RelationGetRelationName(idesc->aoi_rel));	/* tableName */
@@ -1552,7 +1552,7 @@ aocs_update(AOCSUpdateDesc desc, TupleTableSlot *slot,
 
 #ifdef FAULT_INJECTOR
 	FaultInjector_InjectFaultIfSet(
-								   AppendOnlyUpdate,
+								   "appendonly_update",
 								   DDLNotSpecified,
 								   "", //databaseName
 								   RelationGetRelationName(desc->insertDesc->aoi_rel));
@@ -1659,7 +1659,7 @@ aocs_delete(AOCSDeleteDesc aoDeleteDesc,
 
 #ifdef FAULT_INJECTOR
 	FaultInjector_InjectFaultIfSet(
-								   AppendOnlyDelete,
+								   "appendonly_delete",
 								   DDLNotSpecified,
 								   "",	/* databaseName */
 								   RelationGetRelationName(aoDeleteDesc->aod_rel)); /* tableName */

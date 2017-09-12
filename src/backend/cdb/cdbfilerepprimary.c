@@ -635,7 +635,7 @@ FileRepPrimary_MirrorFlush(FileRepIdentifier_u		fileRepIdentifier,
 			if (FileRepPrimary_IsResyncWorker())
 			{
 				FaultInjector_InjectFaultIfSet(
-											   FileRepIsOperationCompleted,
+											   "fileRep_is_operation_completed",
 											   DDLNotSpecified,
 											   "",	// databaseName
 											   ""); // tableName

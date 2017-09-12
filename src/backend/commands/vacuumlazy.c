@@ -201,7 +201,7 @@ lazy_vacuum_rel(Relation onerel, VacuumStmt *vacstmt,
 	if (vacuumStatement_IsInAppendOnlyDropPhase(vacstmt))
 	{
 			FaultInjector_InjectFaultIfSet(
-				CompactionBeforeSegmentFileDropPhase,
+				"compaction_before_segmentfile_drop",
 				DDLNotSpecified,
 				"",	// databaseName
 				""); // tableName
@@ -209,7 +209,7 @@ lazy_vacuum_rel(Relation onerel, VacuumStmt *vacstmt,
 	if (vacummStatement_IsInAppendOnlyCleanupPhase(vacstmt))
 	{
 			FaultInjector_InjectFaultIfSet(
-				CompactionBeforeCleanupPhase,
+				"compaction_before_cleanup_phase",
 				DDLNotSpecified,
 				"",	// databaseName
 				""); // tableName

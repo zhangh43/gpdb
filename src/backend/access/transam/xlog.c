@@ -8856,7 +8856,7 @@ CreateCheckPoint(int flags)
 	if (! resync_to_sync_transition)
 	{
 		if (FaultInjector_InjectFaultIfSet(
-										   Checkpoint,
+										   "checkpoint",
 										   DDLNotSpecified,
 										   "" /* databaseName */,
 										   "" /* tableName */) == FaultInjectorTypeSkip)

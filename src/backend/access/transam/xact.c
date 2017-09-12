@@ -1354,7 +1354,7 @@ RecordTransactionCommit(void)
 		if (isDtxPrepared == 0 &&
 			CurrentTransactionState->blockState == TBLOCK_END)
 		{
-			FaultInjector_InjectFaultIfSet(LocalTmRecordTransactionCommit,
+			FaultInjector_InjectFaultIfSet("local_tm_record_transaction_commit",
 										   DDLNotSpecified,
 										   "",  // databaseName
 										   ""); // tableName
@@ -1422,7 +1422,7 @@ RecordTransactionCommit(void)
 #ifdef FAULT_INJECTOR
 	if (isDtxPrepared)
 	{
-		FaultInjector_InjectFaultIfSet(DtmXLogDistributedCommit,
+		FaultInjector_InjectFaultIfSet("dtm_xlog_distributed_commit",
 									   DDLNotSpecified,
 									   "",  // databaseName
 									   ""); // tableName
@@ -2619,7 +2619,7 @@ CommitTransaction(void)
 	if (isPreparedDtxTransaction())
 	{
 		FaultInjector_InjectFaultIfSet(
-									   TransactionAbortAfterDistributedPrepared, 
+									   "transaction_abort_after_distributed_prepared",
 									   DDLNotSpecified,
 									   "",	// databaseName
 									   ""); // tableName

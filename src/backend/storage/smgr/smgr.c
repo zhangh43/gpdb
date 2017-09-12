@@ -1932,8 +1932,8 @@ smgrDoDeleteActions(
 #ifdef FAULT_INJECTOR
 				FaultInjector_InjectFaultIfSet(
 											   forCommit ?
-											   TransactionCommitPass1FromCreatePendingToCreated :
-											   TransactionAbortPass1FromCreatePendingToAbortingCreate,
+											   "transaction_commit_pass1_from_create_pending_to_created" :
+											   "transaction_abort_pass1_from_create_pending_to_aborting_create",
 											   DDLNotSpecified,
 											   "",	// databaseName
 											   ""); // tableName
@@ -1958,8 +1958,8 @@ smgrDoDeleteActions(
 #ifdef FAULT_INJECTOR
 				FaultInjector_InjectFaultIfSet(
 											   forCommit ?
-											   TransactionCommitPass1FromAbortingCreateNeededToAbortingCreate:
-											   TransactionAbortPass1FromAbortingCreateNeededToAbortingCreate,
+											   "transaction_commit_pass1_from_aborting_create_needed_to_aborting_create":
+											   "transaction_abort_pass1_from_aborting_create_needed_to_aborting_create",
 											   DDLNotSpecified,
 											   "",	// databaseName
 											   ""); // tableName
@@ -1989,7 +1989,7 @@ smgrDoDeleteActions(
 		if (abortingCreate && !forCommit)
 		{
 			FaultInjector_InjectFaultIfSet(
-										   TransactionAbortPass2FromCreatePendingToAbortingCreate,
+										   "transaction_abort_pass2_from_create_pending_to_aborting_create",
 										   DDLNotSpecified,
 										   "",	// databaseName
 										   ""); // tableName
@@ -1998,7 +1998,7 @@ smgrDoDeleteActions(
 		if (dropPending && forCommit)
 		{
 			FaultInjector_InjectFaultIfSet(
-										   TransactionCommitPass2FromDropInMemoryToDropPending,
+										   "transaction_commit_pass2_from_drop_in_memory_to_drop_pending",
 										   DDLNotSpecified,
 										   "",	// databaseName
 										   ""); // tableName
@@ -2010,7 +2010,7 @@ smgrDoDeleteActions(
 				if (!forCommit)
 				{
 					FaultInjector_InjectFaultIfSet(
-												   TransactionAbortPass2FromCreatePendingToAbortingCreate,
+												   "transaction_abort_pass2_from_create_pending_to_aborting_create",
 												   DDLNotSpecified,
 												   "",	// databaseName
 												   ""); // tableName
@@ -2021,7 +2021,7 @@ smgrDoDeleteActions(
 				if (forCommit)
 				{
 					FaultInjector_InjectFaultIfSet(
-												   TransactionCommitPass2FromDropInMemoryToDropPending,
+												   "transaction_commit_pass2_from_drop_in_memory_to_drop_pending",
 												   DDLNotSpecified,
 												   "",	// databaseName
 												   ""); // tableName
@@ -2031,8 +2031,8 @@ smgrDoDeleteActions(
 			case PersistentEndXactFileSysAction_AbortingCreateNeeded:
 				FaultInjector_InjectFaultIfSet(
 											   forCommit ?
-											   TransactionCommitPass2FromAbortingCreateNeededToAbortingCreate :
-											   TransactionAbortPass2FromAbortingCreateNeededToAbortingCreate,
+											   "transaction_commit_pass2_from_aborting_create_needed_to_aborting_create" :
+											   "transaction_abort_pass2_from_aborting_create_needed_to_aborting_create",
 											   DDLNotSpecified,
 											   "",	// databaseName
 											   ""); // tableName

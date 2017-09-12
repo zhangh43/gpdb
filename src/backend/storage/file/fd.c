@@ -1254,7 +1254,7 @@ FileWrite(File file, char *buffer, int amount)
 	if (! strcmp(VfdCache[file].fileName, "global/pg_control"))
 	{
 		if (FaultInjector_InjectFaultIfSet(
-										   PgControl,
+										   "pg_control",
 										   DDLNotSpecified,
 										   "" /* databaseName */,
 										   "" /* tableName */) == FaultInjectorTypeDataCorruption)
@@ -1266,7 +1266,7 @@ FileWrite(File file, char *buffer, int amount)
 	if (strstr(VfdCache[file].fileName, "pg_xlog/"))
 	{
 		if (FaultInjector_InjectFaultIfSet(
-										   PgXlog,
+										   "pg_xlog",
 										   DDLNotSpecified,
 										   "" /* databaseName */,
 										   "" /* tableName */) == FaultInjectorTypeDataCorruption)
