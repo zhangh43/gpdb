@@ -3251,7 +3251,7 @@ static void processTransitionRequest_getFaultInjectStatus(void * buf, int *offse
 		return;
 	}
 
-	if (FaultInjector_IsFaultInjected(FaultInjectorIdentifierStringToEnum(faultName))) {
+	if (FaultInjector_IsFaultInjected(faultName)) {
 		isDone = true;
 	}
 
