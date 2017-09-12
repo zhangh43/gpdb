@@ -231,7 +231,7 @@ ShareInputNext(ShareInputScanState *node)
 		Gpmon_Incr_Rows_Out(GpmonPktFromShareInputState(node));
 		CheckSendPlanStateGpmonPkt(&node->ss.ps);
 
-		SIMPLE_FAULT_INJECTOR(ExecShareInputNext);
+		SIMPLE_FAULT_INJECTOR("execshare_input_next");
 
 		return slot;
 	}

@@ -242,7 +242,7 @@ BackgroundWriterMain(void)
 			exit(1);
 
 #ifdef USE_ASSERT_CHECKING
-		SIMPLE_FAULT_INJECTOR(FaultInBackgroundWriterMain);
+		SIMPLE_FAULT_INJECTOR("fault_in_background_writer_main");
 #endif
 		if (got_SIGHUP)
 		{

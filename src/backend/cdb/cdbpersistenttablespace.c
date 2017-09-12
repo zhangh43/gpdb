@@ -666,7 +666,7 @@ void PersistentTablespace_MarkCreatePending(
 						tablespaceOid);
 #endif
 
-	SIMPLE_FAULT_INJECTOR(FaultBeforePendingDeleteTablespaceEntry);
+	SIMPLE_FAULT_INJECTOR("fault_before_pending_delete_tablespace_entry");
 
 	/*
 	 * MPP-18228

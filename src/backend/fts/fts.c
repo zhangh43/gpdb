@@ -920,7 +920,7 @@ probeUpdateConfig(FtsSegmentStatusChange *changes, int changeCount)
 	heap_close(histrel, RowExclusiveLock);
 	heap_close(configrel, RowExclusiveLock);
 
-	SIMPLE_FAULT_INJECTOR(FtsWaitForShutdown);
+	SIMPLE_FAULT_INJECTOR("fts_wait_for_shutdown");
 	/*
 	 * Do not block shutdown.  We will always get a change to update
 	 * gp_segment_configuration in subsequent probes upon database

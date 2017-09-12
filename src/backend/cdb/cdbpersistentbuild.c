@@ -620,7 +620,7 @@ PersistentBuild_BuildDb(
 
 	gp_before_persistence_work = false;
 
-	SIMPLE_FAULT_INJECTOR(RebuildPTDB);
+	SIMPLE_FAULT_INJECTOR("rebuild_pt_db");
 
 	/* 
 	 * Since we have written XLOG records with <persistentTid,

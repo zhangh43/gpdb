@@ -3384,7 +3384,7 @@ drop_unnamed_stmt(void)
 void
 quickdie(SIGNAL_ARGS)
 {
-	SIMPLE_FAULT_INJECTOR(QuickDie);
+	SIMPLE_FAULT_INJECTOR("quickdie");
 	quickdie_impl();
 }
 
@@ -4693,7 +4693,7 @@ PostgresMain(int argc, char *argv[],
 	if (Gp_role == GP_ROLE_EXECUTE)
 	{
 #ifdef FAULT_INJECTOR
-		if (SIMPLE_FAULT_INJECTOR(SendQEDetailsInitBackend) != FaultInjectorTypeSkip)
+		if (SIMPLE_FAULT_INJECTOR("send_qe_details_init_backend") != FaultInjectorTypeSkip)
 #endif
 			sendQEDetails();
 	}

@@ -1410,7 +1410,7 @@ vacuumStatement_Relation(VacuumStmt *vacstmt, Oid relid,
 
 		if (relationRound == 0)
 		{
-			SIMPLE_FAULT_INJECTOR(VacuumRelationEndOfFirstRound);
+			SIMPLE_FAULT_INJECTOR("vacuum_relation_end_of_first_round");
 		}
 
 		relationRound++;
@@ -2510,7 +2510,7 @@ vacuum_heap_rel(Relation onerel, VacuumStmt *vacstmt,
 	{
 		Assert(vacrelstats->rel_pages >= vacuum_pages.empty_end_pages);
 
-		SIMPLE_FAULT_INJECTOR(VacuumFullBeforeTruncate);
+		SIMPLE_FAULT_INJECTOR("vacuum_full_before_truncate");
 
 		if (vacuum_pages.empty_end_pages > 0)
 		{
@@ -2522,7 +2522,7 @@ vacuum_heap_rel(Relation onerel, VacuumStmt *vacstmt,
 		}
 		vac_close_indexes(nindexes, Irel, NoLock);
 
-		SIMPLE_FAULT_INJECTOR(VacuumFullAfterTruncate);
+		SIMPLE_FAULT_INJECTOR("vacuum_full_after_truncate");
 	}
 	else
 	{
@@ -4338,7 +4338,7 @@ repair_frag(VRelStats *vacrelstats, Relation onerel,
 
 	vacuum_pages->empty_end_pages = nblocks - blkno;
 
-	SIMPLE_FAULT_INJECTOR(RepairFragEnd);
+	SIMPLE_FAULT_INJECTOR("repair_frag_end");
 
 	return heldoff;
 }
@@ -5420,7 +5420,7 @@ open_relation_and_check_permission(VacuumStmt *vacstmt,
 	if (isDropTransaction && !vacstmt->full)
 	{
 		MyProc->inDropTransaction = true;
-		SIMPLE_FAULT_INJECTOR(VacuumRelationOpenRelationDuringDropPhase);
+		SIMPLE_FAULT_INJECTOR("vacuum_relation_open_relation_during_drop_phase");
 		if (HasDropTransaction(false))
 		{
 			elogif(Debug_appendonly_print_compaction, LOG,

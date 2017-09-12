@@ -308,7 +308,7 @@ FileRepAckPrimary_RunReceiver(void)
 			break;
 		}		
 		
-		SIMPLE_FAULT_INJECTOR(FileRepReceiver);
+		SIMPLE_FAULT_INJECTOR("filerep_receiver");
 		
 		fileRepShmemMessageDescr = 
 		(FileRepShmemMessageDescr_s*) msgPositionInsert;	
@@ -1022,7 +1022,7 @@ FileRepAckPrimary_RunConsumer(void)
 			break;
 		}
 		
-		SIMPLE_FAULT_INJECTOR(FileRepConsumer);
+		SIMPLE_FAULT_INJECTOR("filerep_consumer");
 		
 		/* Calculate and compare FileRepMessageHeader_s Crc */
 		fileRepMessageHeader = (FileRepMessageHeader_s*) (fileRepAckShmem->positionConsume + 

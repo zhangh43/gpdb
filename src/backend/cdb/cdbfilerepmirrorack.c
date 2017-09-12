@@ -426,7 +426,7 @@ FileRepAckMirror_RunSender(void)
 							   FILEREP_UNDEFINED,
 							   FILEREP_UNDEFINED);		
 				
-		SIMPLE_FAULT_INJECTOR(FileRepSender);
+		SIMPLE_FAULT_INJECTOR("filerep_sender");
 		
 		fileRepMessage = (char*) (fileRepAckShmem->positionConsume + 
 								  sizeof(FileRepShmemMessageDescr_s));

@@ -1672,7 +1672,7 @@ FileRepPrimary_RunSender(void)
 			break;
 		}
 
-		SIMPLE_FAULT_INJECTOR(FileRepSender);
+		SIMPLE_FAULT_INJECTOR("filerep_sender");
 
 		fileRepMessage = (char*) (fileRepShmem->positionConsume +
 								  sizeof(FileRepShmemMessageDescr_s));

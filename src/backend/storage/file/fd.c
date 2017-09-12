@@ -1329,7 +1329,7 @@ FileSync(File file)
 	if (returnCode < 0)
 		return returnCode;
 
-	SIMPLE_FAULT_INJECTOR(FileRepFlush);
+	SIMPLE_FAULT_INJECTOR("filerep_flush");
 
 	returnCode =  pg_fsync(VfdCache[file].fd);
 

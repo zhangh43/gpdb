@@ -829,7 +829,7 @@ ExecHashJoinNewBatch(HashJoinState *hjstate)
 	int			nbatch;
 	int			curbatch;
 
-	SIMPLE_FAULT_INJECTOR(FaultExecHashJoinNewBatch);
+	SIMPLE_FAULT_INJECTOR("exec_hashjoin_new_batch");
 
 	HashState  *hashState = (HashState *) innerPlanState(hjstate);
 
@@ -1394,7 +1394,7 @@ ExecHashJoinReloadHashTable(HashJoinState *hjstate)
 				ExecWorkFile_Tell64(hashtable->batches[curbatch]->innerside.workfile);
 		}
 
-		SIMPLE_FAULT_INJECTOR(WorkfileHashJoinFailure);
+		SIMPLE_FAULT_INJECTOR("workfile_hashjoin_failure");
 
 		if (!hjstate->reuse_hashtable)
 		{

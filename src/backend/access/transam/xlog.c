@@ -8889,7 +8889,7 @@ CreateCheckPoint(int flags)
 		/* database transitions to suspended state, IO activity on the segment is suspended */
 		primaryMirrorSetIOSuspended(TRUE);
 
-		SIMPLE_FAULT_INJECTOR(FileRepTransitionToInSyncBeforeCheckpoint);
+		SIMPLE_FAULT_INJECTOR("filerep_transition_to_sync_before_checkpoint");
 	}
 	else
 	{
@@ -11996,7 +11996,7 @@ int XLogAddRecordsToChangeTracking(
 
 		lastEndLoc = EndRecPtr;
 
-		SIMPLE_FAULT_INJECTOR(FileRepTransitionToChangeTracking);
+		SIMPLE_FAULT_INJECTOR("filerep_transition_to_change_tracking");
 
 		if (lastChangeTrackingEndLoc != NULL)
 		{

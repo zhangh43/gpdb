@@ -1963,7 +1963,7 @@ mdsync(void)
 
 #ifdef FAULT_INJECTOR
 		if (!entry->canceled &&
-			SIMPLE_FAULT_INJECTOR(FsyncCounter) == FaultInjectorTypeSkip)
+			SIMPLE_FAULT_INJECTOR("fsync_counter") == FaultInjectorTypeSkip)
 		{
 			if (MyAuxProcType == CheckpointerProcess)
 				elog(LOG, "checkpoint performing fsync for %d/%d/%d",

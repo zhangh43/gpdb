@@ -2229,7 +2229,7 @@ StartTransaction(void)
 
 	if (DistributedTransactionContext == DTX_CONTEXT_QE_ENTRY_DB_SINGLETON)
 	{
-		SIMPLE_FAULT_INJECTOR(TransactionStartUnderEntryDbSingleton);
+		SIMPLE_FAULT_INJECTOR("transaction_start_under_entry_db_singleton");
 	}
 
 	/*
@@ -3145,7 +3145,7 @@ AbortTransaction(void)
 	TransactionId localXid = GetTopTransactionIdIfAny();
 	bool willHaveObjectsFromSmgr;
 
-	SIMPLE_FAULT_INJECTOR(AbortTransactionFail);
+	SIMPLE_FAULT_INJECTOR("transaction_abort_failure");
 
 	/* Prevent cancel/die interrupt while cleaning up */
 	HOLD_INTERRUPTS();

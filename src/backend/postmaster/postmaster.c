@@ -2347,7 +2347,7 @@ ServerLoop(void)
                 }
             }
 
-			SIMPLE_FAULT_INJECTOR(Postmaster);
+			SIMPLE_FAULT_INJECTOR("postmaster");
         }
         else
         {
@@ -2944,7 +2944,7 @@ retry1:
 			break;
 	}
 
-	SIMPLE_FAULT_INJECTOR(ProcessStartupPacketFault);
+	SIMPLE_FAULT_INJECTOR("process_startup_packet");
 
 	return STATUS_OK;
 }
@@ -3539,7 +3539,7 @@ processPrimaryMirrorTransitionRequest(Port *port, void *pkt)
 		strcpy(args->peerAddress, peer);
 	}
 
-	SIMPLE_FAULT_INJECTOR(SegmentTransitionRequest);
+	SIMPLE_FAULT_INJECTOR("segment_transition_request");
 
     char extraResultInfo[MAX_TRANSITION_RESULT_EXTRA_INFO];
 	result = requestTransitionToPrimaryMirrorMode(args, extraResultInfo);
@@ -3628,7 +3628,7 @@ processPrimaryMirrorTransitionQuery(Port *port, void *pkt)
 		return;
 	}
 
-	SIMPLE_FAULT_INJECTOR(SegmentProbeResponse);
+	SIMPLE_FAULT_INJECTOR("segment_probe_response");
 
 	getPrimaryMirrorStatusCodes(&pm_mode, &s_state, &d_state, &f_type);
 

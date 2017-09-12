@@ -680,7 +680,7 @@ doPrepareTransaction(void)
 	setCurrentGxactState( DTX_STATE_PREPARED );
 	releaseTmLock();
 
-	SIMPLE_FAULT_INJECTOR(DtmBroadcastPrepare);
+	SIMPLE_FAULT_INJECTOR("dtm_broadcast_prepare");
 
 	elog(DTM_DEBUG5, "doPrepareTransaction leaving in state = %s", DtxStateToString(currentGxact->state));
 }
@@ -744,7 +744,7 @@ doNotifyingCommitPrepared(void)
 		elog(PANIC, "Distribute transaction identifier too long (%d)",
 			 (int)strlen(currentGxact->gid));
 
-	SIMPLE_FAULT_INJECTOR(DtmBroadcastCommitPrepared);
+	SIMPLE_FAULT_INJECTOR("dtm_broadcast_commit_prepared");
 	savedInterruptHoldoffCount = InterruptHoldoffCount;
 
 	PG_TRY();
@@ -1006,7 +1006,7 @@ doNotifyingAbort(void)
 		retryAbortPrepared();
 	}
 
-	SIMPLE_FAULT_INJECTOR(DtmBroadcastAbortPrepared);
+	SIMPLE_FAULT_INJECTOR("dtm_broadcast_abort_prepared");
 
 	/*
 	 * Global locking order: ProcArrayLock then DTM lock.
@@ -1452,7 +1452,7 @@ initTM(void)
 		 */
 		olduser = ChangeToSuperuser();
 
-		SIMPLE_FAULT_INJECTOR(DtmInit);
+		SIMPLE_FAULT_INJECTOR("dtm_init");
 
 		oldcontext = CurrentMemoryContext;
 		succeeded = false;

@@ -127,7 +127,7 @@ RunawayCleaner_StartCleanup()
 			/* Super user is terminated only when it's the primary runaway consumer (i.e., the top consumer) */
 			(!superuser() || MySessionState->runawayStatus == RunawayStatus_PrimaryRunawaySession))
 		{
-			SIMPLE_FAULT_INJECTOR(RunawayCleanup);
+			SIMPLE_FAULT_INJECTOR("runaway_cleanup");
 
 			ereport(ERROR, (errmsg("Canceling query because of high VMEM usage. Used: %dMB, available %dMB, red zone: %dMB",
 					VmemTracker_ConvertVmemChunksToMB(MySessionState->sessionVmem), VmemTracker_GetAvailableVmemMB(),

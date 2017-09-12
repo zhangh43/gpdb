@@ -943,7 +943,7 @@ FileRepResyncManager_InResyncTransition(void)
 		goto exit;
 	}		
 
-	SIMPLE_FAULT_INJECTOR(FileRepTransitionToInResyncMirrorReCreate);
+	SIMPLE_FAULT_INJECTOR("filerep_transition_to_resync");
 	
 	FileRep_InsertConfigLogEntry("run resync transition, mirror recreate");	
 	
@@ -959,7 +959,7 @@ FileRepResyncManager_InResyncTransition(void)
 
 	FileRepSubProcess_SetState(FileRepStateReady);
 	
-	SIMPLE_FAULT_INJECTOR(FileRepTransitionToInResyncMarkReCreated);
+	SIMPLE_FAULT_INJECTOR("filerep_transition_to_resync_mark_recreate");
 
 	/*
 	 * Mark Persistent Table entries as 'Dropped (i.e. Free)' to indicate the drops
@@ -987,7 +987,7 @@ FileRepResyncManager_InResyncTransition(void)
 		goto exit;
 	}		
 	
-	SIMPLE_FAULT_INJECTOR(FileRepTransitionToInResyncMarkCompleted);
+	SIMPLE_FAULT_INJECTOR("filerep_transition_to_resync_mark_completed");
 
 	FileRep_InsertConfigLogEntry("run resync transition, mark transition to resync completed");	
 
@@ -1194,7 +1194,7 @@ FileRepPrimary_RunResyncManager(void)
 				continue;
 		}
 
-		SIMPLE_FAULT_INJECTOR(FileRepResync);
+		SIMPLE_FAULT_INJECTOR("filerep_resync");
 
 		FileRep_GetRelationPath(
 								entry.fileName, 
@@ -1254,7 +1254,7 @@ FileRepResyncManager_InSyncTransition(void)
 	
 	FileRep_InsertConfigLogEntry("run resync sync transition");
 
-	SIMPLE_FAULT_INJECTOR(FileRepTransitionToInSyncBegin);
+	SIMPLE_FAULT_INJECTOR("filerep_transition_to_sync_begin");
 
 	while (1) {
 		/*
@@ -1293,7 +1293,7 @@ FileRepResyncManager_InSyncTransition(void)
 		setResyncCompleted();
 		primaryMirrorSetInSync();
 
-		SIMPLE_FAULT_INJECTOR(FileRepTransitionToInSyncMarkCompleted);
+		SIMPLE_FAULT_INJECTOR("filerep_transition_to_sync_mark_completed");
 
 		break;
 	}
@@ -1311,7 +1311,7 @@ FileRepResyncManager_ResyncFlatFiles(void)
 	
 	FileRep_SetSegmentState(SegmentStateInSyncTransition, FaultTypeNotInitialized);
 
-	SIMPLE_FAULT_INJECTOR(FileRepTransitionToInSync);
+	SIMPLE_FAULT_INJECTOR("filerep_transition_to_sync");
 
 	while (1) 
 	{

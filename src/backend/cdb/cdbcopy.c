@@ -192,7 +192,7 @@ cdbCopyStart(CdbCopy *c, char *copyCmd, struct GpPolicy *policy)
 								NIL, /* FIXME */
 								NULL);
 
-	SIMPLE_FAULT_INJECTOR(CdbCopyStartAfterDispatch);
+	SIMPLE_FAULT_INJECTOR("cdb_copy_start_after_dispatch");
 
 	/* fill in CdbCopy structure */
 	for (seg = 0; seg < c->total_segs; seg++)

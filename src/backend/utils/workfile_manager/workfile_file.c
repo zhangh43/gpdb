@@ -58,7 +58,7 @@ workfile_mgr_create_fileno(workfile_set *work_set, uint32 file_no)
 			true /* del_on_close */,
 			work_set->metadata.bfz_compress_type);
 
-	SIMPLE_FAULT_INJECTOR(WorkfileCreationFail);
+	SIMPLE_FAULT_INJECTOR("workfile_creation_failure");
 
 	ExecWorkfile_SetWorkset(ewfile, work_set);
 

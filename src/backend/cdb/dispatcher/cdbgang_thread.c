@@ -194,7 +194,7 @@ create_gang_retry:
 	destroyConnectParms(doConnectParmsAr, threadCount);
 	doConnectParmsAr = NULL;
 
-	SIMPLE_FAULT_INJECTOR(GangCreated);
+	SIMPLE_FAULT_INJECTOR("gang_created");
 
 	/* find out the successful connections and the failed ones */
 	checkConnectionStatus(newGangDefinition, &in_recovery_mode_count,

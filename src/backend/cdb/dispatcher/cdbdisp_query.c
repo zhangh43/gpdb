@@ -1351,7 +1351,7 @@ cdbdisp_dispatchX(DispatchCommandQueryParms *pQueryParms,
 
 		cdbdisp_dispatchToGang(ds, primaryGang, si, &direct);
 
-		SIMPLE_FAULT_INJECTOR(AfterOneSliceDispatched);
+		SIMPLE_FAULT_INJECTOR("after_one_slice_dispatched");
 	}
 
 	pfree(sliceVector);

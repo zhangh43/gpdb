@@ -512,7 +512,7 @@ ExecutorStart(QueryDesc *queryDesc, int eflags)
 				Assert(!estate->interconnect_context);
 				SetupInterconnect(estate);
 
-				SIMPLE_FAULT_INJECTOR(QEGotSnapshotAndInterconnect);
+				SIMPLE_FAULT_INJECTOR("qe_got_snapshot_and_interconnect");
 				Assert(estate->interconnect_context);
 			}
 			PG_CATCH();

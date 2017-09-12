@@ -3183,7 +3183,7 @@ int ChangeTracking_CompactLogFile(CTFType source, CTFType dest, XLogRecPtr*	upto
 					DirectFunctionCall1(tidin, CStringGetDatum(str_tid)));
 				persistentSerialNum = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(str_sn)));
 
-				SIMPLE_FAULT_INJECTOR(FileRepChangeTrackingCompacting);
+				SIMPLE_FAULT_INJECTOR("filerep_change_tracking_compacting");
 
 				/* write this record to the compact file */
 				ChangeTracking_AddBufferPoolChange(dest,

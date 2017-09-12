@@ -1945,7 +1945,7 @@ smgrDoDeleteActions(
 			{
 				dropPending = true;
 
-				SIMPLE_FAULT_INJECTOR(TransactionCommitPass1FromDropInMemoryToDropPending);
+				SIMPLE_FAULT_INJECTOR("finish_prepared_transaction_commit_pass1_from_drop_in_memory_to_drop_pending");
 			}
 			break;
 

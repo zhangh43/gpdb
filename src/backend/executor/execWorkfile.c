@@ -204,7 +204,7 @@ ExecWorkFile_Write(ExecWorkFile *workfile,
 	Assert(workfile != NULL);
 	uint64 bytes;
 
-	SIMPLE_FAULT_INJECTOR(WorkfileWriteFail);
+	SIMPLE_FAULT_INJECTOR("workfile_write_failure");
 
 	if (data == NULL || size == 0)
 	{

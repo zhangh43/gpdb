@@ -2197,7 +2197,7 @@ FileRep_ProcessSignals()
 			FileRep_SetPostmasterReset();
 		else
 		{
-			SIMPLE_FAULT_INJECTOR(FileRepImmediateShutdownRequested);
+			SIMPLE_FAULT_INJECTOR("filerep_immediate_shutdown_request");
 
 			FileRep_SignalChildren(SIGQUIT, false);
 			processExit = true;

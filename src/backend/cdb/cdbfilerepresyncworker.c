@@ -262,7 +262,7 @@ FileRepPrimary_ResyncWrite(FileRepResyncHashEntry_s	*entry)
 													FileRepResync_GetEndFullResyncLSN() :
 													FileRepResync_GetEndIncrResyncLSN());
 
-						SIMPLE_FAULT_INJECTOR(FileRepResyncWorkerRead);
+						SIMPLE_FAULT_INJECTOR("filerep_resync_worker_read");
 
 						FileRepResync_SetReadBufferRequest();
 						buf = ReadBuffer_Resync(smgr_relation, blkno);
@@ -315,7 +315,7 @@ FileRepPrimary_ResyncWrite(FileRepResyncHashEntry_s	*entry)
 									  FALSE);
 						}
 
-						SIMPLE_FAULT_INJECTOR(FileRepResyncWorker);
+						SIMPLE_FAULT_INJECTOR("filerep_resync_worker");
 
 						UnlockReleaseBuffer(buf);
 						
@@ -685,11 +685,11 @@ FileRepPrimary_ResyncBufferPoolIncrementalWrite(ChangeTrackingRequest *request)
 							FALSE);
 				}
 
-				SIMPLE_FAULT_INJECTOR(FileRepResyncWorker);
+				SIMPLE_FAULT_INJECTOR("filerep_resync_worker");
 
 				UnlockReleaseBuffer(buf);
 
-				SIMPLE_FAULT_INJECTOR(FileRepResyncWorker);
+				SIMPLE_FAULT_INJECTOR("filerep_resync_worker");
 
 	flush_check:			
 				if (((ii + 1) == result->count) ||

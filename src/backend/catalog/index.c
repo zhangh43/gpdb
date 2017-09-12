@@ -3221,7 +3221,7 @@ reindex_relation(Oid relid, bool toast_too)
 
 	result = (indexIds != NIL);
 
-	SIMPLE_FAULT_INJECTOR(ReindexRelation);
+	SIMPLE_FAULT_INJECTOR("reindex_relation");
 
 	/*
 	 * If the relation has a secondary toast rel, reindex that too while we

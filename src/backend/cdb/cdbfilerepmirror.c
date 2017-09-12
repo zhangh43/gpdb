@@ -374,7 +374,7 @@ FileRepMirror_RunReceiver(void)
 									   spareField,
 									   FILEREP_UNDEFINED);	
 				
-				SIMPLE_FAULT_INJECTOR(FileRepReceiver);
+				SIMPLE_FAULT_INJECTOR("filerep_receiver");
 
 				fileRepShmemMessageDescr = (FileRepShmemMessageDescr_s*) msgPositionInsert;	
 		
@@ -687,7 +687,7 @@ FileRepMirror_RunConsumer(void)
 			break;
 		}
 			
-		SIMPLE_FAULT_INJECTOR(FileRepConsumer);
+		SIMPLE_FAULT_INJECTOR("filerep_consumer");
 
 		/* Calculate and compare FileRepMessageHeader_s Crc */
 		fileRepMessageHeader = (FileRepMessageHeader_s*) (fileRepShmem->positionConsume + 
@@ -1338,7 +1338,7 @@ FileRepMirror_RunConsumer(void)
 						}
 				}
 				
-				SIMPLE_FAULT_INJECTOR(FileRepFlush);
+				SIMPLE_FAULT_INJECTOR("filerep_flush");
 
 				gettimeofday(&currentTime, NULL);
 				beginTime = (pg_time_t) currentTime.tv_sec;

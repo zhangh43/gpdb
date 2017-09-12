@@ -334,7 +334,7 @@ void PersistentRelation_AddCreatePending(
 						segmentFileNum);	
 #endif
 
-	SIMPLE_FAULT_INJECTOR(FaultBeforePendingDeleteRelationEntry);
+	SIMPLE_FAULT_INJECTOR("fault_before_pending_delete_relation_entry");
 
    /* We'll add an entry to the PendingDelete LinkedList (LL) to remeber what we
     * created in this transaction (or sub-transaction). If the transaction

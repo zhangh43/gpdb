@@ -3647,7 +3647,7 @@ void PersistentFileSysObj_PreparedEndXactAction(
 				mirrorCatchupRequired = false;
 			}
 
-			SIMPLE_FAULT_INJECTOR(UpdateCommittedEofInPersistentTable);
+			SIMPLE_FAULT_INJECTOR("update_committed_eof_in_persistent_table");
 
 			PersistentFileSysObj_UpdateAppendOnlyMirrorResyncEofs(
 															&eofs->relFileNode,

@@ -720,7 +720,7 @@ void PersistentFilespace_MarkCreatePending(
 	mmxlog_log_create_filespace(filespaceOid);
 #endif
 
-	SIMPLE_FAULT_INJECTOR(FaultBeforePendingDeleteFilespaceEntry);
+	SIMPLE_FAULT_INJECTOR("fault_before_pending_delete_filespace_entry");
 
 	/*
 	 * MPP-18228

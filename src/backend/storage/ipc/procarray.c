@@ -145,7 +145,7 @@ ProcArrayAdd(PGPROC *proc)
 
 	LWLockAcquire(ProcArrayLock, LW_EXCLUSIVE);
 
-	SIMPLE_FAULT_INJECTOR(ProcArray_Add);
+	SIMPLE_FAULT_INJECTOR("procarray_add");
 
 	if (arrayP->numProcs >= arrayP->maxProcs)
 	{

@@ -229,7 +229,7 @@ ExecDynamicTableScan(DynamicTableScanState *node)
 	{
 		slot = ExecTableScanRelation(scanState);
 
-		SIMPLE_FAULT_INJECTOR(FaultDuringExecDynamicTableScan);
+		SIMPLE_FAULT_INJECTOR("fault_during_exec_dynamic_table_scan");
 
 		if (!TupIsNull(slot))
 		{

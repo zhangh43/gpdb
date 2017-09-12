@@ -313,7 +313,7 @@ create_gang_retry:
 	}
 	PG_END_TRY();
 
-	SIMPLE_FAULT_INJECTOR(GangCreated);
+	SIMPLE_FAULT_INJECTOR("gang_created");
 
 	if (retry)
 	{

@@ -547,7 +547,7 @@ void PersistentDatabase_MarkCreatePending(
 	mmxlog_log_create_database(dbDirNode->tablespace, dbDirNode->database); 
 #endif
 
-	SIMPLE_FAULT_INJECTOR(FaultBeforePendingDeleteDatabaseEntry);
+	SIMPLE_FAULT_INJECTOR("fault_before_pending_delete_database_entry");
 
 	/*
 	 * MPP-18228
