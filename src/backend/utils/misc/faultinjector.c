@@ -588,7 +588,7 @@ FaultInjector_InjectFaultIfSet(
 			break;
 		case FaultInjectorTypeFault:
 			
-			if ( strcmp(entryLocal->faultInjectorIdentifier, "filerep_consumer") == 0 \
+			if (strcmp(entryLocal->faultInjectorIdentifier, "filerep_consumer") == 0 \
 					|| strcmp(entryLocal->faultInjectorIdentifier, "filerep_consumer_verification") == 0 \
 					|| strcmp(entryLocal->faultInjectorIdentifier, "filerep_sender") == 0 \
 					|| strcmp(entryLocal->faultInjectorIdentifier, "filerep_receiver") == 0 \
@@ -608,7 +608,7 @@ FaultInjector_InjectFaultIfSet(
 				{
 					FileRep_SetSegmentState(SegmentStateFault, FaultTypeMirror);
 				}
-			else if( strcmp(entryLocal->faultInjectorIdentifier, "filerep_transition_to_change_tracking") == 0 )
+			else if(strcmp(entryLocal->faultInjectorIdentifier, "filerep_transition_to_change_tracking") == 0 )
 			{
 				FileRep_SetPostmasterReset();
 			}
@@ -689,7 +689,7 @@ FaultInjector_InjectFaultIfSet(
 					 errmsg("fault triggered, fault name:'%s' fault type:'%s' ",
 							entryLocal->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entryLocal->faultInjectorType])));
-			if ( strcmp(entryLocal->faultInjectorIdentifier, "filerep_immediate_shutdown_request") == 0)
+			if (strcmp(entryLocal->faultInjectorIdentifier, "filerep_immediate_shutdown_request") == 0)
 				cnt = entryLocal->sleepTime;
 
 			for (ii=0; ii < cnt; ii++)
@@ -698,7 +698,7 @@ FaultInjector_InjectFaultIfSet(
 				
 				getFileRepRoleAndState(NULL, &segmentState, NULL, NULL, NULL);
 
-				if ( strcmp(entryLocal->faultInjectorIdentifier, "filerep_immediate_shutdown_request") != 0 &&
+				if (strcmp(entryLocal->faultInjectorIdentifier, "filerep_immediate_shutdown_request") != 0 &&
 					(segmentState == SegmentStateShutdownFilerepBackends ||
 					segmentState == SegmentStateImmediateShutdown ||
 					segmentState == SegmentStateShutdown ||
@@ -998,7 +998,7 @@ FaultInjector_NewHashEntry(
 	
 	if (entry->faultInjectorType == FaultInjectorTypeSkip)
 	{
-		if ( strcmp(entry->faultInjectorIdentifier, "checkpoint") == 0 \
+		if (strcmp(entry->faultInjectorIdentifier, "checkpoint") == 0 \
 				|| strcmp(entry->faultInjectorIdentifier, "fsync_counter") == 0 \
 				|| strcmp(entry->faultInjectorIdentifier, "bg_buffer_sync_default_logic") == 0 \
 				|| strcmp(entry->faultInjectorIdentifier, "change_tracking_disable") == 0 \
@@ -1037,7 +1037,7 @@ FaultInjector_NewHashEntry(
 	
 	getFileRepRoleAndState(&fileRepRole, &segmentState, &dataState, NULL, NULL);
 	
-	if ( strcmp(entry->faultInjectorIdentifier, "change_tracking_disable") == 0 \
+	if (strcmp(entry->faultInjectorIdentifier, "change_tracking_disable") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_consumer_verification") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_resync") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_resync_in_progress") == 0 \
@@ -1071,7 +1071,7 @@ FaultInjector_NewHashEntry(
 			goto exit;
 		}
 	}
-	else if ( strcmp(entry->faultInjectorIdentifier, "filerep_consumer") == 0 \
+	else if (strcmp(entry->faultInjectorIdentifier, "filerep_consumer") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_sender") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_receiver") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "filerep_flush") == 0 \
@@ -1093,7 +1093,7 @@ FaultInjector_NewHashEntry(
 			goto exit;
 		}
 	}
-	else if ( strcmp(entry->faultInjectorIdentifier, "transaction_abort_after_distributed_prepared") == 0 \
+	else if (strcmp(entry->faultInjectorIdentifier, "transaction_abort_after_distributed_prepared") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "dtm_broadcast_prepare") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "dtm_broadcast_commit_prepared") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "dtm_broadcast_abort_prepared") == 0 \
@@ -1117,7 +1117,7 @@ FaultInjector_NewHashEntry(
 			goto exit;
 		}
 	}
-	else if( strcmp(entry->faultInjectorIdentifier, "start_prepare") == 0 \
+	else if(strcmp(entry->faultInjectorIdentifier, "start_prepare") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "finish_prepared_transaction_commit_pass1_from_create_pending_to_created") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "finish_prepared_transaction_commit_pass2_from_create_pending_to_created") == 0 \
 			|| strcmp(entry->faultInjectorIdentifier, "finish_prepared_transaction_commit_pass1_from_drop_in_memory_to_drop_pending") == 0 \
@@ -1305,7 +1305,7 @@ FaultInjector_SetFaultInjection(
 			HASH_SEQ_STATUS			hash_status;
 			FaultInjectorEntry_s	*entryLocal;
 			
-			if (entry->faultInjectorIdentifier == all) 
+			if (strcmp(entry->faultInjectorIdentifier, 'all') == 0)
 			{
 				hash_seq_init(&hash_status, faultInjectorShmem->hash);
 				
@@ -1352,7 +1352,7 @@ FaultInjector_SetFaultInjection(
 			}
 			length = snprintf(entry->bufOutput, sizeof(entry->bufOutput), "Success: ");
 			
-			if (entry->faultInjectorIdentifier == ChangeTrackingCompactingReport)
+			if (strcmp(entry->faultInjectorIdentifier, "change_tracking_compacting_report") == 0)
 			{
 				snprintf(entry->bufOutput, sizeof(entry->bufOutput), 
 						 "Success: compacting in progress %s",
@@ -1476,7 +1476,7 @@ FaultInjector_IsFaultInjected(
 				ereport(DEBUG1,
 						(errmsg("LOG(fault injector): could not remove fault injection from hash"
 								"identifier:'%s' ",
-								FaultInjectorIdentifierEnumToString[identifier])));
+								identifier)));
 			} else {
 				faultInjectorShmem->faultInjectorSlots--;
 			}
@@ -1492,7 +1492,7 @@ exit:
 	if ((isCompleted == TRUE) && (retval == FALSE)) {
 		ereport(WARNING,
 				(errmsg("could not complete fault injection, fault name:'%s' fault type:'%s' ",
-						FaultInjectorIdentifierEnumToString[identifier],
+						identifier,
 						FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 	}
 	return isCompleted;
