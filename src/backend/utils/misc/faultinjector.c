@@ -1024,7 +1024,7 @@ FaultInjector_NewHashEntry(
 			ereport(WARNING,
 					(errmsg("could not insert fault injection, fault type not supported"
 							"fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 			snprintf(entry->bufOutput, sizeof(entry->bufOutput),
 					 "could not insert fault injection, fault type not supported");
@@ -1063,7 +1063,7 @@ FaultInjector_NewHashEntry(
 			ereport(WARNING,
 					(errmsg("could not insert fault injection entry into table, segment not in primary role"
 							"fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 			snprintf(entry->bufOutput, sizeof(entry->bufOutput),
 					 "could not insert fault injection, segment not in primary role");
@@ -1085,7 +1085,7 @@ FaultInjector_NewHashEntry(
 					(errmsg("could not insert fault injection entry into table, "
 							"segment not in primary or mirror role, "
 							"fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 			snprintf(entry->bufOutput, sizeof(entry->bufOutput),
 					 "could not insert fault injection, segment not in primary or mirror role");
@@ -1109,7 +1109,7 @@ FaultInjector_NewHashEntry(
 					(errmsg("could not insert fault injection entry into table, "
 							"segment not in master role, "
 							"fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 			snprintf(entry->bufOutput, sizeof(entry->bufOutput),
 					 "could not insert fault injection, segment not in master role");
@@ -1163,7 +1163,7 @@ FaultInjector_NewHashEntry(
 					(errmsg("could not insert fault injection entry into table, "
 							"segment not in primary or master role, "
 							"fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 			snprintf(entry->bufOutput, sizeof(entry->bufOutput),
 					 "could not insert fault injection, segment not in primary or master role");
@@ -1180,7 +1180,7 @@ FaultInjector_NewHashEntry(
 		ereport(WARNING,
 				(errmsg("could not insert fault injection entry into table, no memory, "
 						"fault name:'%s' fault type:'%s' ",
-						FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+						entry->faultInjectorIdentifier,
 						FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 		snprintf(entry->bufOutput, sizeof(entry->bufOutput), 
 				 "could not insert fault injection, no memory");
@@ -1195,7 +1195,7 @@ FaultInjector_NewHashEntry(
 				(errmsg("could not insert fault injection entry into table, "
 						"entry already exists, "
 						"fault name:'%s' fault type:'%s' ",
-						FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+						entry->faultInjectorIdentifier,
 						FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 		snprintf(entry->bufOutput, sizeof(entry->bufOutput), 
 				 "could not insert fault injection, entry already exists");
@@ -1228,7 +1228,7 @@ FaultInjector_NewHashEntry(
 	FiLockRelease();
 	
 	elog(DEBUG1, "FaultInjector_NewHashEntry() identifier:'%s'", 
-		 FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier]);
+		 entry->faultInjectorIdentifier);
 	
 exit:
 		
@@ -1258,7 +1258,7 @@ FaultInjector_UpdateHashEntry(
 				(errmsg("could not update fault injection hash entry with fault injection status, "
 						"no entry found, "
 						"fault name:'%s' fault type:'%s' ",
-						FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+						entry->faultInjectorIdentifier,
 						FaultInjectorTypeEnumToString[entry->faultInjectorType])));
 		goto exit;
 	}
@@ -1278,7 +1278,7 @@ FaultInjector_UpdateHashEntry(
 	ereport(DEBUG1,
 			(errmsg("LOG(fault injector): update fault injection hash entry "
 					"identifier:'%s' state:'%s' occurrence:'%d' ",
-					FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier], 
+					entry->faultInjectorIdentifier,
 					FaultInjectorStateEnumToString[entryLocal->faultInjectorState],
 					entry->occurrence)));
 	
@@ -1334,7 +1334,7 @@ FaultInjector_SetFaultInjection(
 				ereport(DEBUG1,
 						(errmsg("LOG(fault injector): could not remove fault injection from hash"
 								"identifier:'%s' ",
-								FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier])));
+								entry->faultInjectorIdentifier)));
 			}			
 			
 			break;
@@ -1374,7 +1374,7 @@ FaultInjector_SetFaultInjection(
 							"sleep time:'%d' "
 							"fault injection state:'%s' "
 							"num times hit:'%d' ",
-							FaultInjectorIdentifierEnumToString[entryLocal->faultInjectorIdentifier],
+							entryLocal->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entryLocal->faultInjectorType],
 							FaultInjectorDDLEnumToString[entryLocal->ddlStatement],
 							entryLocal->databaseName,
@@ -1397,7 +1397,7 @@ FaultInjector_SetFaultInjection(
 									  "sleep time:'%d' "
 									  "fault injection state:'%s'  "
 									  "num times hit:'%d' \n",
-									  FaultInjectorIdentifierEnumToString[entryLocal->faultInjectorIdentifier],
+									  entryLocal->faultInjectorIdentifier,
 									  FaultInjectorTypeEnumToString[entryLocal->faultInjectorType],
 									  FaultInjectorDDLEnumToString[entryLocal->ddlStatement],
 									  entryLocal->databaseName,
@@ -1412,7 +1412,7 @@ FaultInjector_SetFaultInjection(
 			if (found == FALSE) {
 				snprintf(entry->bufOutput, sizeof(entry->bufOutput), "Failure: "
 						 "fault name:'%s' not set",
-						 FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier]);
+						 entry->faultInjectorIdentifier);
 			}
 			break;
 		}
@@ -1420,7 +1420,7 @@ FaultInjector_SetFaultInjection(
 			ereport(LOG, 
 					(errcode(ERRCODE_FAULT_INJECT),
 					 errmsg("fault triggered, fault name:'%s' fault type:'%s' ",
-							FaultInjectorIdentifierEnumToString[entry->faultInjectorIdentifier],
+							entry->faultInjectorIdentifier,
 							FaultInjectorTypeEnumToString[entry->faultInjectorType])));	
 			
 			FaultInjector_UpdateHashEntry(entry);	

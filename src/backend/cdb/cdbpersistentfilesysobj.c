@@ -3491,8 +3491,8 @@ void PersistentFileSysObj_PreparedEndXactAction(
 #ifdef FAULT_INJECTOR
 				if (FaultInjector_InjectFaultIfSet(
 											   isCommit ?
-											   FinishPreparedTransactionCommitPass1FromCreatePendingToCreated :
-											   FinishPreparedTransactionAbortPass1FromCreatePendingToAbortingCreate,
+											   "finish_prepared_transaction_commit_pass1_from_create_pending_to_created" :
+											   "finish_prepared_transaction_abort_pass1_from_create_pending_to_aborting_create",
 											   DDLNotSpecified,
 												   "" /* databaseName */,
 												   "" /* tableName */) == TRUE)
@@ -3506,7 +3506,7 @@ void PersistentFileSysObj_PreparedEndXactAction(
 				dropPending = true;
 #ifdef FAULT_INJECTOR
 				if (FaultInjector_InjectFaultIfSet(
-											   FinishPreparedTransactionCommitPass1FromDropInMemoryToDropPending,
+											   "finish_prepared_transaction_commit_pass1_from_drop_in_memory_to_drop_pending",
 											   DDLNotSpecified,
 											   "" /* databaseName */,
 											   "" /* tableName */) == TRUE)
@@ -3520,8 +3520,8 @@ void PersistentFileSysObj_PreparedEndXactAction(
 #ifdef FAULT_INJECTOR
 				if (FaultInjector_InjectFaultIfSet(
 											   isCommit ?
-											   FinishPreparedTransactionCommitPass1AbortingCreateNeeded:
-											   FinishPreparedTransactionAbortPass1AbortingCreateNeeded,
+											   "finish_prepared_transaction_commit_pass1_aborting_create_needed":
+											   "finish_prepared_transaction_abort_pass1_aborting_create_needed",
 											   DDLNotSpecified,
 											   "" /* databaseName */,
 											   "" /* tableName */) == TRUE)
@@ -3583,8 +3583,8 @@ void PersistentFileSysObj_PreparedEndXactAction(
 			case PersistentEndXactFileSysAction_Create:
 				if (FaultInjector_InjectFaultIfSet(
 												   isCommit ?
-												   FinishPreparedTransactionCommitPass2FromCreatePendingToCreated :
-												   FinishPreparedTransactionAbortPass2FromCreatePendingToAbortingCreate,
+												   "finish_prepared_transaction_commit_pass2_from_create_pending_to_created" :
+												   "finish_prepared_transaction_abort_pass2_from_create_pending_to_aborting_create",
 												   DDLNotSpecified,
 												   "" /* databaseName */,
 												   "" /* tableName */) == TRUE)
@@ -3596,7 +3596,7 @@ void PersistentFileSysObj_PreparedEndXactAction(
 				if (isCommit)
 				{
 					if (FaultInjector_InjectFaultIfSet(
-												   FinishPreparedTransactionCommitPass2FromDropInMemoryToDropPending,
+												   "finish_prepared_transaction_commit_pass2_from_drop_in_memory_to_drop_pending",
 												   DDLNotSpecified,
 												   "" /* databaseName */,
 												   "" /* tableName */) == TRUE)
@@ -3607,8 +3607,8 @@ void PersistentFileSysObj_PreparedEndXactAction(
 			case PersistentEndXactFileSysAction_AbortingCreateNeeded:
 				if (FaultInjector_InjectFaultIfSet(
 											   isCommit ?
-											   FinishPreparedTransactionCommitPass2AbortingCreateNeeded :
-											   FinishPreparedTransactionAbortPass2AbortingCreateNeeded,
+											   "finish_prepared_transaction_commit_pass2_aborting_create_needed" :
+											   "finish_prepared_transaction_abort_pass2_aborting_create_needed",
 											   DDLNotSpecified,
 											   "" /* databaseName */,
 											   "" /* tableName */) == TRUE)

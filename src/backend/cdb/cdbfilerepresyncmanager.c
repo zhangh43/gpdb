@@ -1642,7 +1642,7 @@ FileRepResync_CheckProgress(void)
 #ifdef FAULT_INJECTOR	
 	if (fileRepResyncShmem->resyncInProgressCount > 10)
 		FaultInjector_InjectFaultIfSet(
-									   FileRepResyncInProgress, 
+									   "filerep_resync_in_progress",
 									   DDLNotSpecified,
 									   "",	// databaseName
 									   ""); // tableName
