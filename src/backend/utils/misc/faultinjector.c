@@ -1305,7 +1305,7 @@ FaultInjector_SetFaultInjection(
 			HASH_SEQ_STATUS			hash_status;
 			FaultInjectorEntry_s	*entryLocal;
 			
-			if (strcmp(entry->faultInjectorIdentifier, 'all') == 0)
+			if (strcmp(entry->faultInjectorIdentifier, "all") == 0)
 			{
 				hash_seq_init(&hash_status, faultInjectorShmem->hash);
 				
