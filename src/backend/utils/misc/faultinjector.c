@@ -1385,7 +1385,7 @@ FaultInjector_SetFaultInjection(
 						entryLocal->numTimesTriggered)));
 				
 				if (entry->faultInjectorIdentifier == entryLocal->faultInjectorIdentifier ||
-					entry->faultInjectorIdentifier == all)
+					strcmp(entry->faultInjectorIdentifier, "all") == 0)
 				{
 					length = snprintf((entry->bufOutput + length), sizeof(entry->bufOutput) - length,
 									  "fault name:'%s' "
