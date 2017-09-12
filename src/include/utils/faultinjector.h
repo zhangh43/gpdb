@@ -14,221 +14,6 @@
 #define FAULTINJECTOR_MAX_SLOTS	16
 
 /*
- *
- */
-typedef enum FaultInjectorIdentifier_e {
-	FaultInjectorIdNotSpecified=0,
-	
-	FaultInjectorIdAll,
-		/* 
-		 * affects all faults injected
-		 *		*) remove all faults injected from the segment
-		 *		*) display status for all faults injected 
-		 */
-	Postmaster,
-	
-	PgControl,
-	
-	PgXlog,
-	
-	StartPrepareTx,
-
-	FaultBeforePendingDeleteRelationEntry,
-
-	FaultBeforePendingDeleteDatabaseEntry,
-
-	FaultBeforePendingDeleteTablespaceEntry,
-
-	FaultBeforePendingDeleteFilespaceEntry,
-	
-	FileRepConsumer,
-	
-	FileRepConsumerVerification,
-
-	FileRepChangeTrackingCompacting,
-	
-	FileRepSender,
-	
-	FileRepReceiver,
-	
-	FileRepFlush,
-	
-	FileRepResync,
-	
-	FileRepResyncInProgress,	
-	
-	FileRepResyncWorker,
-	
-	FileRepResyncWorkerRead,
-	
-	FileRepTransitionToInResyncMirrorReCreate,
-	
-	FileRepTransitionToInResyncMarkReCreated,
-	
-	FileRepTransitionToInResyncMarkCompleted,
-	
-	FileRepTransitionToInSyncBegin,
-	
-	FileRepTransitionToInSync,
-	
-	FileRepTransitionToInSyncBeforeCheckpoint,
-	
-	FileRepTransitionToInSyncMarkCompleted,
-	
-	FileRepTransitionToChangeTracking,
-	FileRepIsOperationCompleted,
-	FileRepImmediateShutdownRequested,
-	
-	Checkpoint,
-	
-	ChangeTrackingCompactingReport,
-	
-	ChangeTrackingDisable,
-	
-	TransactionStartUnderEntryDbSingleton,
-
-	TransactionAbortAfterDistributedPrepared,
-	
-	TransactionCommitPass1FromCreatePendingToCreated,
-	
-	TransactionCommitPass1FromDropInMemoryToDropPending,
-	
-	TransactionCommitPass1FromAbortingCreateNeededToAbortingCreate,
-	
-	TransactionAbortPass1FromCreatePendingToAbortingCreate,
-	
-	TransactionAbortPass1FromAbortingCreateNeededToAbortingCreate,
-	
-	TransactionCommitPass2FromDropInMemoryToDropPending,
-	
-	TransactionCommitPass2FromAbortingCreateNeededToAbortingCreate,
-	
-	TransactionAbortPass2FromCreatePendingToAbortingCreate,
-	
-	TransactionAbortPass2FromAbortingCreateNeededToAbortingCreate,
-	
-	
-	FinishPreparedTransactionCommitPass1FromCreatePendingToCreated,
-	
-	FinishPreparedTransactionCommitPass2FromCreatePendingToCreated,
-		/* commit: create pending => created */
-			
-	FinishPreparedTransactionAbortPass1FromCreatePendingToAbortingCreate,
-	FinishPreparedTransactionAbortPass2FromCreatePendingToAbortingCreate,
-		/* abort: create pending => aborting create */
-
-	FinishPreparedTransactionCommitPass1FromDropInMemoryToDropPending,
-	
-	FinishPreparedTransactionCommitPass2FromDropInMemoryToDropPending,
-		/* commit: drop in memory => drop pending */
-
-	FinishPreparedTransactionCommitPass1AbortingCreateNeeded,
-	
-	FinishPreparedTransactionCommitPass2AbortingCreateNeeded,
-		/* commit: create pending => created */
-	
-	FinishPreparedTransactionAbortPass1AbortingCreateNeeded,
-	
-	FinishPreparedTransactionAbortPass2AbortingCreateNeeded,	
-		/* abort: create pending => aborting create */
-
-	FileRepVerification,
-		/* trigger filerep verification for testing */
-	
-	TwoPhaseTransactionCommitPrepared,
-	
-	TwoPhaseTransactionAbortPrepared,
-	
-	DtmBroadcastPrepare,
-	
-	DtmBroadcastCommitPrepared,
-	
-	DtmBroadcastAbortPrepared,
-	
-	DtmXLogDistributedCommit,
-
-	DtmInit,
-	
-        EndPreparedTwoPhaseSleep,
-	       /* sleep after creating two phase files */
-
-	SegmentTransitionRequest,
-
-	SegmentProbeResponse,
-
-	LocalTmRecordTransactionCommit,
-	
-	MallocFailure,
-	AbortTransactionFail,
-	WorkfileCreationFail,
-	WorkfileWriteFail,
-	WorkfileHashJoinFailure,
-
-	UpdateCommittedEofInPersistentTable,
-
-	MultiExecHashLargeVmem,
-
-	ExecSortBeforeSorting,
-	ExecSortMKSortMergeRuns,
-	ExecShareInputNext,
-	BaseBackupPostCreateCheckpoint,
-
-	CompactionBeforeSegmentFileDropPhase,
-	CompactionBeforeCleanupPhase,
-
-	AppendOnlyInsert,
-	AppendOnlyDelete,
-	AppendOnlyUpdate,
-
-	ReindexDB,
-	ReindexRelation,
-
-	FaultDuringExecDynamicTableScan,
-
-	FaultInBackgroundWriterMain,
-
-	CdbCopyStartAfterDispatch,
-
-	RepairFragEnd,
-	VacuumFullBeforeTruncate,
-	VacuumFullAfterTruncate,
-	VacuumRelationEndOfFirstRound,
-	VacuumRelationOpenRelationDuringDropPhase,
-
-	RebuildPTDB,
-
-	ProcArray_Add,
-
-	FaultExecHashJoinNewBatch,
-
-	FtsWaitForShutdown,
-
-	RunawayCleanup,
-
-	OptRelcacheTranslatorCatalogAccess,
-
-	SendQEDetailsInitBackend,
-	ProcessStartupPacketFault,
-	QuickDie,
-	AfterOneSliceDispatched,
-
-	InterconnectStopAckIsLost,
-	QEGotSnapshotAndInterconnect,
-
-	FsyncCounter,
-	BgBufferSyncDefaultLogic,
-
-	FinishPreparedAfterRecordCommitPrepared,
-
-	GangCreated,
-
-	ResGroupAssignedOnMaster,
-	/* INSERT has to be done before that line */
-	FaultInjectorIdMax,
-	
-} FaultInjectorIdentifier_e;
-
-/*
  * NB: This list needs to be kept in sync with:
  * - FaultInjectorTypeEnumToString
  * - the help message in clsInjectFault.py
@@ -332,7 +117,7 @@ typedef enum FaultInjectorState_e {
  */
 typedef struct FaultInjectorEntry_s {
 	
-	FaultInjectorIdentifier_e	faultInjectorIdentifier;
+	char	 faultInjectorIdentifier[NAMEDATALEN];
 	
 	FaultInjectorType_e		faultInjectorType;
 	
@@ -358,9 +143,6 @@ typedef struct FaultInjectorEntry_s {
 extern FaultInjectorType_e	FaultInjectorTypeStringToEnum(
 									char*		faultTypeString);
 
-extern	FaultInjectorIdentifier_e FaultInjectorIdentifierStringToEnum(
-									char*			faultName);
-
 extern DDLStatement_e FaultInjectorDDLStringToEnum(
 									char*	ddlString);
 
@@ -369,7 +151,7 @@ extern Size FaultInjector_ShmemSize(void);
 extern void FaultInjector_ShmemInit(void);
 
 extern FaultInjectorType_e FaultInjector_InjectFaultIfSet(
-							   FaultInjectorIdentifier_e identifier,
+							   char* identifier,
 							   DDLStatement_e			 ddlStatement,
 							   const char*				 databaseName,
 							   const char*				 tableName);
@@ -379,7 +161,7 @@ extern int FaultInjector_SetFaultInjection(
 
 
 extern bool FaultInjector_IsFaultInjected(
-							FaultInjectorIdentifier_e identifier);
+							char* identifier);
 
 
 #ifdef FAULT_INJECTOR

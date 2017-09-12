@@ -3289,15 +3289,7 @@ processTransitionRequest_faultInject(void * inputBuf, int *offsetPtr, int length
 	elog(DEBUG1, "FAULT INJECTED: Name %s Type %s, DDL %s, DB %s, Table %s, NumOccurrences %d  SleepTime %d",
 		 faultName, type, ddlStatement, databaseName, tableName, numOccurrences, sleepTimeSeconds );
 
-	faultInjectorEntry.faultInjectorIdentifier = FaultInjectorIdentifierStringToEnum(faultName);
-	if (faultInjectorEntry.faultInjectorIdentifier == FaultInjectorIdNotSpecified ||
-		faultInjectorEntry.faultInjectorIdentifier == FaultInjectorIdMax) {
-		ereport(COMMERROR, (errcode(ERRCODE_PROTOCOL_VIOLATION),
-							errmsg("could not recognize fault name")));
-
-		appendStringInfo(buf, "Failure: could not recognize fault name");
-		goto exit;
-	}
+	strncpy(faultInjectorEntry.faultInjectorIdentifier, faultName, sizeof(faultInjectorEntry.faultInjectorIdentifier));
 
 	faultInjectorEntry.faultInjectorType = FaultInjectorTypeStringToEnum(type);
 	if (faultInjectorEntry.faultInjectorType == FaultInjectorTypeNotSpecified ||
