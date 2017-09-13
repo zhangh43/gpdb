@@ -763,7 +763,7 @@ FaultInjector_InjectFaultIfSet(
 							entryLocal->faultName,
 							FaultInjectorTypeEnumToString[entryLocal->faultInjectorType])));	
 			
-			while ((entry = FaultInjector_LookupHashEntry(entryLocal->faultInjectorIdentifier)) != NULL &&
+			while ((entry = FaultInjector_LookupHashEntry(entryLocal->faultName)) != NULL &&
 				   entry->faultInjectorType != FaultInjectorTypeResume)
 			{
 				pg_usleep(1000000L);  // 1 sec
@@ -929,7 +929,7 @@ FaultInjector_LookupHashEntry(
 	if (entry == NULL) {
 		ereport(DEBUG5,
 				(errmsg("FaultInjector_LookupHashEntry() could not find fault injection hash entry identifier:'%d' ",
-						identifier)));
+						FaultInjectorIdentifierStringToEnum(faultName))));
 	} 
 	
 	return entry;
@@ -1227,7 +1227,7 @@ FaultInjector_NewHashEntry(
 		default:
 			break;
 	}
-	entryLocal = FaultInjector_InsertHashEntry(entry->faultInjectorIdentifier, &exists);
+	entryLocal = FaultInjector_InsertHashEntry(entry->faultName, &exists);
 		
 	if (entryLocal == NULL) {
 		FiLockRelease();
@@ -1367,7 +1367,7 @@ FaultInjector_SetFaultInjection(
 				FiLockAcquire();
 				
 				while ((entryLocal = (FaultInjectorEntry_s *) hash_seq_search(&hash_status)) != NULL) {
-					isRemoved = FaultInjector_RemoveHashEntry(entryLocal->faultInjectorIdentifier);
+					isRemoved = FaultInjector_RemoveHashEntry(entryLocal->faultName);
 					if (isRemoved == TRUE) {
 						faultInjectorShmem->faultInjectorSlots--;
 					}					
@@ -1378,7 +1378,7 @@ FaultInjector_SetFaultInjection(
 			else
 			{
 				FiLockAcquire();
-				isRemoved = FaultInjector_RemoveHashEntry(entry->faultInjectorIdentifier);
+				isRemoved = FaultInjector_RemoveHashEntry(entry->faultName);
 				if (isRemoved == TRUE) {
 					faultInjectorShmem->faultInjectorSlots--;
 				}
