@@ -381,7 +381,7 @@ extern FaultInjectorType_e FaultInjector_InjectFaultIfSet(
 							   const char*				 databaseName,
 							   const char*				 tableName);
 
-extern FaultInjectorType_e FaultInjector_InjectFaultIfSet(
+extern FaultInjectorType_e FaultInjector_InjectFaultEnumIfSet(
 							   FaultInjectorIdentifier_e identifier,
 							   DDLStatement_e			 ddlStatement,
 							   const char*				 databaseName,
@@ -396,11 +396,13 @@ extern bool FaultInjector_IsFaultInjected(
 
 
 #ifdef FAULT_INJECTOR
-#define SIMPLE_FAULT_INJECTOR(FaultName) \
+#define SIMPLE_FAULT_INJECTOR(FaultIdentifier) \
+	FaultInjector_InjectFaultEnumIfSet(FaultIdentifier, DDLNotSpecified, "", "")
+#define SIMPLE_FAULT_NAME_INJECTOR(FaultName) \
 	FaultInjector_InjectFaultIfSet(FaultName, DDLNotSpecified, "", "")
-
 #else
-#define SIMPLE_FAULT_INJECTOR(FaultName)
+#define SIMPLE_FAULT_INJECTOR(FaultIdentifier)
+#define SIMPLE_FAULT_NAME_INJECTOR(FaultName)
 #endif
 
 #endif	/* FAULTINJECTOR_H */

@@ -507,7 +507,7 @@ FaultInjector_ShmemInit(void)
 }
 
 FaultInjectorType_e
-FaultInjector_InjectFaultIfSet(
+FaultInjector_InjectFaultEnumIfSet(
 							   FaultInjectorIdentifier_e identifier,
 							   DDLStatement_e			 ddlStatement,
 							   const char*					 databaseName,
