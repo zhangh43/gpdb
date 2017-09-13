@@ -13,6 +13,8 @@
 
 #define FAULTINJECTOR_MAX_SLOTS	16
 
+#define FAULT_NAME_MAX_LENGTH	256
+
 /*
  *
  */
@@ -334,6 +336,8 @@ typedef struct FaultInjectorEntry_s {
 	
 	FaultInjectorIdentifier_e	faultInjectorIdentifier;
 	
+	char						faultName[FAULT_NAME_MAX_LENGTH];
+
 	FaultInjectorType_e		faultInjectorType;
 	
 	int						sleepTime;
@@ -361,12 +365,21 @@ extern FaultInjectorType_e	FaultInjectorTypeStringToEnum(
 extern	FaultInjectorIdentifier_e FaultInjectorIdentifierStringToEnum(
 									char*			faultName);
 
+extern	char* FaultInjectorIdentifierEnumToFaultName(
+								FaultInjectorIdentifier_e identifier);
+
 extern DDLStatement_e FaultInjectorDDLStringToEnum(
 									char*	ddlString);
 
 extern Size FaultInjector_ShmemSize(void);
 
 extern void FaultInjector_ShmemInit(void);
+
+extern FaultInjectorType_e FaultInjector_InjectFaultIfSet(
+							   const char*				 faultName,
+							   DDLStatement_e			 ddlStatement,
+							   const char*				 databaseName,
+							   const char*				 tableName);
 
 extern FaultInjectorType_e FaultInjector_InjectFaultIfSet(
 							   FaultInjectorIdentifier_e identifier,
@@ -379,7 +392,7 @@ extern int FaultInjector_SetFaultInjection(
 
 
 extern bool FaultInjector_IsFaultInjected(
-							FaultInjectorIdentifier_e identifier);
+							char* faultName);
 
 
 #ifdef FAULT_INJECTOR
