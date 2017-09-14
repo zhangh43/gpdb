@@ -924,7 +924,7 @@ FaultInjector_LookupHashEntry(
 	elog(LOG, "huberthubert3%s", key);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
-												  (void *) &key, // key
+												  (void *) faultName, // key
 												  HASH_FIND, 
 												  NULL);
 	
@@ -957,7 +957,7 @@ FaultInjector_InsertHashEntry(
 	elog(LOG,"hubert6:%s:%d:%d:%c",key,strlen(faultName), strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
-												  (void *) key, // key
+												  (void *) faultName, // key
 												  HASH_ENTER,
 												  &foundPtr);
 	
@@ -1007,7 +1007,7 @@ FaultInjector_RemoveHashEntry(
 		strncpy(key, faultName, strlen(faultName) + 1);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
-												  (void *) &key, // key
+												  (void *) faultName, // key
 												  HASH_REMOVE, 
 												  NULL);
 	
