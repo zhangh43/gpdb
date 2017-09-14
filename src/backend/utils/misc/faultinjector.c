@@ -950,10 +950,10 @@ FaultInjector_InsertHashEntry(
 	FaultInjectorEntry_s	*entry;
 
 	Assert(faultInjectorShmem->hash != NULL);
-	elog("hubert5:%s:%d",faultName, strlen(faultName));
+	elog(LOG,"hubert5:%s:%d",faultName, strlen(faultName));
 	char	* key=palloc(strlen(faultName) + 1);
 	strncpy(key, faultName, sizeof(key));
-	elog("hubert6:%s:%d:%d",key, strlen(key),key[strlen(faultName)]);
+	elog(LOG,"hubert6:%s:%d:%d",key, strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) key, // key
