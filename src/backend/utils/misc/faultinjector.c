@@ -952,14 +952,27 @@ FaultInjector_InsertHashEntry(
 	Assert(faultInjectorShmem->hash != NULL);
 	elog(LOG,"hubert5:%s:%d",faultName, strlen(faultName));
 	char	* key=palloc(strlen(faultName) + 1);
-	strncpy(key, faultName, sizeof(key));
-	elog(LOG,"hubert6:%s:%d:%d",key, strlen(key),key[strlen(faultName)]);
+	strncpy(key, faultName, strlen(faultName) + 1);
+	elog(LOG,"hubert6:%s:%d:%d:%c",key,strlen(faultName), strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) key, // key
 												  HASH_ENTER,
 												  &foundPtr);
 	
+	if (foundPtr) {
+			elog(LOG, "hubert91");
+			}
+		else{
+			elog(LOG, "hubert101");
+		}
+	if (entry == NULL) {
+			elog(LOG, "hubert92");
+			}
+		else{
+			elog(LOG, "hubert12");
+		}
+
 	if (entry == NULL) {
 		*exists = FALSE;
 		return entry;
@@ -974,17 +987,25 @@ FaultInjector_InsertHashEntry(
 		*exists = FALSE;
 	}
 
+
 	entry = (FaultInjectorEntry_s *) hash_search(
 													  faultInjectorShmem->hash,
 													  (void*) key, // key
 													  HASH_ENTER,
 													  &foundPtr);
 	if (entry == NULL) {
-		elog(LOG, "hubert7");
+		elog(LOG, "hubert71");
 		}
 	else{
-		elog(LOG, "hubert8");
+		elog(LOG, "hubert81");
 	}
+
+	if (foundPtr) {
+				elog(LOG, "hubert72");
+				}
+			else{
+				elog(LOG, "hubert82");
+			}
 
 	return entry;
 }
