@@ -1002,7 +1002,7 @@ FaultInjector_RemoveHashEntry(
 	
 	Assert(faultInjectorShmem->hash != NULL);
 	char	* key=palloc(strlen(faultName) + 1);
-		strncpy(key, faultName, sizeof(key));
+		strncpy(key, faultName, strlen(faultName) + 1);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) &key, // key
