@@ -487,7 +487,7 @@ FaultInjector_ShmemInit(void)
 	faultInjectorShmem->faultInjectorSlots = 0;
 	
 	MemSet(&hash_ctl, 0, sizeof(hash_ctl));
-	hash_ctl.keysize = sizeof(FAULT_NAME_MAX_LENGTH);
+	hash_ctl.keysize = FAULT_NAME_MAX_LENGTH;
 	hash_ctl.entrysize = sizeof(FaultInjectorEntry_s);
 	hash_ctl.hash = string_hash;
 	
@@ -950,11 +950,13 @@ FaultInjector_InsertHashEntry(
 	FaultInjectorEntry_s	*entry;
 
 	Assert(faultInjectorShmem->hash != NULL);
+	elog("hubert5:%s:%d",faultName, strlen(faultName));
 	char	* key=palloc(strlen(faultName) + 1);
-		strncpy(key, faultName, sizeof(key));
+	strncpy(key, faultName, sizeof(key));
+	elog("hubert6:%s:%d:%d",key, strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
-												  (void *) &key, // key
+												  (void *) key, // key
 												  HASH_ENTER,
 												  &foundPtr);
 	
@@ -970,6 +972,18 @@ FaultInjector_InsertHashEntry(
 		*exists = TRUE;
 	} else {
 		*exists = FALSE;
+	}
+
+	entry = (FaultInjectorEntry_s *) hash_search(
+													  faultInjectorShmem->hash,
+													  (void*) key, // key
+													  HASH_ENTER,
+													  &foundPtr);
+	if (entry == NULL) {
+		elog(LOG, "hubert7");
+		}
+	else{
+		elog(LOG, "hubert8");
 	}
 
 	return entry;
