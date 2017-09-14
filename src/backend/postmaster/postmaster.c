@@ -3289,7 +3289,7 @@ processTransitionRequest_faultInject(void * inputBuf, int *offsetPtr, int length
 	elog(DEBUG1, "FAULT INJECTED: Name %s Type %s, DDL %s, DB %s, Table %s, NumOccurrences %d  SleepTime %d",
 		 faultName, type, ddlStatement, databaseName, tableName, numOccurrences, sleepTimeSeconds );
 
-	memset(&faultInjectorEntry, 0, sizeof(faultInjectorEntry));
+	//memset(&faultInjectorEntry, 0, sizeof(faultInjectorEntry));
 	strncpy(faultInjectorEntry.faultName, faultName, sizeof(faultInjectorEntry.faultName));
 	faultInjectorEntry.faultInjectorIdentifier = FaultInjectorIdentifierStringToEnum(faultName);
 	if (faultInjectorEntry.faultInjectorIdentifier == FaultInjectorIdNotSpecified) {
