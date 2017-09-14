@@ -919,9 +919,6 @@ FaultInjector_LookupHashEntry(
 	FaultInjectorEntry_s	*entry;
 	
 	Assert(faultInjectorShmem->hash != NULL);
-	char	* key=palloc(strlen(faultName) + 1);
-	strncpy(key, faultName, sizeof(key));
-	elog(LOG, "huberthubert3%s", key);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) faultName, // key
@@ -950,29 +947,11 @@ FaultInjector_InsertHashEntry(
 	FaultInjectorEntry_s	*entry;
 
 	Assert(faultInjectorShmem->hash != NULL);
-	elog(LOG,"hubert5:%s:%d",faultName, strlen(faultName));
-	char	* key=palloc(strlen(faultName) + 1);
-	strncpy(key, faultName, strlen(faultName) + 1);
-	key[strlen(faultName)]='\0';
-	elog(LOG,"hubert6:%s:%d:%d:%c",key,strlen(faultName), strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) faultName, // key
-												  HASH_ENTER,
+												  HASH_ENTER_NULL,
 												  &foundPtr);
-	
-	if (foundPtr) {
-			elog(LOG, "hubert91");
-			}
-		else{
-			elog(LOG, "hubert101");
-		}
-	if (entry == NULL) {
-			elog(LOG, "hubert92");
-			}
-		else{
-			elog(LOG, "hubert12");
-		}
 
 	if (entry == NULL) {
 		*exists = FALSE;
@@ -1003,8 +982,6 @@ FaultInjector_RemoveHashEntry(
 	bool					isRemoved = FALSE;
 	
 	Assert(faultInjectorShmem->hash != NULL);
-	char	* key=palloc(strlen(faultName) + 1);
-		strncpy(key, faultName, strlen(faultName) + 1);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
 												  (void *) faultName, // key
