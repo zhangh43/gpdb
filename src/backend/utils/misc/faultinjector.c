@@ -953,6 +953,7 @@ FaultInjector_InsertHashEntry(
 	elog(LOG,"hubert5:%s:%d",faultName, strlen(faultName));
 	char	* key=palloc(strlen(faultName) + 1);
 	strncpy(key, faultName, strlen(faultName) + 1);
+	key[strlen(faultName)]='\0';
 	elog(LOG,"hubert6:%s:%d:%d:%c",key,strlen(faultName), strlen(key),key[strlen(faultName)]);
 	entry = (FaultInjectorEntry_s *) hash_search(
 												  faultInjectorShmem->hash, 
@@ -986,26 +987,6 @@ FaultInjector_InsertHashEntry(
 	} else {
 		*exists = FALSE;
 	}
-
-
-	entry = (FaultInjectorEntry_s *) hash_search(
-													  faultInjectorShmem->hash,
-													  (void*) key, // key
-													  HASH_ENTER,
-													  &foundPtr);
-	if (entry == NULL) {
-		elog(LOG, "hubert71");
-		}
-	else{
-		elog(LOG, "hubert81");
-	}
-
-	if (foundPtr) {
-				elog(LOG, "hubert72");
-				}
-			else{
-				elog(LOG, "hubert82");
-			}
 
 	return entry;
 }
