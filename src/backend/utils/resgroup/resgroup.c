@@ -493,6 +493,7 @@ InitResGroups(void)
 
 		ResGroupOps_CreateGroup(groupId);
 		ResGroupOps_SetCpuRateLimit(groupId, cpuRateLimit);
+		ResGroupOps_SetMemoryLimit(groupId, caps.memLimit);
 
 		numGroups++;
 		Assert(numGroups <= MaxResourceGroups);
@@ -665,6 +666,10 @@ ResGroupAlterOnCommit(Oid groupId,
 		if (limittype == RESGROUP_LIMIT_TYPE_CPU)
 		{
 			ResGroupOps_SetCpuRateLimit(groupId, caps->cpuRateLimit);
+		}
+		else if (limittype == RESGROUP_LIMIT_TYPE_MEMORY)
+		{
+			ResGroupOps_SetMemoryLimit(groupId, caps->memLimit);
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{

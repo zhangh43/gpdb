@@ -531,6 +531,14 @@ checkPermission(Oid group, bool report)
 	__CHECK("cpuacct.usage", R_OK);
 	__CHECK("cpuacct.stat", R_OK);
 
+	comp = "memory";
+
+	__CHECK("", R_OK | W_OK | X_OK);
+	__CHECK("memory.limit_in_bytes", R_OK | W_OK);
+	__CHECK("memory.memsw.limit_in_bytes", R_OK | W_OK);
+	__CHECK("memory.usage_in_bytes", R_OK);
+	__CHECK("memory.memsw.usage_in_bytes", R_OK);
+
 #undef __CHECK
 
 	return true;
@@ -690,7 +698,9 @@ ResGroupOps_CreateGroup(Oid group)
 {
 	int retry = 0;
 
-	if (!createDir(group, "cpu") || !createDir(group, "cpuacct"))
+	if (!createDir(group, "cpu")
+		|| !createDir(group, "cpuacct")
+		|| !createDir(group, "memory"))
 	{
 		CGROUP_ERROR("can't create cgroup for resgroup '%d': %s",
 					 group, strerror(errno));
@@ -721,7 +731,9 @@ ResGroupOps_CreateGroup(Oid group)
 void
 ResGroupOps_DestroyGroup(Oid group)
 {
-	if (!removeDir(group, "cpu", true) || !removeDir(group, "cpuacct", true))
+	if (!removeDir(group, "cpu", true)
+		|| !removeDir(group, "cpuacct", true)
+		|| !removeDir(group, "memory", true))
 	{
 		CGROUP_ERROR("can't remove cgroup for resgroup '%d': %s",
 			 group, strerror(errno));
@@ -743,6 +755,10 @@ ResGroupOps_AssignGroup(Oid group, int pid)
 
 	writeInt64(group, NULL, "cpu", "cgroup.procs", pid);
 	writeInt64(group, NULL, "cpuacct", "cgroup.procs", pid);
+
+	/*
+	 * Do not assign the process to cgroup/memory for now.
+	 */
 
 	currentGroupIdInCGroup = group;
 }
@@ -794,6 +810,24 @@ ResGroupOps_SetCpuRateLimit(Oid group, int cpu_rate_limit)
 
 	int64 shares = readInt64(RESGROUP_ROOT_ID, NULL, comp, "cpu.shares");
 	writeInt64(group, NULL, comp, "cpu.shares", shares * cpu_rate_limit / 100);
+}
+
+/*
+ * Set the memory limit for the OS group.
+ *
+ * memory_limit should be within [0, 100].
+ */
+void
+ResGroupOps_SetMemoryLimit(Oid group, int memory_limit)
+{
+	const char *comp = "memory";
+	int64 memory_limit_in_bytes;
+
+	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
+			ResGroupGetVmemLimitChunks() * memory_limit / 100);
+
+	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+			memory_limit_in_bytes);
 }
 
 /*

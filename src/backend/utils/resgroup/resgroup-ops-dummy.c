@@ -130,6 +130,17 @@ ResGroupOps_SetCpuRateLimit(Oid group, int cpu_rate_limit)
 }
 
 /*
+ * Set the memory limit for the OS group.
+ *
+ * memory_limit should be within [0, 100].
+ */
+void
+ResGroupOps_SetMemoryLimit(Oid group, int memory_limit)
+{
+	unsupported_system();
+}
+
+/*
  * Get the cpu usage of the OS group, that is the total cpu time obtained
  * by this OS group, in nano seconds.
  */
