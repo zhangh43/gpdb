@@ -152,6 +152,16 @@ ResGroupOps_GetCpuUsage(Oid group)
 }
 
 /*
+ * Get the memory usage of the OS group
+ */
+int64
+ResGroupOps_GetMemoryUsage(Oid group)
+{
+	unsupported_system();
+	return 0;
+}
+
+/*
  * Get the count of cpu cores on the system.
  */
 int

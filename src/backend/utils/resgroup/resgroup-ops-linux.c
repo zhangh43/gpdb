@@ -843,6 +843,20 @@ ResGroupOps_GetCpuUsage(Oid group)
 }
 
 /*
+ * Get the memory usage of the OS group
+ */
+int64
+ResGroupOps_GetMemoryUsage(Oid group)
+{
+	const char *comp = "memory";
+	int64 memory_usage_in_bytes;
+
+	memory_usage_in_bytes =  readInt64(group, NULL, comp, "memory.usage_in_bytes");
+
+	return VmemTracker_ConvertVmemBytesToChunks(memory_usage_in_bytes);
+}
+
+/*
  * Get the count of cpu cores on the system.
  */
 int
