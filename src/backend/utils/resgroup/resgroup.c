@@ -162,6 +162,8 @@ struct ResGroupData
 
 	bool		lockedForDrop;  /* true if resource group is dropped but not committed yet */
 
+	bool		external;		/* true if this is a resource group for external component */
+
 	int32		memExpected;		/* expected memory chunks according to current caps */
 	int32		memQuotaGranted;	/* memory chunks for quota part */
 	int32		memSharedGranted;	/* memory chunks for shared part */
@@ -200,8 +202,22 @@ struct ResGroupControl
 	ResGroupData	groups[1];
 };
 
-/* hooks */
+/*
+ * hooks
+ */
+
 resgroup_assign_hook_type resgroup_assign_hook = NULL;
+
+typedef struct ResGroupMemoryHookItem
+{
+	struct ResGroupMemoryHookItem *next;
+	ResGroupMemoryHook memory_hook;
+	void	   *arg;
+} ResGroupMemoryHookItem;
+
+/* TODO need locks to protect hook list? */
+static ResGroupMemoryHookItem
+*ResGroup_memory_hooks[RES_GROUP_MEMORY_HOOK_MAX] = { NULL };
 
 /* static variables */
 
@@ -295,6 +311,14 @@ static void resgroupDumpFreeSlots(StringInfo str);
 static void sessionSetSlot(ResGroupSlotData *slot);
 static ResGroupSlotData *sessionGetSlot(void);
 static void sessionResetSlot(void);
+
+static void CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type);
+static int ResGroupPLDec(void *arg);
+static int ResGroupPLInc(void *arg);
+#if 0
+static void RegisterPlDec(void);
+static void RegisterPlInc(void);
+#endif
 
 #ifdef USE_ASSERT_CHECKING
 static bool selfHasGroup(void);
@@ -493,7 +517,7 @@ InitResGroups(void)
 
 		ResGroupOps_CreateGroup(groupId);
 		ResGroupOps_SetCpuRateLimit(groupId, cpuRateLimit);
-		ResGroupOps_SetMemoryLimit(groupId, caps.memLimit);
+		ResGroupOps_SetMemoryLimitByRate(groupId, caps.memLimit);
 
 		numGroups++;
 		Assert(numGroups <= MaxResourceGroups);
@@ -667,9 +691,9 @@ ResGroupAlterOnCommit(Oid groupId,
 		{
 			ResGroupOps_SetCpuRateLimit(groupId, caps->cpuRateLimit);
 		}
-		else if (limittype == RESGROUP_LIMIT_TYPE_MEMORY)
+		else if (ResGroupIsExternal(groupId) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
 		{
-			ResGroupOps_SetMemoryLimit(groupId, caps->memLimit);
+			// Should we adjust memory limit of external group at this point?
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{
@@ -765,6 +789,80 @@ ResGroupGetStat(Oid groupId, ResGroupStatType type)
 	LWLockRelease(ResGroupLock);
 
 	return result;
+}
+
+void
+ResGroupSetExternal(Oid groupId)
+{
+	ResGroupData *group;
+
+	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
+
+	group = groupHashFind(groupId, true);
+	group->external = true;
+
+	LWLockRelease(ResGroupLock);
+}
+
+void
+ResGroupClearExternal(Oid groupId)
+{
+	ResGroupData *group;
+
+	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
+
+	group = groupHashFind(groupId, true);
+	group->external = false;
+
+	LWLockRelease(ResGroupLock);
+}
+
+bool
+ResGroupIsExternal(Oid groupId)
+{
+	ResGroupData *group;
+
+	Assert(LWLockHeldByMe(ResGroupLock));
+
+	group = groupHashFind(groupId, true);
+	return group->external;
+}
+
+void
+RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
+		ResGroupMemoryHook hook, void *arg)
+{
+	ResGroupMemoryHookItem *item;
+
+	item = (ResGroupMemoryHookItem *)
+		MemoryContextAlloc(TopMemoryContext, sizeof(ResGroupMemoryHookItem));
+	item->memory_hook = hook;
+	item->arg = arg;
+	item->next = ResGroup_memory_hooks[hook_type];
+	ResGroup_memory_hooks[hook_type] = item;
+}
+
+void
+UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
+		ResGroupMemoryHook hook, void *arg)
+{
+	ResGroupMemoryHookItem *item;
+	ResGroupMemoryHookItem *prev;
+
+	prev = NULL;
+	item = ResGroup_memory_hooks[hook_type];
+	for ( ; item; prev = item, item = item->next)
+	{
+		if (item->memory_hook == hook && item->arg == arg)
+		{
+			if (prev)
+				prev->next = item->next;
+			else
+				ResGroup_memory_hooks[hook_type] = item->next;
+			pfree(item);
+			break;
+		}
+	}
 }
 
 static char *
@@ -993,6 +1091,7 @@ createGroup(Oid groupId, const ResGroupCaps *caps)
 	group->memQuotaUsed = 0;
 	memset(&group->totalQueuedTime, 0, sizeof(group->totalQueuedTime));
 	group->lockedForDrop = false;
+	group->external = false;
 
 	group->memQuotaGranted = 0;
 	group->memSharedGranted = 0;
@@ -1389,6 +1488,7 @@ groupAcquireSlot(ResGroupInfo *pGroupInfo)
 	group = pGroupInfo->group;
 
 	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
+	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
 
 	/* Has the group been dropped? */
 	if (groupIsDropped(pGroupInfo))
@@ -2046,6 +2146,7 @@ AssignResGroupOnMaster(void)
 
 		/* Set spill guc */
 		groupSetMemorySpillRatio(&slot->caps);
+
 	}
 	PG_CATCH();
 	{
@@ -2072,6 +2173,8 @@ UnassignResGroup(void)
 		LOG_RESGROUP_DEBUG(LOG, "idle proc memory usage: %d", self->memUsage);
 
 	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
+
+	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_CLEAN);
 
 	/* Sub proc memory accounting info from group and slot */
 	selfDetachResGroup(group, slot);
@@ -2101,6 +2204,8 @@ UnassignResGroup(void)
 		/* And finally release the overused memory quota */
 		mempoolAutoRelease(group);
 	}
+
+	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_DEC);
 
 	LWLockRelease(ResGroupLock);
 
@@ -3117,3 +3222,115 @@ sessionResetSlot(void)
 
 	MySessionState->resGroupSlot = NULL;
 }
+
+static void
+CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type)
+{
+	while(ResGroup_memory_hooks[hook_type])
+	{
+		ResGroupMemoryHookItem *next = ResGroup_memory_hooks[hook_type]->next;
+		ResGroupMemoryHook hook = ResGroup_memory_hooks[hook_type]->memory_hook;
+		void *arg = ResGroup_memory_hooks[hook_type]->arg;
+		pfree(ResGroup_memory_hooks[hook_type]);
+		ResGroup_memory_hooks[hook_type] = next;
+
+		hook(arg);
+	}
+}
+
+static int
+ResGroupPLDec(void *arg)
+{
+	Oid groupId;
+	ResGroupData *group;
+	ResGroupCaps *caps;
+	int32 memory_usage;
+	int32 memory_expected;
+	int32 memory_limit, memory_limit_new;
+
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+	groupId = *(Oid *)arg;
+	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
+
+	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
+
+	group = groupHashFind(groupId, true);
+	caps = &group->caps;
+
+	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
+	memory_usage = ResGroupOps_GetMemoryUsage(groupId);
+	memory_expected = groupGetMemExpected(caps);
+
+	/* no intention to decrease memory limit */
+	if (memory_limit <= memory_expected)
+		return 0;
+
+	/* no room to decrease memory limit */
+	if (memory_limit <= memory_usage)
+		return 0;
+
+	memory_limit_new = Max(memory_usage, memory_expected);
+
+	ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit_new);
+	mempoolRelease(groupId, memory_limit - memory_limit_new);
+	wakeupGroups(InvalidOid);
+
+	return 0;
+}
+
+static int
+ResGroupPLInc(void *arg)
+{
+	Oid groupId;
+	ResGroupData *group;
+	ResGroupCaps *caps;
+	int32 memory_expected;
+	int32 memory_limit;
+	int32 memory_inc;
+
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+	groupId = *(Oid *)arg;
+	group = groupHashFind(groupId, true);
+	caps = &group->caps;
+
+	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
+	memory_expected = groupGetMemExpected(caps);
+
+	/* no intention to increase memory limit */
+	if (memory_limit >= memory_expected)
+		return 0;
+
+	memory_inc = mempoolReserve(groupId, memory_expected - memory_limit);
+
+	if (memory_inc > 0)
+	{
+		ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit + memory_inc);
+	}
+
+	return 0;
+}
+
+#if 0
+/*
+ * Just for test
+ */
+static void RegisterPlDec()
+{
+	Oid 		*hookArg = NULL;
+
+	hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+	*hookArg = 16385;
+	RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg);
+}
+
+static void RegisterPlInc()
+{
+	Oid 		*hookArg = NULL;
+
+	hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+	*hookArg = 16385;
+	RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg);
+}
+#endif

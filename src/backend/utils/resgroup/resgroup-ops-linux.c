@@ -818,13 +818,28 @@ ResGroupOps_SetCpuRateLimit(Oid group, int cpu_rate_limit)
  * memory_limit should be within [0, 100].
  */
 void
-ResGroupOps_SetMemoryLimit(Oid group, int memory_limit)
+ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 {
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
 			ResGroupGetVmemLimitChunks() * memory_limit / 100);
+
+	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+			memory_limit_in_bytes);
+}
+
+/*
+ * Flush the memory limit to cgroup control file
+ */
+void
+ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
+{
+	const char *comp = "memory";
+	int64 memory_limit_in_bytes;
+
+	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(memory_limit);
 
 	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
 			memory_limit_in_bytes);
@@ -845,15 +860,29 @@ ResGroupOps_GetCpuUsage(Oid group)
 /*
  * Get the memory usage of the OS group
  */
-int64
+int32
 ResGroupOps_GetMemoryUsage(Oid group)
 {
 	const char *comp = "memory";
 	int64 memory_usage_in_bytes;
 
-	memory_usage_in_bytes =  readInt64(group, NULL, comp, "memory.usage_in_bytes");
+	memory_usage_in_bytes = readInt64(group, NULL, comp, "memory.usage_in_bytes");
 
 	return VmemTracker_ConvertVmemBytesToChunks(memory_usage_in_bytes);
+}
+
+/*
+ * Get the memory limit of the OS group
+ */
+int32
+ResGroupOps_GetMemoryLimit(Oid group)
+{
+	const char *comp = "memory";
+	int64 memory_limit_in_bytes;
+
+	memory_limit_in_bytes = readInt64(group, NULL, comp, "memory.limit_in_bytes");
+
+	return VmemTracker_ConvertVmemBytesToChunks(memory_limit_in_bytes);
 }
 
 /*

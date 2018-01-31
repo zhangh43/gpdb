@@ -135,7 +135,16 @@ ResGroupOps_SetCpuRateLimit(Oid group, int cpu_rate_limit)
  * memory_limit should be within [0, 100].
  */
 void
-ResGroupOps_SetMemoryLimit(Oid group, int memory_limit)
+ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
+{
+	unsupported_system();
+}
+
+/*
+ * Flush the memory limit to cgroup control file
+ */
+void
+ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 {
 	unsupported_system();
 }
@@ -154,8 +163,18 @@ ResGroupOps_GetCpuUsage(Oid group)
 /*
  * Get the memory usage of the OS group
  */
-int64
+int32
 ResGroupOps_GetMemoryUsage(Oid group)
+{
+	unsupported_system();
+	return 0;
+}
+
+/*
+ * Get the memory limit of the OS group
+ */
+int32
+ResGroupOps_GetMemoryLimit(Oid group)
 {
 	unsupported_system();
 	return 0;
