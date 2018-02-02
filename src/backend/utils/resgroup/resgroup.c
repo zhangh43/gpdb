@@ -313,9 +313,9 @@ static ResGroupSlotData *sessionGetSlot(void);
 static void sessionResetSlot(void);
 
 static void CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type);
+#if 0
 static int ResGroupPLDec(void *arg);
 static int ResGroupPLInc(void *arg);
-#if 0
 static void RegisterPlDec(void);
 static void RegisterPlInc(void);
 #endif
@@ -868,7 +868,8 @@ UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 int32
 ResGroup_GetMemoryExpected(Oid groupId)
 {
-	int32 memory_expected;
+	ResGroupData *group;
+	ResGroupCaps *caps;
 
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
