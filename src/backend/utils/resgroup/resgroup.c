@@ -313,9 +313,9 @@ static ResGroupSlotData *sessionGetSlot(void);
 static void sessionResetSlot(void);
 
 static void CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type);
+static bool ResGroupPLDec(void *arg);
+static bool ResGroupPLInc(void *arg);
 #if 0
-static int ResGroupPLDec(void *arg);
-static int ResGroupPLInc(void *arg);
 static void RegisterPlDec(void);
 static void RegisterPlInc(void);
 #endif
@@ -877,6 +877,25 @@ ResGroup_GetMemoryExpected(Oid groupId)
 	caps = &group->caps;
 
 	return groupGetMemExpected(caps);
+}
+
+void
+ResGroup_ReclaimMemoryFromExternal(Oid groupId, int32 chunks)
+{
+	if (chunks <= 0)
+		return;
+
+	mempoolRelease(groupId, chunks);
+	wakeupGroups(InvalidOid);
+}
+
+int32
+ResGroup_AssignMemoryToExternal(Oid groupId, int32 chunks)
+{
+	if (chunks <= 0)
+		return 0;
+
+	return mempoolReserve(groupId, chunks);
 }
 
 static char *
@@ -3252,14 +3271,10 @@ CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type)
 	}
 }
 
-#if 0
-
-static int
+static bool
 ResGroupPLDec(void *arg)
 {
 	Oid groupId;
-	ResGroupData *group;
-	ResGroupCaps *caps;
 	int32 memory_usage;
 	int32 memory_expected;
 	int32 memory_limit, memory_limit_new;
@@ -3267,36 +3282,32 @@ ResGroupPLDec(void *arg)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
-	group = groupHashFind(groupId, true);
-	caps = &group->caps;
 
 	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
 	memory_usage = ResGroupOps_GetMemoryUsage(groupId);
-	memory_expected = groupGetMemExpected(caps);
+	memory_expected = ResGroup_GetMemoryExpected(groupId);
 
 	/* no intention to decrease memory limit */
 	if (memory_limit <= memory_expected)
-		return 0;
+		return true;
 
 	/* no room to decrease memory limit */
 	if (memory_limit <= memory_usage)
-		return 0;
+		return true;
 
 	memory_limit_new = Max(memory_usage, memory_expected);
 
 	ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit_new);
-	mempoolRelease(groupId, memory_limit - memory_limit_new);
-	wakeupGroups(InvalidOid);
+	ResGroup_ReclaimMemoryFromExternal(groupId,
+			memory_limit - memory_limit_new);
 
-	return 0;
+	return true;
 }
 
-static int
+static bool
 ResGroupPLInc(void *arg)
 {
 	Oid groupId;
-	ResGroupData *group;
-	ResGroupCaps *caps;
 	int32 memory_expected;
 	int32 memory_limit;
 	int32 memory_inc;
@@ -3304,26 +3315,26 @@ ResGroupPLInc(void *arg)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
-	group = groupHashFind(groupId, true);
-	caps = &group->caps;
 
 	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
-	memory_expected = groupGetMemExpected(caps);
+	memory_expected = ResGroup_GetMemoryExpected(groupId);
 
 	/* no intention to increase memory limit */
 	if (memory_limit >= memory_expected)
-		return 0;
+		return true;
 
-	memory_inc = mempoolReserve(groupId, memory_expected - memory_limit);
+	memory_inc = ResGroup_AssignMemoryToExternal(groupId,
+			memory_expected - memory_limit);
 
 	if (memory_inc > 0)
 	{
 		ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit + memory_inc);
 	}
 
-	return 0;
+	return true;
 }
 
+#if 0
 /*
  * Just for test
  */

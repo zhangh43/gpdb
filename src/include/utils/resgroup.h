@@ -165,6 +165,10 @@ extern void UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 
 extern int32 ResGroup_GetMemoryExpected(Oid groupId);
 
+extern void ResGroup_ReclaimMemoryFromExternal(Oid groupId, int32 chunks);
+
+extern int32 ResGroup_AssignMemoryToExternal(Oid groupId, int32 chunks);
+
 #define LOG_RESGROUP_DEBUG(...) \
 	do {if (Debug_resource_group) elog(__VA_ARGS__); } while(false);
 
