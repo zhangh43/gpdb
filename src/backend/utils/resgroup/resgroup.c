@@ -830,9 +830,21 @@ ResGroupIsExternal(Oid groupId)
 
 void
 RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
-		ResGroupMemoryHook hook, void *arg)
+		ResGroupMemoryHook hook, void *arg,
+		ResGroupMemoryHookCompareArg compare)
 {
 	ResGroupMemoryHookItem *item;
+
+	if (compare == NULL)
+		return;
+
+	/* check if the hook fucntion is duplicated */
+	item = ResGroup_memory_hooks[hook_type];
+	for ( ; item; item = item->next)
+	{
+		if (item->memory_hook == hook && compare(item->arg, arg))
+			return;
+	}
 
 	item = (ResGroupMemoryHookItem *)
 		MemoryContextAlloc(TopMemoryContext, sizeof(ResGroupMemoryHookItem));

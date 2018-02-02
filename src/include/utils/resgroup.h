@@ -79,6 +79,7 @@ typedef Oid (*resgroup_assign_hook_type)(void);
 extern PGDLLIMPORT resgroup_assign_hook_type resgroup_assign_hook;
 
 typedef bool (*ResGroupMemoryHook) (void *arg);
+typedef bool (*ResGroupMemoryHookCompareArg) (void *arg1, void *arg2);
 
 typedef enum
 {
@@ -158,7 +159,8 @@ extern void ResGroupClearExternal(Oid groupId);
 extern bool ResGroupIsExternal(Oid groupId);
 
 extern void RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
-		ResGroupMemoryHook hook, void *arg);
+		ResGroupMemoryHook hook, void *arg,
+		ResGroupMemoryHookCompareArg compare);
 
 extern void UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 		ResGroupMemoryHook hook, void *arg);
