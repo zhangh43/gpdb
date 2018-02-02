@@ -163,6 +163,8 @@ extern void RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 extern void UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 		ResGroupMemoryHook hook, void *arg);
 
+extern int32 ResGroup_GetMemoryExpected(Oid groupId);
+
 #define LOG_RESGROUP_DEBUG(...) \
 	do {if (Debug_resource_group) elog(__VA_ARGS__); } while(false);
 

@@ -865,6 +865,19 @@ UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 	}
 }
 
+int32
+ResGroup_GetMemoryExpected(Oid groupId)
+{
+	int32 memory_expected;
+
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+	group = groupHashFind(groupId, true);
+	caps = &group->caps;
+
+	return groupGetMemExpected(caps);
+}
+
 static char *
 groupDumpMemUsage(ResGroupData *group)
 {
@@ -3238,6 +3251,8 @@ CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type)
 	}
 }
 
+#if 0
+
 static int
 ResGroupPLDec(void *arg)
 {
@@ -3251,10 +3266,6 @@ ResGroupPLDec(void *arg)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
-	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
-
-	CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
-
 	group = groupHashFind(groupId, true);
 	caps = &group->caps;
 
@@ -3312,7 +3323,6 @@ ResGroupPLInc(void *arg)
 	return 0;
 }
 
-#if 0
 /*
  * Just for test
  */
