@@ -78,7 +78,7 @@ extern double gp_resource_group_memory_limit;
 typedef Oid (*resgroup_assign_hook_type)(void);
 extern PGDLLIMPORT resgroup_assign_hook_type resgroup_assign_hook;
 
-typedef int (*ResGroupMemoryHook) (void *arg);
+typedef bool (*ResGroupMemoryHook) (void *arg);
 
 typedef enum
 {
