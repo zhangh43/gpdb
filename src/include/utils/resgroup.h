@@ -163,7 +163,8 @@ extern void RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 		ResGroupMemoryHookCompareArg compare);
 
 extern void UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
-		ResGroupMemoryHook hook, void *arg);
+		ResGroupMemoryHook hook, void *arg,
+		ResGroupMemoryHookCompareArg compare);
 
 extern int32 ResGroup_GetMemoryExpected(Oid groupId);
 

@@ -856,7 +856,8 @@ RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 
 void
 UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
-		ResGroupMemoryHook hook, void *arg)
+		ResGroupMemoryHook hook, void *arg,
+		ResGroupMemoryHookCompareArg compare)
 {
 	ResGroupMemoryHookItem *item;
 	ResGroupMemoryHookItem *prev;
@@ -865,7 +866,7 @@ UnregisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 	item = ResGroup_memory_hooks[hook_type];
 	for ( ; item; prev = item, item = item->next)
 	{
-		if (item->memory_hook == hook && item->arg == arg)
+		if (item->memory_hook == hook && compare(item->arg, arg))
 		{
 			if (prev)
 				prev->next = item->next;
@@ -3271,15 +3272,36 @@ sessionResetSlot(void)
 static void
 CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type)
 {
-	while(ResGroup_memory_hooks[hook_type])
-	{
-		ResGroupMemoryHookItem *next = ResGroup_memory_hooks[hook_type]->next;
-		ResGroupMemoryHook hook = ResGroup_memory_hooks[hook_type]->memory_hook;
-		void *arg = ResGroup_memory_hooks[hook_type]->arg;
-		pfree(ResGroup_memory_hooks[hook_type]);
-		ResGroup_memory_hooks[hook_type] = next;
+	ResGroupMemoryHookItem *item;
+	ResGroupMemoryHookItem *prev;
+	ResGroupMemoryHookItem *next;
+	ResGroupMemoryHook hook;
+	void *arg;
 
-		hook(arg);
+	prev = NULL;
+	item = ResGroup_memory_hooks[hook_type];
+
+	while(item)
+	{
+		next = item->next;
+
+		hook = item->memory_hook;
+		arg = item->arg;
+
+		if (hook(arg))
+		{
+			if (prev)
+				prev->next = next;
+			else
+				ResGroup_memory_hooks[hook_type] = next;
+			pfree(item);
+		}
+		else
+		{
+			prev = item;
+		}
+
+		item = next;
 	}
 }
 
