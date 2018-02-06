@@ -101,7 +101,7 @@ ResGroupOps_AssignGroup(Oid group, int pid)
  * ResGroupOps_UnLockGroup() to unblock it.
  */
 int
-ResGroupOps_LockGroup(Oid group, bool block)
+ResGroupOps_LockGroup(Oid group, const char *comp, bool block)
 {
 	unsupported_system();
 	return -1;

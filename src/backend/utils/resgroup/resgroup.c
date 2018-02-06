@@ -69,6 +69,7 @@
 #define InvalidSlotId	(-1)
 #define RESGROUP_MAX_SLOTS	(MaxConnections)
 
+
 /*
  * GUC variables.
  */
@@ -163,6 +164,8 @@ struct ResGroupData
 	bool		lockedForDrop;  /* true if resource group is dropped but not committed yet */
 
 	bool		external;		/* true if this is a resource group for external component */
+	int32		memGap;			/* (memory limit (before alter) - memory expected (after alter)) */
+								/* For normal resource group, it is always 0. */
 
 	int32		memExpected;		/* expected memory chunks according to current caps */
 	int32		memQuotaGranted;	/* memory chunks for quota part */
@@ -517,7 +520,7 @@ InitResGroups(void)
 
 		ResGroupOps_CreateGroup(groupId);
 		ResGroupOps_SetCpuRateLimit(groupId, cpuRateLimit);
-		ResGroupOps_SetMemoryLimitByRate(groupId, caps.memLimit);
+		ResGroupOps_SetMemoryLimitByRate(groupId, caps.memLimit * ResGroup_GetSegmentNum());
 
 		numGroups++;
 		Assert(numGroups <= MaxResourceGroups);
@@ -670,7 +673,8 @@ ResGroupCreateOnAbort(Oid groupId)
 void
 ResGroupAlterOnCommit(Oid groupId,
 					  ResGroupLimitType limittype,
-					  const ResGroupCaps *caps)
+					  const ResGroupCaps *caps,
+					  int32 memGap)
 {
 	ResGroupData	*group;
 	bool			shouldWakeUp;
@@ -694,6 +698,7 @@ ResGroupAlterOnCommit(Oid groupId,
 		else if (ResGroupIsExternal(groupId) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
 		{
 			// Should we adjust memory limit of external group at this point?
+			group->memGap = memGap;
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{
@@ -892,6 +897,18 @@ ResGroup_GetMemoryExpected(Oid groupId)
 	return groupGetMemExpected(caps);
 }
 
+int32
+ResGroup_GetMemoryGap(Oid groupId)
+{
+	ResGroupData *group;
+
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+	group = groupHashFind(groupId, true);
+
+	return group->memGap;
+}
+
 void
 ResGroup_ReclaimMemoryFromExternal(Oid groupId, int32 chunks)
 {
@@ -909,6 +926,12 @@ ResGroup_AssignMemoryToExternal(Oid groupId, int32 chunks)
 		return 0;
 
 	return mempoolReserve(groupId, chunks);
+}
+
+int
+ResGroup_GetSegmentNum()
+{
+	return (Gp_role == GP_ROLE_EXECUTE ? host_segments : pResGroupControl->segmentsOnMaster);
 }
 
 static char *
@@ -1138,6 +1161,7 @@ createGroup(Oid groupId, const ResGroupCaps *caps)
 	memset(&group->totalQueuedTime, 0, sizeof(group->totalQueuedTime));
 	group->lockedForDrop = false;
 	group->external = false;
+	group->memGap = 0;
 
 	group->memQuotaGranted = 0;
 	group->memSharedGranted = 0;
