@@ -910,6 +910,18 @@ ResGroup_GetMemoryGap(Oid groupId)
 }
 
 void
+ResGroup_SetMemoryGap(Oid groupId, int32 memGap)
+{
+	ResGroupData *group;
+
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+	group = groupHashFind(groupId, true);
+
+	group->memGap = memGap;
+}
+
+void
 ResGroup_ReclaimMemoryFromExternal(Oid groupId, int32 chunks)
 {
 	if (chunks <= 0)

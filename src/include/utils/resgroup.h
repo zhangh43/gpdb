@@ -174,6 +174,7 @@ extern void ResGroup_ReclaimMemoryFromExternal(Oid groupId, int32 chunks);
 
 extern int32 ResGroup_AssignMemoryToExternal(Oid groupId, int32 chunks);
 extern int ResGroup_GetSegmentNum(void);
+extern void ResGroup_SetMemoryGap(Oid groupId, int32 memGap);
 
 #define LOG_RESGROUP_DEBUG(...) \
 	do {if (Debug_resource_group) elog(__VA_ARGS__); } while(false);
