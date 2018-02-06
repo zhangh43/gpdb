@@ -316,9 +316,9 @@ static ResGroupSlotData *sessionGetSlot(void);
 static void sessionResetSlot(void);
 
 static void CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type);
+#if 0
 static bool ResGroupPLDec(void *arg);
 static bool ResGroupPLInc(void *arg);
-#if 0
 static void RegisterPlDec(void);
 static void RegisterPlInc(void);
 #endif
@@ -698,7 +698,6 @@ ResGroupAlterOnCommit(Oid groupId,
 		else if (ResGroupIsExternal(groupId) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
 		{
 			// Should we adjust memory limit of external group at this point?
-			group->memGap = memGap;
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{
@@ -708,6 +707,7 @@ ResGroupAlterOnCommit(Oid groupId,
 			if (shouldWakeUp)
 				wakeupGroups(groupId);
 		}
+		group->memGap = memGap;
 	}
 	PG_CATCH();
 	{
@@ -906,7 +906,8 @@ ResGroup_GetMemoryGap(Oid groupId)
 
 	group = groupHashFind(groupId, true);
 
-	return group->memGap;
+	Assert(pResGroupControl->totalChunks > 0);
+	return pResGroupControl->totalChunks * group->memGap / 100;
 }
 
 void
@@ -3341,6 +3342,7 @@ CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type)
 	}
 }
 
+#if 0
 static bool
 ResGroupPLDec(void *arg)
 {
@@ -3404,7 +3406,6 @@ ResGroupPLInc(void *arg)
 	return true;
 }
 
-#if 0
 /*
  * Just for test
  */
