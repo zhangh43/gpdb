@@ -69,7 +69,6 @@
 #define InvalidSlotId	(-1)
 #define RESGROUP_MAX_SLOTS	(MaxConnections)
 
-
 /*
  * GUC variables.
  */
@@ -2352,6 +2351,8 @@ SwitchResGroupOnSegment(const char *buf, int len)
 		group->memQuotaUsed += slot->memQuota;
 		Assert(group->memQuotaUsed <= group->memQuotaGranted);
 		group->nRunning++;
+
+		CallResGroupMemoryHooks(RES_GROUP_MEMORY_HOOK_INC);
 	}
 
 	selfAttachResGroup(group, slot);
