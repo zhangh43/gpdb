@@ -706,7 +706,9 @@ ResGroupAlterOnCommit(Oid groupId,
 			if (shouldWakeUp)
 				wakeupGroups(groupId);
 		}
-		group->memGap = memGap;
+
+		Assert(pResGroupControl->totalChunks > 0);
+		group->memGap = pResGroupControl->totalChunks * memGap / 100;
 	}
 	PG_CATCH();
 	{
@@ -905,8 +907,7 @@ ResGroup_GetMemoryGap(Oid groupId)
 
 	group = groupHashFind(groupId, true);
 
-	Assert(pResGroupControl->totalChunks > 0);
-	return pResGroupControl->totalChunks * group->memGap / 100;
+	return group->memGap;
 }
 
 void
