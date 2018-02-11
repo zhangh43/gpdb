@@ -822,14 +822,27 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 {
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
+	int64 memory_limit_in_bytes_old;
+
+	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.usage_in_bytes");
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
 			ResGroupGetVmemLimitChunks() * memory_limit / 100);
 
-	writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
-			memory_limit_in_bytes);
-	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
-			memory_limit_in_bytes);
+	if (memory_limit_in_bytes > memory_limit_in_bytes_old)
+	{
+		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+				memory_limit_in_bytes);
+		writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+				memory_limit_in_bytes);
+	}
+	else
+	{
+		writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+				memory_limit_in_bytes);
+		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+				memory_limit_in_bytes);
+	}
 }
 
 /*
@@ -840,13 +853,26 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 {
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
+	int64 memory_limit_in_bytes_old;
+
+	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.usage_in_bytes");
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(memory_limit);
 
-	writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
-			memory_limit_in_bytes);
-	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
-			memory_limit_in_bytes);
+	if (memory_limit_in_bytes > memory_limit_in_bytes_old)
+	{
+		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+				memory_limit_in_bytes);
+		writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+				memory_limit_in_bytes);
+	}
+	else
+	{
+		writeInt64(group, NULL, comp, "memory.limit_in_bytes",
+				memory_limit_in_bytes);
+		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+				memory_limit_in_bytes);
+	}
 }
 
 /*

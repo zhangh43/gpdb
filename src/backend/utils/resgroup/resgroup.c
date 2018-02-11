@@ -697,7 +697,7 @@ ResGroupAlterOnCommit(Oid groupId,
 		else if (ResGroupIsExternal(caps) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
 		{
 			Assert(pResGroupControl->totalChunks > 0);
-			group->memGap = pResGroupControl->totalChunks * memGap / 100;
+			group->memGap += pResGroupControl->totalChunks * memGap / 100;
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{
