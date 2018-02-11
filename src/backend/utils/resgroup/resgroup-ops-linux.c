@@ -826,9 +826,9 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
 			ResGroupGetVmemLimitChunks() * memory_limit / 100);
 
-	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
-			memory_limit_in_bytes);
 	writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+			memory_limit_in_bytes);
+	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
 			memory_limit_in_bytes);
 }
 
@@ -843,9 +843,9 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(memory_limit);
 
-	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
-			memory_limit_in_bytes);
 	writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
+			memory_limit_in_bytes);
+	writeInt64(group, NULL, comp, "memory.limit_in_bytes",
 			memory_limit_in_bytes);
 }
 
