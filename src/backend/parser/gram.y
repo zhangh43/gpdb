@@ -560,7 +560,7 @@ static Node *makeIsNotDistinctFromNode(Node *expr, int position);
 	LEAST LEFT LEVEL LIBRARY LIKE LIMIT LISTEN LOAD LOCAL LOCALTIME LOCALTIMESTAMP
 	LOCATION LOCK_P LOGIN_P
 
-	MAPPING MATCH MAXVALUE MEMORY_LIMIT MEMORY_SHARED_QUOTA MEMORY_SPILL_RATIO
+	MAPPING MATCH MAXVALUE MEMORY_AUDITOR MEMORY_LIMIT MEMORY_SHARED_QUOTA MEMORY_SPILL_RATIO
 	MINUTE_P MINVALUE MODE MONTH_P MOVE
 
 	NAME_P NAMES NATIONAL NATURAL NCHAR NEW NEXT NO NOCREATEDB
@@ -829,6 +829,7 @@ static Node *makeIsNotDistinctFromNode(Node *expr, int position);
 			%nonassoc MASTER
 			%nonassoc MATCH
 			%nonassoc MAXVALUE
+			%nonassoc MEMORY_AUDITOR
 			%nonassoc MEMORY_LIMIT
 			%nonassoc MEMORY_SHARED_QUOTA
 			%nonassoc MEMORY_SPILL_RATIO
@@ -1393,6 +1394,10 @@ OptResourceGroupElem:
 			| MEMORY_SPILL_RATIO SignedIconst
 				{
 					$$ = makeDefElem("memory_spill_ratio", (Node *) makeInteger($2));
+				}
+			| MEMORY_AUDITOR SignedIconst
+				{
+					$$ = makeDefElem("memory_auditor", (Node *) makeInteger($2));
 				}
 		;
 
@@ -13548,6 +13553,7 @@ unreserved_keyword:
 			| MASTER
 			| MATCH
 			| MAXVALUE
+			| MEMORY_AUDITOR
 			| MEMORY_LIMIT
 			| MEMORY_SHARED_QUOTA
 			| MEMORY_SPILL_RATIO
@@ -13849,6 +13855,7 @@ PartitionIdentKeyword: ABORT_P
 			| MASTER
 			| MATCH
 			| MAXVALUE
+			| MEMORY_AUDITOR
 			| MEMORY_LIMIT
 			| MEMORY_SHARED_QUOTA
 			| MEMORY_SPILL_RATIO

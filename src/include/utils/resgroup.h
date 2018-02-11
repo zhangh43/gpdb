@@ -54,6 +54,8 @@ typedef struct ResGroupCaps
 	ResGroupCap		memLimit;
 	ResGroupCap		memSharedQuota;
 	ResGroupCap		memSpillRatio;
+	ResGroupCap		memAuditor;			/* 0: normal group */
+										/* 1: external group */
 } ResGroupCaps;
 
 /*
@@ -153,11 +155,6 @@ extern void ResGroupGetMemInfo(int *memLimit, int *slotQuota, int *sharedQuota);
 extern int64 ResourceGroupGetQueryMemoryLimit(void);
 
 extern void ResGroupDumpInfo(StringInfo str);
-
-extern void ResGroupSetExternal(Oid groupId);
-extern void ResGroupClearExternal(Oid groupId);
-
-extern bool ResGroupIsExternal(Oid groupId);
 
 extern void RegisterResGroupMemoryHook(ResGroupMemoryHookType hook_type,
 		ResGroupMemoryHook hook, void *arg,

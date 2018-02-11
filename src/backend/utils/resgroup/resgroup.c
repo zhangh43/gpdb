@@ -162,7 +162,6 @@ struct ResGroupData
 
 	bool		lockedForDrop;  /* true if resource group is dropped but not committed yet */
 
-	bool		external;		/* true if this is a resource group for external component */
 	int32		memGap;			/* (memory limit (before alter) - memory expected (after alter)) */
 								/* For normal resource group, it is always 0. */
 
@@ -315,6 +314,7 @@ static ResGroupSlotData *sessionGetSlot(void);
 static void sessionResetSlot(void);
 
 static void CallResGroupMemoryHooks(ResGroupMemoryHookType hook_type);
+static bool ResGroupIsExternal(const ResGroupCaps *caps);
 #if 0
 static bool ResGroupPLDec(void *arg);
 static bool ResGroupPLInc(void *arg);
@@ -694,9 +694,10 @@ ResGroupAlterOnCommit(Oid groupId,
 		{
 			ResGroupOps_SetCpuRateLimit(groupId, caps->cpuRateLimit);
 		}
-		else if (ResGroupIsExternal(groupId) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
+		else if (ResGroupIsExternal(caps) && limittype == RESGROUP_LIMIT_TYPE_MEMORY)
 		{
-			// Should we adjust memory limit of external group at this point?
+			Assert(pResGroupControl->totalChunks > 0);
+			group->memGap = pResGroupControl->totalChunks * memGap / 100;
 		}
 		else if (limittype != RESGROUP_LIMIT_TYPE_MEMORY_SPILL_RATIO)
 		{
@@ -707,8 +708,6 @@ ResGroupAlterOnCommit(Oid groupId,
 				wakeupGroups(groupId);
 		}
 
-		Assert(pResGroupControl->totalChunks > 0);
-		group->memGap = pResGroupControl->totalChunks * memGap / 100;
 	}
 	PG_CATCH();
 	{
@@ -797,41 +796,12 @@ ResGroupGetStat(Oid groupId, ResGroupStatType type)
 	return result;
 }
 
-void
-ResGroupSetExternal(Oid groupId)
+static bool
+ResGroupIsExternal(const ResGroupCaps *caps)
 {
-	ResGroupData *group;
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
-	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
-
-	group = groupHashFind(groupId, true);
-	group->external = true;
-
-	LWLockRelease(ResGroupLock);
-}
-
-void
-ResGroupClearExternal(Oid groupId)
-{
-	ResGroupData *group;
-
-	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
-
-	group = groupHashFind(groupId, true);
-	group->external = false;
-
-	LWLockRelease(ResGroupLock);
-}
-
-bool
-ResGroupIsExternal(Oid groupId)
-{
-	ResGroupData *group;
-
-	Assert(LWLockHeldByMe(ResGroupLock));
-
-	group = groupHashFind(groupId, true);
-	return group->external;
+	return caps->memAuditor == RESGROUP_MEMORY_AUDITOR_EXTERNAL;
 }
 
 void
@@ -1173,7 +1143,6 @@ createGroup(Oid groupId, const ResGroupCaps *caps)
 	group->memQuotaUsed = 0;
 	memset(&group->totalQueuedTime, 0, sizeof(group->totalQueuedTime));
 	group->lockedForDrop = false;
-	group->external = false;
 	group->memGap = 0;
 
 	group->memQuotaGranted = 0;
