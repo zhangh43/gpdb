@@ -252,6 +252,7 @@ lockDir(const char *path, bool block)
 			continue;
 
 		int err = errno;
+		//flock(fddir, LOCK_UN);
 		close(fddir);
 
 		/*
@@ -287,6 +288,7 @@ lockDir(const char *path, bool block)
 	if (access(path, F_OK))
 	{
 		/* the dir is already removed by other process, nothing to do */
+		//flock(fddir, LOCK_UN);
 		close(fddir);
 		return -1;
 	}
@@ -342,7 +344,7 @@ removeDir(Oid group, const char *comp, bool unassign)
 	if (rmdir(path))
 	{
 		int err = errno;
-
+		//flock(fddir, LOCK_UN);
 		close(fddir);
 
 		/*
@@ -356,6 +358,7 @@ removeDir(Oid group, const char *comp, bool unassign)
 	elog(DEBUG1, "cgroup dir '%s' removed", path);
 
 	/* close() also releases the lock */
+	//flock(fddir, LOCK_UN);	
 	close(fddir);
 
 	return true;
@@ -792,8 +795,10 @@ ResGroupOps_LockGroup(Oid group, const char *comp, bool block)
 void
 ResGroupOps_UnLockGroup(Oid group, int fd)
 {
-	if (fd >= 0)
+	if (fd >= 0) {
+		//flock(fd, LOCK_UN);
 		close(fd);
+	}
 }
 
 /*
@@ -829,7 +834,7 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
 			ResGroupGetVmemLimitChunks() * memory_limit / 100);
 
-	if (memory_limit_in_bytes > memory_limit_in_bytes_old)
+	if (memory_limit_in_bytes > memory_limit_in_bytes_old && memory_limit_in_bytes_old != 0)
 	{
 		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
 				memory_limit_in_bytes);
@@ -854,12 +859,12 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 	int64 memory_limit_in_bytes_old;
-
+	
 	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.usage_in_bytes");
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(memory_limit);
 
-	if (memory_limit_in_bytes > memory_limit_in_bytes_old)
+	if (memory_limit_in_bytes > memory_limit_in_bytes_old && memory_limit_in_bytes_old != 0)
 	{
 		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
 				memory_limit_in_bytes);
