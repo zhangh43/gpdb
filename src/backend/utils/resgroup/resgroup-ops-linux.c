@@ -239,7 +239,7 @@ lockDir(const char *path, bool block)
 	}
 
 	int flags = LOCK_EX;
-	if (block)
+	if (!block)
 		flags |= LOCK_NB;
 
 	while (flock(fddir, flags))
@@ -823,9 +823,11 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 	int64 memory_limit_in_bytes_old;
+	int fd;
 
-	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.usage_in_bytes");
+	fd = ResGroupOps_LockGroup(group, comp, true);
 
+	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.limit_in_bytes");
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
 			ResGroupGetVmemLimitChunks() * memory_limit / 100);
 
@@ -843,6 +845,8 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
 				memory_limit_in_bytes);
 	}
+
+	ResGroupOps_UnLockGroup(group, fd);
 }
 
 /*
@@ -854,8 +858,11 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 	int64 memory_limit_in_bytes_old;
+	int fd;
 
-	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.usage_in_bytes");
+	fd = ResGroupOps_LockGroup(group, comp, true);
+
+	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.limit_in_bytes");
 
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(memory_limit);
 
@@ -873,6 +880,8 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 		writeInt64(group, NULL, comp, "memory.memsw.limit_in_bytes",
 				memory_limit_in_bytes);
 	}
+
+	ResGroupOps_UnLockGroup(group, fd);
 }
 
 /*
