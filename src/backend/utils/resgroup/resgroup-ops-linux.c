@@ -823,9 +823,9 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 	int64 memory_limit_in_bytes_old;
-	int fd;
+//	int fd;
 
-	fd = ResGroupOps_LockGroup(group, comp, true);
+//	fd = ResGroupOps_LockGroup(group, comp, true);
 
 	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.limit_in_bytes");
 	memory_limit_in_bytes = VmemTracker_ConvertVmemChunksToBytes(
@@ -846,7 +846,7 @@ ResGroupOps_SetMemoryLimitByRate(Oid group, int memory_limit)
 				memory_limit_in_bytes);
 	}
 
-	ResGroupOps_UnLockGroup(group, fd);
+//	ResGroupOps_UnLockGroup(group, fd);
 }
 
 /*
@@ -858,9 +858,9 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 	const char *comp = "memory";
 	int64 memory_limit_in_bytes;
 	int64 memory_limit_in_bytes_old;
-	int fd;
+//	int fd;
 
-	fd = ResGroupOps_LockGroup(group, comp, true);
+//	fd = ResGroupOps_LockGroup(group, comp, true);
 
 	memory_limit_in_bytes_old = readInt64(group, NULL, comp, "memory.limit_in_bytes");
 
@@ -881,7 +881,7 @@ ResGroupOps_SetMemoryLimitByValue(Oid group, int32 memory_limit)
 				memory_limit_in_bytes);
 	}
 
-	ResGroupOps_UnLockGroup(group, fd);
+//	ResGroupOps_UnLockGroup(group, fd);
 }
 
 /*
