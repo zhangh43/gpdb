@@ -490,6 +490,7 @@ InitResGroups(void)
 		ResGroupData	*group;
 		int cpuRateLimit;
 		Oid groupId = HeapTupleGetOid(tuple);
+		int fd;
 
 		GetResGroupCapabilities(relResGroupCapability, groupId, &caps);
 		cpuRateLimit = caps.cpuRateLimit;
@@ -499,6 +500,10 @@ InitResGroups(void)
 
 		ResGroupOps_CreateGroup(groupId);
 		ResGroupOps_SetCpuRateLimit(groupId, cpuRateLimit);
+
+		fd = ResGroupOps_LockGroup(groupId, "memory", true);
+		ResGroupOps_SetMemoryLimitByRate(groupId, caps.memLimit * ResGroup_GetSegmentNum());
+		ResGroupOps_UnLockGroup(groupId, fd);
 
 		numGroups++;
 		Assert(numGroups <= MaxResourceGroups);
@@ -781,6 +786,12 @@ ResGroupGetExtension(char *name)
 	}
 
 	return -1;
+}
+
+int
+ResGroup_GetSegmentNum()
+{
+	return (Gp_role == GP_ROLE_EXECUTE ? host_segments : pResGroupControl->segmentsOnMaster);
 }
 
 static char *
