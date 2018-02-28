@@ -231,13 +231,6 @@ static ResGroupProcData *self = &__self;
 /* If we are waiting on a group, this points to the associated group */
 static ResGroupData *groupAwaited = NULL;
 
-static const char *ResGroupExtension[] =
-{
-	"none", //0
-	"plcontainer", // 1
-	NULL
-};
-
 /* static functions */
 
 static bool groupApplyMemCaps(ResGroupData *group);
@@ -262,7 +255,7 @@ static ResGroupData *groupHashNew(Oid groupId);
 static ResGroupData *groupHashFind(Oid groupId, bool raise);
 static ResGroupData *groupHashRemove(Oid groupId);
 static void waitOnGroup(ResGroupData *group);
-static ResGroupData *createGroup(Oid groupId, const ResGroupCaps *caps);
+static ResGroupData *createGroup(Oid groupId, const ResGroupCaps *caps, void *ext_handle);
 static void removeGroup(Oid groupId);
 static void AtProcExit_ResGroup(int code, Datum arg);
 static void groupWaitCancel(void);
@@ -429,13 +422,13 @@ error_out:
  * Allocate a resource group entry from a hash table
  */
 void
-AllocResGroupEntry(Oid groupId, const ResGroupCaps *caps)
+AllocResGroupEntry(Oid groupId, const ResGroupCaps *caps, void *ext_handle)
 {
 	ResGroupData	*group;
 
 	LWLockAcquire(ResGroupLock, LW_EXCLUSIVE);
 
-	group = createGroup(groupId, caps);
+	group = createGroup(groupId, caps, ext_handle);
 	Assert(group != NULL);
 
 	LWLockRelease(ResGroupLock);
@@ -513,11 +506,16 @@ InitResGroups(void)
 		int cpuRateLimit;
 		Oid groupId = HeapTupleGetOid(tuple);
 		int fd;
+		void *ext_handle = NULL;
 
 		GetResGroupCapabilities(relResGroupCapability, groupId, &caps);
 		cpuRateLimit = caps.cpuRateLimit;
 
-		group = createGroup(groupId, &caps);
+		/*
+		 * TODO load extension
+		 */
+
+		group = createGroup(groupId, &caps, ext_handle);
 		Assert(group != NULL);
 
 		ResGroupOps_CreateGroup(groupId);
@@ -771,21 +769,6 @@ ResGroupGetStat(Oid groupId, ResGroupStatType type)
 }
 
 int
-ResGroupGetExtension(char *name)
-{
-	int index = 0;
-	while(ResGroupExtension[index] != NULL)
-	{
-		if (strcmp(ResGroupExtension[index], name) == 0)
-			return index;
-
-		index ++;
-	}
-
-	return -1;
-}
-
-int
 ResGroup_GetSegmentNum()
 {
 	return (Gp_role == GP_ROLE_EXECUTE ? host_segments : pResGroupControl->segmentsOnMaster);
@@ -1016,7 +999,7 @@ removeGroup(Oid groupId)
  *	calling this - unless we are the startup process.
  */
 static ResGroupData *
-createGroup(Oid groupId, const ResGroupCaps *caps)
+createGroup(Oid groupId, const ResGroupCaps *caps, void *ext_handle)
 {
 	ResGroupData	*group;
 	int32			chunks;
@@ -1038,7 +1021,7 @@ createGroup(Oid groupId, const ResGroupCaps *caps)
 	group->memQuotaUsed = 0;
 	memset(&group->totalQueuedTime, 0, sizeof(group->totalQueuedTime));
 	memset(&group->group_ops, 0, sizeof(group->group_ops));
-	group->ext_handle = NULL;
+	group->ext_handle = ext_handle;
 	group->lockedForDrop = false;
 
 	group->memQuotaGranted = 0;
@@ -1047,15 +1030,6 @@ createGroup(Oid groupId, const ResGroupCaps *caps)
 
 	chunks = mempoolReserve(groupId, group->memExpected);
 	groupRebalanceQuota(group, chunks, caps);
-
-	/*
-	 * TODO load extension according to caps->memExtension
-	 */
-	if (caps->memExtension != RESGROUP_DEFAULT_EXTENSION)
-	{
-		// load extension
-//		group->ext_handle = ResGroupLoadExtension(caps->memExtension);
-	}
 
 	ResGroupBindOperations(group);
 
@@ -1066,14 +1040,17 @@ static void
 ResGroupBindOperations(ResGroupData *group)
 {
 	if (group->caps.memExtension == RESGROUP_DEFAULT_EXTENSION)
-	{
+	{ // No extension
+		Assert(group->ext_handle == NULL);
+
 		//Bind local operations
 		group->group_ops.group_check_for_drop = ResGroupCheckForDropLocal;
 		group->group_ops.group_alter_mem = ResGroupAlterMemLocal;
 		group->group_ops.group_release_mem = ResGroupReleaseMemLocal;
 	}
 	else if (group->ext_handle == NULL)
-	{
+	{ // Failed to load extension
+
 		//Assign NULL to the function pointers.
 	}
 	else
