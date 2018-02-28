@@ -215,6 +215,13 @@ static ResGroupProcData *self = &__self;
 /* If we are waiting on a group, this points to the associated group */
 static ResGroupData *groupAwaited = NULL;
 
+static const char *ResGroupExtension[] =
+{
+	"none", //0
+	"plcontainer", // 1
+	NULL
+};
+
 /* static functions */
 
 static bool groupApplyMemCaps(ResGroupData *group);
@@ -759,6 +766,21 @@ ResGroupGetStat(Oid groupId, ResGroupStatType type)
 	LWLockRelease(ResGroupLock);
 
 	return result;
+}
+
+int
+ResGroupGetExtension(char *name)
+{
+	int index = 0;
+	while(ResGroupExtension[index] != NULL)
+	{
+		if (strcmp(ResGroupExtension[index], name) == 0)
+			return index;
+
+		index ++;
+	}
+
+	return -1;
 }
 
 static char *
