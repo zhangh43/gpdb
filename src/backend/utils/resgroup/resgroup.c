@@ -45,6 +45,7 @@
 #include "cdb/cdbvars.h"
 #include "cdb/memquota.h"
 #include "commands/resgroupcmds.h"
+#include "dynloader.h"
 #include "funcapi.h"
 #include "miscadmin.h"
 #include "pgstat.h"
@@ -68,6 +69,8 @@
 #define InvalidSlotId	(-1)
 #define RESGROUP_MAX_SLOTS	(MaxConnections)
 
+#define RESGROUP_BIND_FUNCTION_NAME_STRING "ResGroupBindExtOperation"
+
 /*
  * GUC variables.
  */
@@ -88,6 +91,8 @@ typedef struct ResGroupProcData			ResGroupProcData;
 typedef struct ResGroupSlotData			ResGroupSlotData;
 typedef struct ResGroupData				ResGroupData;
 typedef struct ResGroupControl			ResGroupControl;
+
+typedef bool (*ResGroupBindFunc) (ResGroupData *);
 
 /*
  * Resource group info.
@@ -984,8 +989,8 @@ removeGroup(Oid groupId)
 		group->group_ops.group_release_mem(groupId, group);
 
 
-//	if (group->ext_handle)
-//		dlclose(group->ext_handle);
+	if (group->ext_handle)
+		pg_dlclose(group->ext_handle);
 
 	group->groupId = InvalidOid;
 	wakeupGroups(groupId);
@@ -1039,6 +1044,8 @@ createGroup(Oid groupId, const ResGroupCaps *caps, void *ext_handle)
 static void
 ResGroupBindOperations(ResGroupData *group)
 {
+	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
 	if (group->caps.memExtension == RESGROUP_DEFAULT_EXTENSION)
 	{ // No extension
 		Assert(group->ext_handle == NULL);
@@ -1055,7 +1062,31 @@ ResGroupBindOperations(ResGroupData *group)
 	}
 	else
 	{
-		//dlsym	
+		ResGroupBindFunc resgroup_do_bind;
+		char *sym_error;
+		bool bind;
+
+		pg_dlerror();    /* Clear any existing error */
+
+		resgroup_do_bind = (ResGroupBindFunc)
+			pg_dlsym(group->ext_handle, RESGROUP_BIND_FUNCTION_NAME_STRING);
+
+		sym_error = pg_dlerror();
+		if (resgroup_do_bind == NULL || sym_error != NULL)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("cannot find bind operation from extension: %s",
+						 sym_error)));
+		}
+
+		bind = (*resgroup_do_bind)(group);
+		if (!bind)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("cannot bind operation from extension")));
+		}
 	}
 }
 
