@@ -513,6 +513,11 @@ ResGroupCheckForDrop(Oid groupId, char *name)
 
 	group = groupHashFind(groupId, true);
 
+	/*
+	 * TODO load extension according to caps->memExtension
+	 */
+	 ResGroupLoadExtension(group->caps.memExtension);
+
 	if (group->group_ops.group_check_for_drop)
 		group->group_ops.group_check_for_drop(groupId, name);
 
@@ -941,9 +946,8 @@ removeGroup(Oid groupId)
 	if (group->group_ops.group_release_mem)
 		group->group_ops.group_release_mem(groupId, group);
 
-
-	if (group->ext_handle)
-		pg_dlclose(group->ext_handle);
+//	if (group->ext_handle)
+//		pg_dlclose(group->ext_handle);
 
 	group->groupId = InvalidOid;
 	wakeupGroups(groupId);
