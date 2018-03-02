@@ -1264,7 +1264,7 @@ ResGroupLoadExtension(int extension)
 	if (extension == RESGROUP_DEFAULT_EXTENSION)
 		return NULL;
 
-	snprintf(ext_file_name, sizeof(ext_file_name), "/home/gpadmin/gpdb.devel/lib/postgresql/%s.so", ResGroupExtension[extension]);
+	snprintf(ext_file_name, sizeof(ext_file_name), "/usr/local/greenplum-db/lib/postgresql/%s.so", ResGroupExtension[extension]);
 	ext_handle = pg_dlopen(ext_file_name);
 	if (!ext_handle)
 	{
