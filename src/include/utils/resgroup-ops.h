@@ -36,5 +36,6 @@ extern int32 ResGroupOps_GetMemoryUsage(Oid group);
 extern int32 ResGroupOps_GetMemoryLimit(Oid group);
 extern int ResGroupOps_GetCpuCores(void);
 extern int ResGroupOps_GetTotalMemory(void);
-
+extern char * buildPath(Oid group, const char *base, const char *comp, const char *prop, char *path, size_t pathsize);
+extern int lockDir(const char *path, bool block);
 #endif   /* RES_GROUP_OPS_H */

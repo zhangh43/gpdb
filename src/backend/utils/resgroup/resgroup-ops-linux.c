@@ -50,8 +50,8 @@
 #define PROC_MOUNTS "/proc/self/mounts"
 #define MAX_INT_STRING_LEN 20
 
-static char * buildPath(Oid group, const char *base, const char *comp, const char *prop, char *path, size_t pathsize);
-static int lockDir(const char *path, bool block);
+//static char * buildPath(Oid group, const char *base, const char *comp, const char *prop, char *path, size_t pathsize);
+//static int lockDir(const char *path, bool block);
 static void unassignGroup(Oid group, const char *comp, int fddir);
 static bool createDir(Oid group, const char *comp);
 static bool removeDir(Oid group, const char *comp, bool unassign);
@@ -75,7 +75,7 @@ static char cgdir[MAXPGPATH];
  * - if group is RESGROUP_ROOT_ID then the path is for the gpdb toplevel cgroup;
  * - if prop is "" then the path is for the cgroup dir;
  */
-static char *
+char *
 buildPath(Oid group,
 		  const char *base,
 		  const char *comp,
@@ -220,7 +220,7 @@ unassignGroup(Oid group, const char *comp, int fddir)
  * - if block is true then lock in block mode, otherwise will give up if
  *   the dir is already locked;
  */
-static int
+int
 lockDir(const char *path, bool block)
 {
 	int fddir;

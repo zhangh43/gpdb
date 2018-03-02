@@ -19,7 +19,7 @@
 #include "cdb/memquota.h"
 #include "catalog/pg_resgroup.h"
 #include "utils/timestamp.h"
-
+#include "storage/lock.h"
 /*
  * The max number of resource groups.
  */
@@ -31,7 +31,7 @@
 typedef int32 ResGroupCap;
 
 typedef struct ResGroupData				ResGroupData;
-
+//extern ResGroupControl *pResGroupControl = NULL;
 /*
  * Resource group capabilities.
  *
@@ -194,7 +194,7 @@ extern int64 ResourceGroupGetQueryMemoryLimit(void);
 extern void ResGroupDumpInfo(StringInfo str);
 
 extern int ResGroup_GetSegmentNum(void);
-
+extern void AddFreeChunkByRate(int memoryRatio);
 #define LOG_RESGROUP_DEBUG(...) \
 	do {if (Debug_resource_group) elog(__VA_ARGS__); } while(false);
 

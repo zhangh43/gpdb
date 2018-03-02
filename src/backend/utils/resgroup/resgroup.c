@@ -3212,3 +3212,8 @@ ResGroupReleaseMemLocal(Oid groupId, ResGroupData *group)
 	group->memQuotaGranted = 0;
 	group->memSharedGranted = 0;
 }
+
+void AddFreeChunkByRate(int memoryRatio)
+{
+	pResGroupControl->freeChunks += ResGroupGetVmemLimitChunks() * memoryRatio / 100;
+}
