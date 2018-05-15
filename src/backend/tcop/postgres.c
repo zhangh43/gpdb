@@ -132,6 +132,21 @@ int			max_stack_depth = 100;
 int			PostAuthDelay = 0;
 
 
+/*
+ * Hook for extensions, to get notified when query cancel or DIE signal is
+ * received. This allows the extension to stop whatever it's doing as
+ * quickly as possible. Normally, you would sprinkle your code with
+ * CHECK_FOR_INTERRUPTS() in suitable places, but sometimes that's not
+ * possible, for example because you call a slow function in a 3rd party
+ * library that you have no control over. In the hook function, you might
+ * be able to abort such a slow operation somehow.
+ *
+ * This gets called after setting ProcDiePending, QueryCancelPending, so
+ * the hook function can check those to determine what event happened.
+ *
+ * NB: This is called from a signal handler!
+ */
+cancel_pending_hook_type cancel_pending_hook = NULL;
 
 /* ----------------
  *		private variables
@@ -3500,13 +3515,15 @@ die(SIGNAL_ARGS)
 		InterruptPending = true;
 		ProcDiePending = true;
 		TermSignalReceived = true;
-
 		/* although we don't strictly need to set this to true since the
 		 * ProcDiePending will occur first.  We set this anyway since the
 		 * MPP dispatch code is triggered only off of QueryCancelPending
 		 * and not any of the others.
 		 */
 		QueryCancelPending = true;
+
+		if (cancel_pending_hook)
+			(*cancel_pending_hook)();
 
 		/*
 		 * If it's safe to interrupt, and we're waiting for input or a lock,
@@ -3565,6 +3582,8 @@ StatementCancelHandler(SIGNAL_ARGS)
 		QueryCancelPending = true;
 		QueryCancelCleanup = true;
 
+		if (cancel_pending_hook)
+			(*cancel_pending_hook)();
 		/*
 		 * If it's safe to interrupt, and we're waiting for input or a lock,
 		 * service the interrupt immediately
