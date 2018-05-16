@@ -143,8 +143,6 @@ int			PostAuthDelay = 0;
  *
  * This gets called after setting ProcDiePending, QueryCancelPending, so
  * the hook function can check those to determine what event happened.
- *
- * NB: This is called from a signal handler!
  */
 cancel_pending_hook_type cancel_pending_hook = NULL;
 
