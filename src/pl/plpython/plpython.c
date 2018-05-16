@@ -297,9 +297,6 @@ typedef struct PLyExceptionEntry
 	PyObject   *exc;			/* corresponding exception */
 } PLyExceptionEntry;
 
-
-static cancel_pending_hook_type prev_cancel_pending_hook;
-
 static void PLy_handle_cancel_interrupt(void);
 
 /* function declarations */
@@ -4573,8 +4570,7 @@ _PG_init(void)
 					 errhint("Start a new session to use a different Python major version.")));
 	}
 	/* Register SIGINT/SIGTERM handler for python */
-	prev_cancel_pending_hook = cancel_pending_hook;
-	cancel_pending_hook = PLy_handle_cancel_interrupt;
+	cancel_pending_hook_list = lappend(cancel_pending_hook_list, PLy_handle_cancel_interrupt);
 
 	pg_bindtextdomain(TEXTDOMAIN);
 
@@ -4641,9 +4637,6 @@ PLy_handle_cancel_interrupt(void)
 	 */
 	if (PLy_enter_python_intepreter) 
 		(void) Py_AddPendingCall(PLy_python_cancel_handler, NULL);
-
-	if (prev_cancel_pending_hook)
-		prev_cancel_pending_hook();
 }
 
 static void

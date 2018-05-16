@@ -144,7 +144,7 @@ int			PostAuthDelay = 0;
  * This gets called after setting ProcDiePending, QueryCancelPending, so
  * the hook function can check those to determine what event happened.
  */
-cancel_pending_hook_type cancel_pending_hook = NULL;
+List *cancel_pending_hook_list = NULL;
 
 /* ----------------
  *		private variables
@@ -3520,8 +3520,15 @@ die(SIGNAL_ARGS)
 		 */
 		QueryCancelPending = true;
 
-		if (cancel_pending_hook)
-			(*cancel_pending_hook)();
+		ListCell   *hook_item;
+
+		/* Call all the extension cancel hooks */
+		foreach(hook_item, cancel_pending_hook_list)
+		{
+			cancel_pending_hook_type cancel_pending_hook = (cancel_pending_hook_type) lfirst(hook_item);
+			if (cancel_pending_hook)
+				(*cancel_pending_hook)();
+		}
 
 		/*
 		 * If it's safe to interrupt, and we're waiting for input or a lock,
@@ -3580,8 +3587,15 @@ StatementCancelHandler(SIGNAL_ARGS)
 		QueryCancelPending = true;
 		QueryCancelCleanup = true;
 
-		if (cancel_pending_hook)
-			(*cancel_pending_hook)();
+		ListCell   *hook_item;
+
+		/* Call all the extension cancel hooks */
+		foreach(hook_item, cancel_pending_hook_list)
+		{
+			cancel_pending_hook_type cancel_pending_hook = (cancel_pending_hook_type) lfirst(hook_item);
+			if (cancel_pending_hook)
+				(*cancel_pending_hook)();
+		}
 		/*
 		 * If it's safe to interrupt, and we're waiting for input or a lock,
 		 * service the interrupt immediately

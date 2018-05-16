@@ -24,8 +24,7 @@
 #define MISCADMIN_H
 
 #include "pgtime.h"				/* for pg_time_t */
-
-
+#include "nodes/pg_list.h"
 #define PG_VERSIONSTR "postgres (Greenplum Database) " PG_VERSION "\n"
 #define PG_BACKEND_VERSIONSTR "postgres (Greenplum Database) " PG_VERSION "\n"
 
@@ -95,7 +94,7 @@ extern void gp_set_thread_sigmasks(void);
 
 /* Hook get notified when QueryCancelPending or ProcDiePending is raised */
 typedef void (*cancel_pending_hook_type) (void);
-extern PGDLLIMPORT cancel_pending_hook_type cancel_pending_hook;
+extern PGDLLIMPORT List *cancel_pending_hook_list;
 
 /* in utils/resource_manager.h */
 extern bool IsResQueueEnabled(void);
