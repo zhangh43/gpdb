@@ -8,7 +8,7 @@ function prep_env_for_centos() {
   export JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.39.x86_64
   export PATH=${JAVA_HOME}/bin:${PATH}
   install_system_deps
-  yum install -y python36-devel
+  yum install -y python34-devel
 }
 
 function install_system_deps() {
@@ -56,7 +56,7 @@ function build_gpdb() {
     make -j4 -s
     make -s install
 
-    PYTHON=/usr/bin/python3.6 CC=$(which gcc) CXX=$(which g++) ./configure --enable-mapreduce --with-perl --with-libxml \
+    PYTHON=/usr/bin/python3.4 CC=$(which gcc) CXX=$(which g++) ./configure --enable-mapreduce --with-perl --with-libxml \
 	--disable-orca --with-python --disable-gpfdist --prefix=${GREENPLUM_INSTALL_DIR}
     # Use -j4 to speed up the build. (Doesn't seem worth trying to guess a better
     # value based on number of CPUs or anything like that. Going above -j4 wouldn't
