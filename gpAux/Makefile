@@ -299,6 +299,13 @@ Release/GNUmakefile : $(GPPGDIR)/configure  env.sh
                       --prefix=$(INSTLOC)                   \
                       --with-docdir=$(INSTLOC)/doc          \
                       --mandir=$(INSTLOC)/man
+	CC="$(strip $(BLD_CC) $(BLD_CFLAGS))"     \
+                   CFLAGS=$(INSTCFLAGS) $(BLD_CONFIG_SHELL)  \
+                   PYTHON=/usr/bin/python3.6                 \	
+                   ./configure $(CONFIGFLAGS)                \
+                       --prefix=$(INSTLOC)                   \
+                       --with-docdir=$(INSTLOC)/doc          \
+                       --mandir=$(INSTLOC)/man
 
 #---------------------------------------------------------------------
 # autoconf

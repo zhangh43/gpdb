@@ -35,6 +35,7 @@ function prep_env_for_centos() {
       alternatives --set java "$java7_bin"
       export JAVA_HOME="${java7_bin/jre\/bin\/java/}"
       ln -sf /usr/bin/xsubpp /usr/share/perl5/ExtUtils/xsubpp
+	  yum install -y python36-devel
       ;;
 
     *)
