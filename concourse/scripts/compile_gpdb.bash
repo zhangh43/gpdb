@@ -85,8 +85,10 @@ function build_gpdb() {
     # a single-CPU system
     if [ -n "$1" ]; then
       make "$1" GPROOT=/usr/local PARALLEL_MAKE_OPTS=-j4 -s dist
+	  make "$1" GPROOT=/usr/local PYTHON=/usr/bin/python3.6 PARALLEL_MAKE_OPTS=-j4 -s dist
     else
       make GPROOT=/usr/local PARALLEL_MAKE_OPTS=-j4 -s dist
+	  make GPROOT=/usr/local PYTHON=/usr/bin/python3.6 PARALLEL_MAKE_OPTS=-j4 -s dist
     fi
   popd
 }
