@@ -295,7 +295,7 @@ Release/GNUmakefile : $(GPPGDIR)/configure  env.sh
 	mkdir -p Release
 	cd Release && CC="$(strip $(BLD_CC) $(BLD_CFLAGS))"     \
                   CFLAGS=$(INSTCFLAGS) $(BLD_CONFIG_SHELL)  \
-                  PYTHON=$(PYTHON)                          \
+                  PYTHON=$(PYTHON_BINARY)                          \
                   ./configure $(CONFIGFLAGS)                \
                       --prefix=$(INSTLOC)                   \
                       --with-docdir=$(INSTLOC)/doc          \
