@@ -93,6 +93,8 @@ function build_gpdb() {
 }
 
 function build_plpython3() {
+  unset PYTHONPATH
+  unset PYTHONHOME
   pushd ${GPDB_SRC_PATH}
   	make -C src/pl/plpython clean
 	PYTHON=/usr/bin/python3.6 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH}
