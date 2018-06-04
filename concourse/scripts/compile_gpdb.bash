@@ -2,6 +2,7 @@
 set -exo pipefail
 
 GREENPLUM_INSTALL_DIR=/usr/local/greenplum-db-devel
+PLPYTHON3_INSTALL_PATH=/usr/local/plpython3
 export GPDB_ARTIFACTS_DIR=$(pwd)/${OUTPUT_ARTIFACT_DIR}
 
 CWDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -85,11 +86,15 @@ function build_gpdb() {
     # a single-CPU system
     if [ -n "$1" ]; then
       make "$1" GPROOT=/usr/local PARALLEL_MAKE_OPTS=-j4 -s dist
-	  make "$1" GPROOT=/usr/local PYTHON=/usr/bin/python3.6 PARALLEL_MAKE_OPTS=-j4 -s dist
     else
       make GPROOT=/usr/local PARALLEL_MAKE_OPTS=-j4 -s dist
-	  make GPROOT=/usr/local PYTHON_BINARY=/usr/bin/python3.6 PARALLEL_MAKE_OPTS=-j4 -s dist
     fi
+  popd
+  pushd ${GPDB_SRC_PATH}
+  	make -C src/pl/plpython clean
+	PYTHON=/usr/bin/python3.6 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH}
+	make -C src/pl/plpython install
+	cp ${PLPYTHON3_INSTALL_PATH}/lib/postgresql/plpython3.so ${GREENPLUM_INSTALL_DIR}/lib/postgresql/
   popd
 }
 
