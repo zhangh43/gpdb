@@ -4584,6 +4584,10 @@ _PG_init(void)
 	PyImport_AppendInittab("plpy", PyInit_plpy);
 	unsetenv("PYTHONPATH");
 	unsetenv("PYTHONHOME");
+	if (python3_path && python3_path != "") 
+		setenv("PYTHONPATH"	, python3_path, 1);
+	if (python3_home && python3_home != "")
+		setenv("PYTHONHOME" , python3_home, 1);
 #endif
 	Py_Initialize();
 #if PY_MAJOR_VERSION >= 3
