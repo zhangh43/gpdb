@@ -220,4 +220,4 @@ function _main() {
   export_gpdb_extensions
   export_gpdb_win32_ccl
 }
-4_main "$@"
+_main "$@"
