@@ -26,6 +26,7 @@ function prep_env_for_centos() {
     6)
       BLDARCH=rhel6_x86_64
       export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk.x86_64
+	  yum install -y python34-devel
       ;;
 
     7)
@@ -96,10 +97,24 @@ function build_plpython3() {
   unset PYTHONPATH
   unset PYTHONHOME
   pushd ${GPDB_SRC_PATH}
-  	make -C src/pl/plpython clean
-	PYTHON=/usr/bin/python3.6 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH}
-	make -C src/pl/plpython install
-	cp ${PLPYTHON3_INSTALL_PATH}/lib/postgresql/plpython3.so ${GREENPLUM_INSTALL_DIR}/lib/postgresql/
+    make -C src/pl/plpython clean
+
+    case "${TARGET_OS_VERSION}" in
+      5)
+        ;;
+
+      6)
+	    PYTHON=/usr/bin/python3.4 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH}
+	    make -C src/pl/plpython install
+	    cp ${PLPYTHON3_INSTALL_PATH}/lib/postgresql/plpython3.so ${GREENPLUM_INSTALL_DIR}/lib/postgresql/
+        ;;
+
+      7)
+        PYTHON=/usr/bin/python3.6 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH} 
+        make -C src/pl/plpython install
+        cp ${PLPYTHON3_INSTALL_PATH}/lib/postgresql/plpython3.so ${GREENPLUM_INSTALL_DIR}/lib/postgresql/
+        ;;
+    esac
   popd
 }
 
@@ -205,5 +220,4 @@ function _main() {
   export_gpdb_extensions
   export_gpdb_win32_ccl
 }
-
-_main "$@"
+4_main "$@"
