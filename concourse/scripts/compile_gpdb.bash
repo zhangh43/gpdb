@@ -90,6 +90,9 @@ function build_gpdb() {
       make GPROOT=/usr/local PARALLEL_MAKE_OPTS=-j4 -s dist
     fi
   popd
+}
+
+function build_plpython3() {
   pushd ${GPDB_SRC_PATH}
   	make -C src/pl/plpython clean
 	PYTHON=/usr/bin/python3.6 ./configure --with-perl --with-python --with-libxml --disable-orca --prefix=${PLPYTHON3_INSTALL_PATH}
@@ -195,6 +198,7 @@ function _main() {
       # Bundle PXF server
       tar -xzf pxf_tarball/pxf.tar.gz -C ${GREENPLUM_INSTALL_DIR}
   fi
+  build_plpython3
   export_gpdb
   export_gpdb_extensions
   export_gpdb_win32_ccl
