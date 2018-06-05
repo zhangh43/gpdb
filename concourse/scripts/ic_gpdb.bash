@@ -75,10 +75,27 @@ function _main() {
       libperl_path="$(rpm -ql perl | grep libperl.so)"
       ln -sf "$libperl_path" /lib64/libperl.so || return 1
     fi
-
-    time configure
+    
+	time configure
     time install_gpdb
     time setup_gpadmin_user
+
+	# just for test python3. this should move into docker image in future.
+	if [ "$TEST_OS" == "centos" ]; then
+		wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
+ 		tar -xJf Python-3.6.4.tar.xz
+ 		cd Python-3.6.4
+
+ 		mkdir /opt/python36
+ 		./configure --prefix=/opt/python36
+ 		make
+ 		make install
+		echo "export LD_LIBRARY_PATH=/opt/python36/lib:\$LD_LIBRARY_PATH" >> /usr/local/greenplum-db-devel/greenplum_path.sh
+		export LD_LIBRARY_PATH=/opt/python36/lib:\$LD_LIBRARY_PATH
+        wget https://bootstrap.pypa.io/get-pip.py
+		/opt/python36/bin/python3 get-pip.py
+		/opt/python36/bin/pip3 install numpy
+	fi
     time make_cluster
     time gen_env
     time run_test

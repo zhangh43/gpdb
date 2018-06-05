@@ -99,6 +99,7 @@ REGRESS = \
 	plpython_subtransaction \
 	plpython_returns \
 	plpython_gpdb \
+	plpython3 \
 	plpython_drop
 
 # where to find psql for running the tests

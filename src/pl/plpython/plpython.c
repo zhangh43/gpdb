@@ -4591,7 +4591,7 @@ _PG_init(void)
 #endif
 	Py_Initialize();
 #if PY_MAJOR_VERSION >= 3
-	elog(WARNING, "hubert %ls, %s, %ls, %ls, %ls, %ls, %ls", Py_GetPath(), Py_GetVersion(), Py_GetPythonHome(), Py_GetProgramName(),        Py_GetProgramFullPath(), Py_GetExecPrefix(), Py_GetPrefix());
+	//elog(WARNING, "hubert %ls, %s, %ls, %ls, %ls, %ls, %ls", Py_GetPath(), Py_GetVersion(), Py_GetPythonHome(), Py_GetProgramName(),        Py_GetProgramFullPath(), Py_GetExecPrefix(), Py_GetPrefix());
 	PyImport_ImportModule("plpy");
 #endif
 	PLy_init_interp();
