@@ -5,7 +5,7 @@ CREATE FUNCTION import_succeed3() returns text AS $$
   return "succeeded, as expected"
 $$ LANGUAGE plpython3u;
 SELECT import_succeed3();
-    import_succeed3    
+    import_succeed3     
 ------------------------
  succeeded, as expected
 (1 row)
