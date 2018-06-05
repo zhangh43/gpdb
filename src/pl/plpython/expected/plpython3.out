@@ -1,0 +1,25 @@
+create language plpython3u;
+CREATE FUNCTION import_succeed() returns text AS $$
+  import sys
+  import numpy
+  return "succeeded, as expected"
+$$ LANGUAGE plpython3u;
+SELECT import_succeed();
+     import_succeed
+------------------------
+ succeeded, as expected
+(1 row)
+
+CREATE TYPE named_value AS (
+  name  text,
+  value  integer);
+CREATE OR REPLACE FUNCTION make_pair_sets (name text)
+RETURNS SETOF named_value AS $$
+  import numpy as np
+  return ((name, i) for i in np.arange(3))
+$$ LANGUAGE plpython3u;
+SELECT * from make_pair_sets('test');
+ name | value
+------+-------
+ test |     0
+(1 row)
