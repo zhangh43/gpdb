@@ -87,7 +87,7 @@ function _main() {
  		pushd Python-3.6.4
 
  		mkdir /opt/python36
- 		./configure --prefix=/opt/python36
+ 		./configure --prefix=/opt/python36 --enable-shared
  		make
  		make install
 		popd
