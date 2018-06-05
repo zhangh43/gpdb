@@ -84,12 +84,13 @@ function _main() {
 	if [ "$TEST_OS" == "centos" ]; then
 		wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
  		tar -xJf Python-3.6.4.tar.xz
- 		cd Python-3.6.4
+ 		pushd Python-3.6.4
 
  		mkdir /opt/python36
  		./configure --prefix=/opt/python36
  		make
  		make install
+		popd
 		echo "export LD_LIBRARY_PATH=/opt/python36/lib:\$LD_LIBRARY_PATH" >> /usr/local/greenplum-db-devel/greenplum_path.sh
 		export LD_LIBRARY_PATH=/opt/python36/lib:\$LD_LIBRARY_PATH
         wget https://bootstrap.pypa.io/get-pip.py
