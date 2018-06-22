@@ -26,4 +26,4 @@ sudo yum install -y \
 
 sudo pip install conan
 sudo pip install -r python-dependencies.txt
-sudo pip install -r python-developer-dependencies.txt 
+sudo pip install -r python-developer-dependencies.txt
