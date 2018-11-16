@@ -357,6 +357,7 @@ cdbconn_doConnectStart(SegmentDatabaseDescriptor *segdbDesc,
 		 * get database name from MyDatabaseId, which is initialized
 		 * in InitPostgres()
 		 */
+		Assert(MyDatabaseId != InvalidOid);
 		values[nkeywords] = get_database_name(MyDatabaseId);
 	}
 	nkeywords++;
