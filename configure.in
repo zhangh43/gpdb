@@ -820,6 +820,13 @@ AS_IF([test "$enable_gpcloud" = yes],
 ]) # fi
 
 #
+# diskquota, enabled by default
+#
+PGAC_ARG_BOOL(enable, diskquota, yes, [disable diskquota support])
+AC_MSG_RESULT([checking whether to build with diskquota... $enable_diskquota])
+AC_SUBST(enable_diskquota)
+
+#
 # Include directories
 #
 ac_save_IFS=$IFS
