@@ -182,4 +182,12 @@ extern void BufferedAppendCompleteFile(
 extern void BufferedAppendFinish(
     BufferedAppend *bufferedAppend);
 
+/*
+ * Hook type and declaration in BufferedAppendWrite.
+ * Used to detect AO table size change.
+ * For example, when insert data into AO table.
+ */
+typedef void (*BufferedAppendWrite_hook_type)(RelFileNodeBackend relFileNode);
+extern PGDLLIMPORT BufferedAppendWrite_hook_type BufferedAppendWrite_hook;
+
 #endif   /* CDBBUFFEREDAPPEND_H */

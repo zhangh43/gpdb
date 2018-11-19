@@ -40,6 +40,13 @@
 static bool mdunlink_ao_perFile(const int segno, void *ctx);
 static bool copy_append_only_data_perFile(const int segno, void *ctx);
 
+/*
+ * Hook type and declaration in TruncateAOSegmentFile.
+ * Used to detect AO table size change. For example, when vacuum AO table,
+ * TruncateAOSegmentFile will be called to reduce the disk size.
+ */
+TruncateAOSegmentFile_hook_type TruncateAOSegmentFile_hook = NULL;
+
 int
 AOSegmentFilePathNameLen(Relation rel)
 {
@@ -200,6 +207,10 @@ TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
 					    relname)));
 	if (RelationNeedsWAL(rel))
 		xlog_ao_truncate(rel->rd_node, segFileNum, offset);
+	if (TruncateAOSegmentFile_hook)
+	{
+		(*TruncateAOSegmentFile_hook)(rel->rd_node);
+	}
 }
 
 struct mdunlink_ao_callback_ctx {

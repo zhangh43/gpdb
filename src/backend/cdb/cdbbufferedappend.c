@@ -23,6 +23,13 @@
 #include "cdb/cdbbufferedappend.h"
 #include "utils/guc.h"
 
+/*
+ * Hook function in BufferedAppendWrite.
+ * Used to detect AO table size change.
+ * For example, when insert data into AO table.
+ */
+BufferedAppendWrite_hook_type BufferedAppendWrite_hook = NULL;
+
 static void BufferedAppendWrite(
 					BufferedAppend *bufferedAppend,
 					bool needsWAL);
@@ -196,6 +203,9 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 		   bufferedAppend->filePathName,
 		   bufferedAppend->largeWritePosition,
 		   bytestotal);
+
+	if (BufferedAppendWrite_hook)
+		(*BufferedAppendWrite_hook)(bufferedAppend->relFileNode);
 
 	/*
 	 * Log each varblock to the XLog. Write to the file first, before
