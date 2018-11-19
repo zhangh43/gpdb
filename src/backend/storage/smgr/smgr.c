@@ -33,6 +33,12 @@
 #include "utils/inval.h"
 
 /*
+ * Hook for plugins to collect statistics from smgr functions
+ * One example is to record the active relfilenode information.
+ */
+SmgrStat_hook_type SmgrStat_hook = NULL;
+
+/*
  * Each backend has a hashtable that stores all extant SMgrRelation objects.
  * In addition, "unowned" SMgrRelation objects are chained together in a list.
  */
@@ -343,6 +349,11 @@ smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 							isRedo);
 
 	mdcreate(reln, forknum, isRedo);
+
+	if (SmgrStat_hook)
+	{
+		(*SmgrStat_hook)(reln);
+	}
 }
 
 /*
@@ -591,6 +602,11 @@ smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		   char *buffer, bool skipFsync)
 {
 	mdextend(reln, forknum, blocknum, buffer, skipFsync);
+
+	if (SmgrStat_hook)
+	{
+		(*SmgrStat_hook)(reln);
+	}
 }
 
 /*
@@ -680,6 +696,11 @@ smgrtruncate(SMgrRelation reln, ForkNumber forknum, BlockNumber nblocks)
 	 * Do the truncation.
 	 */
 	mdtruncate(reln, forknum, nblocks);
+
+	if (SmgrStat_hook)
+	{
+		(*SmgrStat_hook)(reln);
+	}
 }
 
 /*
