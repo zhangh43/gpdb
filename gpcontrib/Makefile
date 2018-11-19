@@ -11,7 +11,7 @@ ext_dir=$(BLD_TOP)/gpAux/ext
 top_builddir = ..
 include $(top_builddir)/src/Makefile.global
 
-.PHONY: all install clean distclean gpcloud pxf mapreduce gphdfs mkgphdfs
+.PHONY: all install clean distclean gpcloud pxf mapreduce gphdfs mkgphdfs diskquota
 
 #
 # targets built via top_builddir/GNUmakefile
@@ -26,12 +26,17 @@ ifeq "$(with_zstd)" "yes"
 endif
 $(call recurse,all install clean distclean, $(recurse_targets))
 
-all: gpcloud pxf mapreduce gphdfs orafce
+all: gpcloud pxf mapreduce gphdfs orafce diskquota
 
 gpcloud:
 	@if [ "$(enable_gpcloud)" = "yes" ]; then \
 		$(MAKE) -C gpcloud && \
 		$(MAKE) -C gpcloud/bin/gpcheckcloud; \
+	fi
+
+diskquota:
+	@if [ "$(enable_diskquota)" = "yes" ]; then \
+		$(MAKE) -C gp_diskquota; \
 	fi
 
 pxf:
@@ -63,6 +68,9 @@ install:
 		$(MAKE) -C gpcloud install && \
 		$(MAKE) -C gpcloud/bin/gpcheckcloud install; \
 	fi
+	@if [ "$(enable_diskquota)" = "yes" ]; then \
+		$(MAKE) -C gp_diskquota install; \
+	fi
 	@if [ "$(enable_mapreduce)" = "yes" ]; then \
 		$(MAKE) -C gpmapreduce install; \
 	fi
@@ -79,6 +87,7 @@ install:
 clean:
 	if [ "$(enable_mapreduce)" = "yes" ]; then $(MAKE) -C gpmapreduce clean; fi
 	if [ "$(enable_gpcloud)" = "yes" ]; then $(MAKE) -C gpcloud cleanall; fi
+	if [ "$(enable_diskquota)" = "yes" ]; then $(MAKE) -C gp_diskquota clean; fi
 	if [ "$(enable_pxf)" = "yes" ]; then $(MAKE) -C pxf clean; fi
 	if [ "$(enable_gphdfs)" = "yes" ]; then $(MAKE) -C gphdfs clean; fi
 	if [ "${enable_orafce}" = "yes" ]; then $(MAKE) -C orafce NO_PGXS=true clean; fi
@@ -87,6 +96,7 @@ clean:
 distclean:
 	if [ "$(enable_mapreduce)" = "yes" ]; then $(MAKE) -C gpmapreduce distclean; fi
 	if [ "$(enable_gpcloud)" = "yes" ]; then $(MAKE) -C gpcloud distclean; fi
+	if [ "$(enable_diskquota)" = "yes" ]; then $(MAKE) -C gp_diskquota distclean; fi
 	if [ "$(enable_pxf)" = "yes" ]; then $(MAKE) -C pxf distclean; fi
 	if [ "$(enable_gphdfs)" = "yes" ]; then $(MAKE) -C gphdfs distclean; fi
 	if [ "${enable_orafce}" = "yes" ]; then $(MAKE) -C orafce NO_PGXS=true distclean; fi

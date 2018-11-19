@@ -131,6 +131,7 @@ groups:
 {% if "Extensions" in test_sections %}
 {% if "centos6" in os_types %}
   - icw_extensions_gpcloud_centos6
+  - icw_extensions_gpdiskquota_centos6
 {% endif %}
 {% if "ubuntu16" in os_types %}
   - icw_extensions_gpcloud_ubuntu16
@@ -223,6 +224,7 @@ groups:
   jobs:
 {% if "centos6" in os_types %}
   - icw_extensions_gpcloud_centos6
+  - icw_extensions_gpdiskquota_centos6
 {% endif %}
 {% if "ubuntu16" in os_types %}
   - icw_extensions_gpcloud_ubuntu16
@@ -1419,6 +1421,7 @@ jobs:
       - icw_planner_ictcp_centos6
 {% if "Extensions" in test_sections %}
       - icw_extensions_gpcloud_centos6
+      - icw_extensions_gpdiskquota_centos6
 {% endif %}
 {% endif %}
 {% if "centos6" in os_types %}
@@ -1435,6 +1438,7 @@ jobs:
       - icw_planner_ictcp_centos6
 {% if "Extensions" in test_sections %}
       - icw_extensions_gpcloud_centos6
+      - icw_extensions_gpdiskquota_centos6
 {% endif %}
 {% endif %}
 {% if 'ubuntu16' in os_types %}
@@ -2400,6 +2404,7 @@ jobs:
       - gpdb_packaging_ubuntu16
       - icw_planner_ictcp_centos6
       - icw_extensions_gpcloud_centos6
+      - icw_extensions_gpdiskquota_centos6
       - icw_extensions_gpcloud_ubuntu16
       - client_loader_remote_test_aix
       - resource_group_centos6
@@ -2434,6 +2439,7 @@ jobs:
       - icw_gporca_centos6
       - icw_planner_ictcp_centos6
       - icw_extensions_gpcloud_centos6
+      - icw_extensions_gpdiskquota_centos6
       - client_loader_remote_test_aix
       - resource_group_centos6
       - segwalrep_mirrorless_centos6
@@ -2541,6 +2547,23 @@ jobs:
       params:
         gpcloud_access_key_id: {{gpcloud-access-key-id}}
         gpcloud_secret_access_key: {{gpcloud-secret-access-key}}
+        TARGET_OS: centos
+- name: icw_extensions_gpdiskquota_centos6
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      passed: [compile_gpdb_centos6]
+      trigger: [[ test_trigger ]]
+    - get: bin_gpdb_centos6
+      passed: [compile_gpdb_centos6]
+    - get: centos-gpdb-dev-6
+  - aggregate:
+    - task: regression_tests_gpdiskquota_centos
+      input_mapping:
+        bin_gpdb: bin_gpdb_centos6
+      file: gpdb_src/concourse/tasks/regression_tests_gpdiskquota.yml
+      image: centos-gpdb-dev-6
+      params:
         TARGET_OS: centos
 {% endif %}
 
