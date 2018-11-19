@@ -234,4 +234,12 @@ extern void AtProcExit_LocalBuffers(void);
 extern BufferAccessStrategy GetAccessStrategy(BufferAccessStrategyType btype);
 extern void FreeAccessStrategy(BufferAccessStrategy strategy);
 
+/*
+ * Hook for plugins to check permissions when doing a buffer extend.
+ * One example is to check whether there is additional disk quota for
+ * the table to be inserted.
+ */
+typedef bool (*BufferExtendCheckPerms_hook_type) (Oid, BlockNumber);
+extern PGDLLIMPORT BufferExtendCheckPerms_hook_type BufferExtendCheckPerms_hook;
+
 #endif

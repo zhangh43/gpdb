@@ -147,4 +147,10 @@ extern Datum smgrin(PG_FUNCTION_ARGS);
 extern Datum smgreq(PG_FUNCTION_ARGS);
 extern Datum smgrne(PG_FUNCTION_ARGS);
 
+/*
+ * Hook for plugins to collect statistics from smgr functions
+ * One example is to record the active relfilenode information.
+ */
+typedef void (*SmgrStat_hook_type)(SMgrRelation sreln);
+extern PGDLLIMPORT SmgrStat_hook_type SmgrStat_hook;
 #endif   /* SMGR_H */
