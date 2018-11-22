@@ -5,8 +5,10 @@
  * This code is responsible for init disk quota model and refresh disk quota 
  * model.
  *
- * Copyright (C) 2013, PostgreSQL Global Development Group
+ * Copyright (c) 2018-Present Pivotal Software, Inc.
  *
+ * IDENTIFICATION
+ *		gpcontrib/gp_diskquota/quotamodel.c
  *
  * -------------------------------------------------------------------------
  */
@@ -16,6 +18,7 @@
 #include "access/htup_details.h"
 #include "access/reloptions.h"
 #include "access/transam.h"
+#include "access/tupdesc.h"
 #include "access/xact.h"
 #include "catalog/namespace.h"
 #include "catalog/pg_class.h"
@@ -37,7 +40,9 @@
 #include "utils/snapmgr.h"
 #include "utils/syscache.h"
 
-#include "activetable.h"
+#include <stdlib.h>
+
+#include "gp_activetable.h"
 #include "diskquota.h"
 
 /* cluster level max size of black list */
@@ -54,7 +59,9 @@ typedef struct QuotaLimitEntry QuotaLimitEntry;
 typedef struct BlackMapEntry BlackMapEntry;
 typedef struct LocalBlackMapEntry LocalBlackMapEntry;
 
-/* local cache of table disk size and corresponding schema and owner */
+/*
+ * local cache of table disk size and corresponding schema and owner
+ */
 struct TableSizeEntry
 {
 	Oid			reloid;
@@ -172,7 +179,7 @@ disk_quota_shmem_startup(void)
 
 	if (!found)
 	{
-		black_map_shm_lock->lock = &(GetNamedLWLockTranche("disk_quota_black_map_shm_lock"))->lock;
+		black_map_shm_lock->lock = LWLockAssign();
 	}
 
 	init_lock_active_tables();
@@ -202,8 +209,6 @@ init_disk_quota_shmem(void)
 	 * resources in pgss_shmem_startup().
 	 */
 	RequestAddinShmemSpace(DiskQuotaShmemSize());
-	RequestNamedLWLockTranche("disk_quota_black_map_shm_lock", 1);
-	RequestNamedLWLockTranche("disk_quota_active_table_shm_lock", 1);
 
 	/*
 	 * Install startup hook to initialize our shared memory.
@@ -334,7 +339,6 @@ flush_local_black_map(void)
 	bool found;
 
 	LWLockAcquire(black_map_shm_lock->lock, LW_EXCLUSIVE);
-
 	hash_seq_init(&iter, local_disk_quota_black_map);
 	while ((localblackentry = hash_seq_search(&iter)) != NULL)
 	{
@@ -521,7 +525,7 @@ calculate_table_disk_usage(bool force)
 	classRel = heap_open(RelationRelationId, AccessShareLock);
 	relScan = heap_beginscan_catalog(classRel, 0, NULL);
 
-	local_active_table_stat_map = pg_fetch_active_tables(force);
+	local_active_table_stat_map = gp_fetch_active_tables(force);
 
 	/* unset is_exist flag for tsentry in table_size_map*/
 	hash_seq_init(&iter, table_size_map);
@@ -551,6 +555,15 @@ calculate_table_disk_usage(bool force)
 		tsentry = (TableSizeEntry *)hash_search(table_size_map,
 							 &relOid,
 							 HASH_ENTER, &found);
+
+		if(!found)
+		{
+			tsentry->totalsize = 0;
+			tsentry->owneroid = 0;
+			tsentry->namespaceoid = 0;
+			tsentry->reloid = 0;
+		}
+
 		/* mark tsentry is_exist */
 		if (tsentry)
 			tsentry->is_exist = true;
@@ -697,6 +710,11 @@ load_quotas(void)
 	}
 	heap_close(rel, NoLock);
 
+	/*
+	 * TODO: we should skip to reload quota config when there is no 
+	 * change in quota.config. A flag in shared memory could be used
+	 * to detect the quota config change.
+	 */
 	/* clear entries in quota limit map*/
 	hash_seq_init(&iter, namespace_quota_limit_map);
 	while ((quota_entry = hash_seq_search(&iter)) != NULL)
@@ -720,9 +738,9 @@ load_quotas(void)
 
 	tupdesc = SPI_tuptable->tupdesc;
 	if (tupdesc->natts != 3 ||
-		TupleDescAttr(tupdesc, 0)->atttypid != OIDOID ||
-		TupleDescAttr(tupdesc, 1)->atttypid != INT4OID ||
-		TupleDescAttr(tupdesc, 2)->atttypid != INT8OID)
+		((tupdesc)->attrs[0])->atttypid != OIDOID ||
+		((tupdesc)->attrs[1])->atttypid != INT4OID ||
+		((tupdesc)->attrs[2])->atttypid != INT8OID)
 	{
 		elog(LOG, "configuration table \"quota_config\" is corruptted in database \"%s\"," 
 				" please recreate diskquota extension",
@@ -837,7 +855,7 @@ quota_check_common(Oid reloid)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_DISK_FULL),
-					 errmsg("role's disk space quota exceeded with name:%s", GetUserNameFromId(ownerOid, false))));
+					 errmsg("role's disk space quota exceeded with name:%s", GetUserNameFromId(ownerOid))));
 			return false;
 		}
 	}
