@@ -7,27 +7,34 @@
  * launcher process which is responsible for starting/refreshing the diskquota
  * worker processes which monitor given databases. 
  *
- * Copyright (C) 2013, PostgreSQL Global Development Group
+ * Copyright (c) 2018-Present Pivotal Software, Inc.
  *
+ * IDENTIFICATION
+ *		gpcontrib/gp_diskquota/diskquota.c
  *
  * -------------------------------------------------------------------------
  */
 #include "postgres.h"
 
+#include <unistd.h>
+
 #include "catalog/namespace.h"
 #include "catalog/pg_collation.h"
+#include "cdb/cdbvars.h"
 #include "executor/spi.h"
+#include "libpq/libpq-be.h"
 #include "miscadmin.h"
 #include "pgstat.h"
 #include "postmaster/bgworker.h"
 #include "storage/ipc.h"
+#include "storage/proc.h"
 #include "tcop/utility.h"
+#include "utils/acl.h"
 #include "utils/builtins.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include "utils/varlena.h"
 
-#include "activetable.h"
+#include "gp_activetable.h"
 #include "diskquota.h"
 PG_MODULE_MAGIC;
 
@@ -126,6 +133,12 @@ _PG_init(void)
 							NULL,
 							NULL);
 
+	/* start disk quota launcher only on master */
+	if (Gp_role != GP_ROLE_DISPATCH) 
+	{
+		return ;
+	}
+
 	/* set up common data for diskquota launcher worker */
 	worker.bgw_flags = BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -200,8 +213,8 @@ disk_quota_worker_main(Datum main_arg)
 	BackgroundWorkerUnblockSignals();
 
 	/* Connect to our database */
-	BackgroundWorkerInitializeConnection(dbname, NULL, 0);
-
+	BackgroundWorkerInitializeConnection(dbname, NULL);
+	
 	/* Initialize diskquota related local hash map and refresh model immediately*/
 	init_disk_quota_model();
 	refresh_disk_quota_model(true);
@@ -221,7 +234,7 @@ disk_quota_worker_main(Datum main_arg)
 		 */
 		rc = WaitLatch(&MyProc->procLatch,
 					   WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-					   diskquota_naptime * 1000L, PG_WAIT_EXTENSION);
+					   diskquota_naptime * 1000L);
 		ResetLatch(&MyProc->procLatch);
 
 		/* Do the work */
@@ -305,7 +318,7 @@ disk_quota_launcher_main(Datum main_arg)
 		 */
 		rc = WaitLatch(&MyProc->procLatch,
 						WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-						diskquota_naptime * 1000L, PG_WAIT_EXTENSION);
+						diskquota_naptime * 1000L);
 		ResetLatch(&MyProc->procLatch);
 
 		/* emergency bailout if postmaster has died */
