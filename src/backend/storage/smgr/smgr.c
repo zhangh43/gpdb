@@ -35,8 +35,14 @@
 /*
  * Hook for plugins to collect statistics from smgr functions
  * One example is to record the active relfilenode information.
+ * Hook for plugins to extend smgr functions.
+ * for example, collect statistics from smgr functions
+ * via recording the active relfilenode information.
  */
-SmgrStat_hook_type SmgrStat_hook = NULL;
+smgrcreate_hook_type smgrcreate_hook = NULL;
+smgrextend_hook_type smgrextend_hook = NULL;
+smgrtruncate_hook_type smgrtruncate_hook = NULL;
+smgrdounlinkall_hook_type smgrdounlinkall_hook = NULL;
 
 /*
  * Each backend has a hashtable that stores all extant SMgrRelation objects.
@@ -335,6 +341,11 @@ smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 	if (isRedo && reln->md_fd[forknum] != NULL)
 		return;
 
+	if (smgrcreate_hook)
+	{
+		(*smgrcreate_hook)(reln, forknum, isRedo);
+	}
+
 	/*
 	 * We may be using the target table space for the first time in this
 	 * database, so create a per-database subdirectory if needed.
@@ -349,11 +360,6 @@ smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 							isRedo);
 
 	mdcreate(reln, forknum, isRedo);
-
-	if (SmgrStat_hook)
-	{
-		(*SmgrStat_hook)(reln);
-	}
 }
 
 /*
@@ -458,6 +464,11 @@ smgrdounlinkall(SMgrRelation *rels, int nrels, bool isRedo, char *relstorages)
 
 	if (nrels == 0)
 		return;
+
+	if (smgrdounlinkall_hook)
+	{
+		(*smgrdounlinkall_hook)(rels, nrels, isRedo, relstorages);
+	}
 
 	/*
 	 * create an array which contains all relations to be dropped, and close
@@ -601,12 +612,12 @@ void
 smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		   char *buffer, bool skipFsync)
 {
-	mdextend(reln, forknum, blocknum, buffer, skipFsync);
-
-	if (SmgrStat_hook)
+	if (smgrextend_hook)
 	{
-		(*SmgrStat_hook)(reln);
+		(*smgrextend_hook)(reln, forknum, blocknum, buffer, skipFsync);
 	}
+
+	mdextend(reln, forknum, blocknum, buffer, skipFsync);
 }
 
 /*
@@ -674,6 +685,11 @@ smgrnblocks(SMgrRelation reln, ForkNumber forknum)
 void
 smgrtruncate(SMgrRelation reln, ForkNumber forknum, BlockNumber nblocks)
 {
+	if (smgrtruncate_hook)
+	{
+		(*smgrtruncate_hook)(reln, forknum, nblocks);
+	}
+
 	/*
 	 * Get rid of any buffers for the about-to-be-deleted blocks. bufmgr will
 	 * just drop them without bothering to write the contents.
@@ -696,11 +712,6 @@ smgrtruncate(SMgrRelation reln, ForkNumber forknum, BlockNumber nblocks)
 	 * Do the truncation.
 	 */
 	mdtruncate(reln, forknum, nblocks);
-
-	if (SmgrStat_hook)
-	{
-		(*SmgrStat_hook)(reln);
-	}
 }
 
 /*
