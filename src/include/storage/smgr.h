@@ -150,7 +150,31 @@ extern Datum smgrne(PG_FUNCTION_ARGS);
 /*
  * Hook for plugins to collect statistics from smgr functions
  * One example is to record the active relfilenode information.
+ * Hook for plugins to extend smgr functions.
+ * for example, collect statistics from smgr functions
+ *  via recording the active relfilenode information.
  */
-typedef void (*SmgrStat_hook_type)(SMgrRelation sreln);
-extern PGDLLIMPORT SmgrStat_hook_type SmgrStat_hook;
+typedef void (*smgrcreate_hook_type)(SMgrRelation reln,
+									 ForkNumber forknum,
+									 bool isRedo);
+extern PGDLLIMPORT smgrcreate_hook_type smgrcreate_hook;
+
+typedef void (*smgrextend_hook_type)(SMgrRelation reln,
+									 ForkNumber forknum,
+									 BlockNumber blocknum,
+									 char *buffer,
+									 bool skipFsync);
+extern PGDLLIMPORT smgrextend_hook_type smgrextend_hook;
+
+typedef void (*smgrtruncate_hook_type)(SMgrRelation reln,
+									   ForkNumber forknum,
+									   BlockNumber nblocks);
+extern PGDLLIMPORT smgrtruncate_hook_type smgrtruncate_hook;
+
+typedef void (*smgrdounlinkall_hook_type)(SMgrRelation *rels,
+										  int nrels,
+										  bool isRedo,
+										  char *relstorages);
+extern PGDLLIMPORT smgrdounlinkall_hook_type smgrdounlinkall_hook;
+
 #endif   /* SMGR_H */

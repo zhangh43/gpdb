@@ -78,13 +78,6 @@
 
 #define DROP_RELS_BSEARCH_THRESHOLD		20
 
-/*
- * Hook for plugins to check permissions when doing a buffer extend.
- * One example is to check whether there is additional disk quota for
- * the table to be inserted.
- */
-BufferExtendCheckPerms_hook_type BufferExtendCheckPerms_hook = NULL;
-
 /* GUC variables */
 bool		zero_damaged_pages = false;
 int			bgwriter_lru_maxpages = 100;
@@ -338,11 +331,6 @@ ReadBufferExtended(Relation reln, ForkNumber forkNum, BlockNumber blockNum,
 	 * miss.
 	 */
 	pgstat_count_buffer_read(reln);
-	/* check permissions when doing a buffer extend */
-	if (blockNum == P_NEW && BufferExtendCheckPerms_hook)
-	{
-		(*BufferExtendCheckPerms_hook)(reln->rd_id, blockNum);
-	}
 	buf = ReadBuffer_common(reln->rd_smgr, reln->rd_rel->relpersistence,
 							forkNum, blockNum, mode, strategy, &hit);
 	if (hit)

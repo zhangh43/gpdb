@@ -48,7 +48,20 @@ typedef struct DiskQuotaSetOFCache
 HTAB *active_tables_map = NULL;
 /* active table hooks*/
 static BufferedAppendWrite_hook_type prev_BufferedAppendWrite_hook = NULL;
-static SmgrStat_hook_type prev_SmgrStat_hook = NULL;
+static smgrcreate_hook_type prev_smgrcreate_hook = NULL;
+static smgrextend_hook_type prev_smgrextend_hook = NULL;
+static smgrtruncate_hook_type prev_smgrtruncate_hook = NULL;
+static void active_table_hook_smgrcreate(SMgrRelation reln,
+										 ForkNumber forknum,
+										 bool isRedo);
+static void active_table_hook_smgrextend(SMgrRelation reln,
+										 ForkNumber forknum,
+										 BlockNumber blocknum,
+										 char *buffer,
+										 bool skipFsync);
+static void active_table_hook_smgrtruncate(SMgrRelation reln,
+										   ForkNumber forknum,
+										   BlockNumber blocknum);
 
 PG_FUNCTION_INFO_V1(diskquota_fetch_table_stat);
 
@@ -71,10 +84,52 @@ HTAB* gp_fetch_active_tables(bool force);
 void
 init_active_table_hook(void)
 {
-	prev_SmgrStat_hook = SmgrStat_hook;
-	SmgrStat_hook = report_active_table_SmgrStat;
+	prev_smgrcreate_hook = smgrcreate_hook;
+	smgrcreate_hook = active_table_hook_smgrcreate;
+	
+	prev_smgrextend_hook = smgrextend_hook;
+	smgrextend_hook = active_table_hook_smgrextend;
+	
+	prev_smgrtruncate_hook = smgrtruncate_hook;
+	smgrtruncate_hook = active_table_hook_smgrtruncate;
+	
 	prev_BufferedAppendWrite_hook = BufferedAppendWrite_hook;
 	BufferedAppendWrite_hook = report_active_table_AO;
+}
+
+static void
+active_table_hook_smgrcreate(SMgrRelation reln,
+							 ForkNumber forknum,
+							 bool isRedo)
+{
+	if (prev_smgrcreate_hook)
+		(*prev_smgrcreate_hook)(reln, forknum, isRedo);
+
+	report_active_table_SmgrStat(reln);
+}
+
+static void
+active_table_hook_smgrextend(SMgrRelation reln,
+							 ForkNumber forknum,
+							 BlockNumber blocknum,
+							 char *buffer,
+							 bool skipFsync)
+{
+	if (prev_smgrextend_hook)
+		(*prev_smgrextend_hook)(reln, forknum, blocknum, buffer, skipFsync);
+
+	report_active_table_SmgrStat(reln);
+}
+
+static void
+active_table_hook_smgrtruncate(SMgrRelation reln,
+							   ForkNumber forknum,
+							   BlockNumber blocknum)
+{
+	if (prev_smgrtruncate_hook)
+		(*prev_smgrtruncate_hook)(reln, forknum, blocknum);
+
+	report_active_table_SmgrStat(reln);
 }
 
 /*
@@ -148,9 +203,6 @@ static void report_active_table_helper(const RelFileNodeBackend *relFileNode)
 static void
 report_active_table_SmgrStat(SMgrRelation reln)
 {
-	if (prev_SmgrStat_hook)
-		(*prev_SmgrStat_hook)(reln);
-
 	report_active_table_helper(&reln->smgr_rnode);
 }
 
