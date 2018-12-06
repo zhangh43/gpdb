@@ -75,7 +75,6 @@ static void report_active_table_AO(BufferedAppend *bufferedAppend);
 
 void init_active_table_hook(void);
 void init_shm_worker_active_tables(void);
-void init_lock_active_tables(void);
 HTAB* gp_fetch_active_tables(bool force);
 
 /*
@@ -153,22 +152,6 @@ init_shm_worker_active_tables(void)
 }
 
 /*
- * Init lock of active table map 
- */
-void init_lock_active_tables(void)
-{
-	bool found = false;
-	active_table_shm_lock = ShmemInitStruct("disk_quota_active_table_shm_lock",
-											sizeof(disk_quota_shared_state),
-											&found);
-
-	if (!found)
-	{
-		active_table_shm_lock->lock = LWLockAssign();
-	}
-}
-
-/*
  * Common function for reporting active tables, used by smgr and ao
  */
  
@@ -183,11 +166,11 @@ static void report_active_table_helper(const RelFileNodeBackend *relFileNode)
 	item.relfilenode = relFileNode->node.relNode;
 	item.tablespaceoid = relFileNode->node.spcNode;
 
-	LWLockAcquire(active_table_shm_lock->lock, LW_EXCLUSIVE);
+	LWLockAcquire(diskquota_locks.active_table_lock, LW_EXCLUSIVE);
 	entry = hash_search(active_tables_map, &item, HASH_ENTER_NULL, &found);
 	if (entry && !found)
 		*entry = item;
-	LWLockRelease(active_table_shm_lock->lock);
+	LWLockRelease(diskquota_locks.active_table_lock);
 
 	if (!found && entry == NULL) {
 		/* We may miss the file size change of this relation at current refresh interval.*/
@@ -509,7 +492,7 @@ HTAB* get_active_tables(void)
 								HASH_ELEM | HASH_CONTEXT | HASH_FUNCTION);
 
 	/* Move active table from shared memory to local active table map */
-	LWLockAcquire(active_table_shm_lock->lock, LW_EXCLUSIVE);
+	LWLockAcquire(diskquota_locks.active_table_lock, LW_EXCLUSIVE);
 
 	hash_seq_init(&iter, active_tables_map);
 
@@ -529,7 +512,7 @@ HTAB* get_active_tables(void)
 			*entry = *active_table_file_entry;
 		hash_search(active_tables_map, active_table_file_entry, HASH_REMOVE, NULL);
 	}
-	LWLockRelease(active_table_shm_lock->lock);
+	LWLockRelease(diskquota_locks.active_table_lock);
 
 	memset(&ctl, 0, sizeof(ctl));
 	ctl.keysize = sizeof(Oid);

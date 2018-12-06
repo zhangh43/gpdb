@@ -154,11 +154,9 @@ DiskQuotaShmemSize(void)
 static void
 init_lwlocks(void)
 {
-	LWLockPadded *base;
-	base = GetNamedLWLockTranche("diskquota_locks");
-	diskquota_locks.active_table_lock = &base[0].lock;
-	diskquota_locks.black_map_lock = &base[1].lock;
-	diskquota_locks.message_box_lock = &base[2].lock;
+	diskquota_locks.active_table_lock = LWLockAssign();
+	diskquota_locks.black_map_lock = LWLockAssign();
+	diskquota_locks.message_box_lock = LWLockAssign();
 }
 /*
  * DiskQuotaShmemInit
@@ -209,7 +207,7 @@ init_disk_quota_shmem(void)
 	 * resources in pgss_shmem_startup().
 	 */
 	RequestAddinShmemSpace(DiskQuotaShmemSize());
-	RequestNamedLWLockTranche("diskquota_locks", 3);
+	RequestAddinLWLocks(3);
 
 	/*
 	 * Install startup hook to initialize our shared memory.

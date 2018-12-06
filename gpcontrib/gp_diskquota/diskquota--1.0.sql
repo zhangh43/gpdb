@@ -39,7 +39,7 @@ GROUP BY pg_class.relowner, pg_roles.rolname, quota.quotalimitMB;
 
 CREATE TYPE diskquota.diskquota_active_table_type AS ("TABLE_OID" oid,  "TABLE_SIZE" int8);
 
-CREATE OR REPLACE FUNCTION diskquota.diskquota_fetch_table_stat(int4, oid[]) RETURNS setof diskquota_active_table_type
+CREATE OR REPLACE FUNCTION diskquota.diskquota_fetch_table_stat(int4, oid[]) RETURNS setof diskquota.diskquota_active_table_type
 AS 'MODULE_PATHNAME', 'diskquota_fetch_table_stat'
 LANGUAGE C VOLATILE;
 

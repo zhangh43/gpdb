@@ -45,6 +45,7 @@
 #include "utils/formatting.h"
 #include "utils/memutils.h"
 #include "utils/numeric.h"
+#include "utils/ps_status.h"
 #include "utils/snapmgr.h"
 #include "utils/syscache.h"
 
@@ -239,7 +240,8 @@ disk_quota_sigusr1(SIGNAL_ARGS)
 void
 disk_quota_worker_main(Datum main_arg)
 {
-	char *dbname = MyBgworkerEntry->bgw_extra;
+	char *dbname;
+	dbname = MyBgworkerEntry->bgw_name;
 	elog(LOG,"[diskquota]:start disk quota worker process to monitor database:%s", dbname);
 
 	/* Establish signal handlers before unblocking signals. */
@@ -249,10 +251,11 @@ disk_quota_worker_main(Datum main_arg)
 
 	/* We're now ready to receive signals */
 	BackgroundWorkerUnblockSignals();
+	init_ps_display("bgworker: [diskquota]", dbname, "", "");
 
 	/* Connect to our database */
 	BackgroundWorkerInitializeConnection(dbname, NULL);
-	
+
 	/* Initialize diskquota related local hash map and refresh model immediately*/
 	init_disk_quota_model();
 	refresh_disk_quota_model(true);
@@ -326,6 +329,7 @@ exec_simple_spi(const char *sql, int expected_code)
 {
 	int ret;
 
+	debug_query_string = sql;
 	ret = SPI_connect();
 	if (ret != SPI_OK_CONNECT)
 		elog(ERROR, "connect error, code=%d", ret);
@@ -335,6 +339,7 @@ exec_simple_spi(const char *sql, int expected_code)
 		elog(ERROR, "sql:'%s', code %d", sql, ret);
 	SPI_finish();
 	PopActiveSnapshot();
+	debug_query_string = NULL;
 }
 
 static bool
@@ -372,7 +377,7 @@ start_workers_from_dblist()
 	if (ret != SPI_OK_SELECT)
 		elog(ERROR, "select diskquota_namespace.database_list");
 	tupdesc = SPI_tuptable->tupdesc;
-	if (tupdesc->natts != 1 || tupdesc->attrs[0].atttypid != OIDOID)
+	if (tupdesc->natts != 1 || tupdesc->attrs[0]->atttypid != OIDOID)
 		elog(ERROR, "[diskquota] table database_list corrupt, laucher will exit");
 
 	for (i = 0; num < SPI_processed; i++)
@@ -528,7 +533,7 @@ disk_quota_launcher_main(Datum main_arg)
 
 	message_box->launcher_pid = MyProcPid;
 	/* Connect to our database */
-	BackgroundWorkerInitializeConnection("postgres", NULL, 0);
+	BackgroundWorkerInitializeConnection("postgres", NULL);
 	create_monitor_db_table();
 
 	memset(&hash_ctl, 0, sizeof(hash_ctl));
@@ -609,12 +614,11 @@ start_worker_by_dboid(Oid dbid)
 
 	dbname = get_database_name(dbid);
 	Assert(dbname != NULL);
-	snprintf(worker.bgw_name, sizeof(worker.bgw_name), "[diskquota] %s", dbname);
-	snprintf(worker.bgw_extra, sizeof(worker.bgw_extra), "%s", dbname);
+	snprintf(worker.bgw_name, sizeof(worker.bgw_name), "%s", dbname);
 	pfree(dbname);
 	/* set bgw_notify_pid so that we can use WaitForBackgroundWorkerStartup */
 	worker.bgw_notify_pid = MyProcPid;
-	worker.bgw_main_arg = (Datum) 0;
+	worker.bgw_main_arg = ObjectIdGetDatum(dbid);
 
 	old_ctx = MemoryContextSwitchTo(TopMemoryContext);
 	ok = RegisterDynamicBackgroundWorker(&worker, &handle);
@@ -717,7 +721,7 @@ set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type)
 {
 	int ret;
 	StringInfoData buf;
-	
+
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
 					"select * from diskquota.quota_config where targetoid = %u"
@@ -936,7 +940,7 @@ diskquota_start_worker(PG_FUNCTION_ARGS)
 		{
 			rc = WaitLatch(&MyProc->procLatch,
 						   WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-						   100L, PG_WAIT_EXTENSION);
+						   100L);
 			if (rc & WL_POSTMASTER_DEATH)
 				break;
 			ResetLatch(&MyProc->procLatch);
@@ -999,6 +1003,7 @@ process_message_box()
 		AbortCurrentTransaction();
 		FlushErrorState();
 		RESUME_INTERRUPTS();
+		debug_query_string = NULL;
 		num_db = old_num_db;
 	}
 	PG_END_TRY();
@@ -1041,7 +1046,7 @@ dq_object_access_hook(ObjectAccessType access, Oid classId,
 		{
 			rc = WaitLatch(&MyProc->procLatch,
 						   WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-						   100L, PG_WAIT_EXTENSION);
+						   100L);
 			if (rc & WL_POSTMASTER_DEATH)
 				break;
 			ResetLatch(&MyProc->procLatch);
