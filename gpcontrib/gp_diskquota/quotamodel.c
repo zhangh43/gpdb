@@ -149,7 +149,7 @@ DiskQuotaShmemSize(void)
 	Size		size;
 
 	size = MAXALIGN(sizeof(disk_quota_shared_state));
-	size = add_size(size, size); // two locks
+	size = add_size(size, size); /* two locks */
 	size = add_size(size, hash_estimate_size(MAX_DISK_QUOTA_BLACK_ENTRIES, sizeof(BlackMapEntry)));
 	size = add_size(size, hash_estimate_size(diskquota_max_active_tables, sizeof(DiskQuotaActiveTableEntry)));
 	return size;
@@ -311,7 +311,7 @@ refresh_disk_quota_model(bool force)
 }
 
 /*
- * Update the disk usage of nameapsce and role.
+ * Update the disk usage of namespace and role.
  * Put the exceeded namespace and role into shared black map.
  */
 static void
@@ -328,7 +328,7 @@ refresh_disk_quota_usage(bool force)
 /*
  * Generate the new shared blacklist from the local_black_list which
  * exceed the quota limit.
- * local_balck_list is used to reduce the lock race.
+ * local_black_list is used to reduce the lock race.
  */
 static void
 flush_local_black_map(void)
@@ -381,7 +381,8 @@ flush_local_black_map(void)
  * Compare the disk quota limit and current usage of a database object.
  * Put them into local blacklist if quota limit is exceeded.
  */
-static void check_disk_quota_by_oid(Oid targetOid, int64 current_usage, QuotaType type)
+static void
+check_disk_quota_by_oid(Oid targetOid, int64 current_usage, QuotaType type)
 {
 	bool					found;
 	int32 					quota_limit_mb;
@@ -501,7 +502,7 @@ update_role_map(Oid owneroid, int64 updatesize)
 /*
  *  Incremental way to update the disk quota of every database objects
  *  Recalculate the table's disk usage when it's a new table or active table.
- *  Detect the removed table if it's nolonger in pg_class.
+ *  Detect the removed table if it's no longer in pg_class.
  *  If change happens, no matter size change or owner change,
  *  update namespace_size_map and role_size_map correspondingly.
  *  Parameter 'force' set to true at initialization stage to recalculate 
@@ -636,7 +637,8 @@ calculate_table_disk_usage(bool force)
  * Check the namespace quota limit and current usage
  * Remove dropped namespace from namespace_size_map
  */
-static void calculate_schema_disk_usage(void)
+static void
+calculate_schema_disk_usage(void)
 {
 	HeapTuple	tuple;
 	HASH_SEQ_STATUS iter;
@@ -661,7 +663,8 @@ static void calculate_schema_disk_usage(void)
  * Check the role quota limit and current usage
  * Remove dropped role from roel_size_map
  */
-static void calculate_role_disk_usage(void)
+static void
+calculate_role_disk_usage(void)
 {
 	HeapTuple	tuple;
 	HASH_SEQ_STATUS iter;
@@ -742,7 +745,7 @@ load_quotas(void)
 		((tupdesc)->attrs[1])->atttypid != INT4OID ||
 		((tupdesc)->attrs[2])->atttypid != INT8OID)
 	{
-		elog(LOG, "configuration table \"quota_config\" is corruptted in database \"%s\"," 
+		elog(LOG, "configuration table \"quota_config\" is corrupted in database \"%s\"," 
 				" please recreate diskquota extension",
 			 get_database_name(MyDatabaseId));
 		return false;

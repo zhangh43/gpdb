@@ -358,7 +358,7 @@ get_database_list(void)
 
 	if (!SplitIdentifierString(dbstr, ',', &dblist))
 	{
-		elog(WARNING, "cann't get database list from guc:'%s'", diskquota_monitored_database_list);
+		elog(WARNING, "can't get database list from guc:'%s'", diskquota_monitored_database_list);
 		return NULL;
 	}
 	return dblist;

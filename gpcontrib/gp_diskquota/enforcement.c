@@ -2,7 +2,7 @@
  *
  * enforcment.c
  *
- * This code registers enforcement hooks to cancle the query which exceeds 
+ * This code registers enforcement hooks to cancel the query which exceeds 
  * the quota limit.
  *
  * Copyright (c) 2018-Present Pivotal Software, Inc.
@@ -55,7 +55,7 @@ init_disk_quota_enforcement(void)
 
 /*
  * Reset checked reloid list
- * This maybe called multiple times at different resource relase
+ * This may be called multiple times at different resource relase
  * phase, but it's safe to reset the checked_reloid_list.
  */
 static void
@@ -68,8 +68,9 @@ diskquota_free_callback(ResourceReleasePhase phase,
 	checked_reloid_list_count = 0;
 	return;
 }
+
 /*
- * Enformcent hook function before query is loading data. Throws an error if 
+ * Enforcement hook function before query is loading data. Throws an error if 
  * you try to INSERT, UPDATE or COPY into a table, and the quota has been exceeded.
  */
 static bool
