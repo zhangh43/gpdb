@@ -89,6 +89,10 @@ _PG_init(void)
 {
 	BackgroundWorker worker;
 
+	/* diskquota.so must be in shared_preload_libraries to init SHM. */
+	if (!process_shared_preload_libraries_in_progress)
+		elog(ERROR, "diskquota.so not in shared_preload_libraries.");
+
 	init_disk_quota_shmem();
 	init_disk_quota_enforcement();
 	init_active_table_hook();
