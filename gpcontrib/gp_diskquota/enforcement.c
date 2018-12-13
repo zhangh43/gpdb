@@ -93,7 +93,11 @@ quota_check_ExecCheckRTPerms(List *rangeTable, bool ereport_on_violation)
 		if ((rte->requiredPerms & ACL_INSERT) == 0 && (rte->requiredPerms & ACL_UPDATE) == 0)
 			continue;
 
-		/* Perform the check as the relation's owner and namespace */
+		/*
+		 * Given table oid, check whether the quota limit of table's 
+		 * schema or table's owner are reached.
+		 * This function will ereport(ERROR) when quota limit exceeded.
+		 */
 		quota_check_common(rte->relid);
 		checked_reloid_list[checked_reloid_list_count++] = rte->relid;
 
@@ -113,6 +117,11 @@ quota_check_DispatcherCheckPerms(void)
 	for(i = 0; i< checked_reloid_list_count; i++)
 	{
 		Oid relid = checked_reloid_list[i];
+		/*
+		 * Given table oid, check whether the quota limit of table's 
+		 * schema or table's owner are reached.
+		 * This function will ereport(ERROR) when quota limit exceeded.
+		 */
 		quota_check_common(relid);
 	}
 	return true;
