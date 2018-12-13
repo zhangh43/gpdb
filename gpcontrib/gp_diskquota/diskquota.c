@@ -3,9 +3,9 @@
  * diskquota.c
  *
  * Diskquota is used to limit the amount of disk space that a schema or a role
- * can use. Diskquota is based on background worker framework. It contains a 
+ * can use. Diskquota is based on background worker framework. It contains a
  * launcher process which is responsible for starting/refreshing the diskquota
- * worker processes which monitor given databases. 
+ * worker processes which monitor given databases.
  *
  * Copyright (c) 2018-Present Pivotal Software, Inc.
  *
@@ -50,16 +50,16 @@ static volatile sig_atomic_t got_sighup = false;
 static volatile sig_atomic_t got_sigterm = false;
 
 /* GUC variables */
-int	diskquota_naptime = 0;
-char *diskquota_monitored_database_list = NULL;
-int diskquota_max_active_tables = 0;
+int			diskquota_naptime = 0;
+char	   *diskquota_monitored_database_list = NULL;
+int			diskquota_max_active_tables = 0;
 
 typedef struct DiskQuotaWorkerEntry DiskQuotaWorkerEntry;
 
 /* disk quota worker info used by launcher to manage the worker processes. */
 struct DiskQuotaWorkerEntry
 {
-	char dbname[NAMEDATALEN];
+	char		dbname[NAMEDATALEN];
 	BackgroundWorkerHandle *handle;
 };
 
@@ -67,10 +67,10 @@ struct DiskQuotaWorkerEntry
 static HTAB *disk_quota_worker_map = NULL;
 
 /* functions of disk quota*/
-void _PG_init(void);
-void _PG_fini(void);
-void disk_quota_worker_main(Datum);
-void disk_quota_launcher_main(Datum);
+void		_PG_init(void);
+void		_PG_fini(void);
+void		disk_quota_worker_main(Datum);
+void		disk_quota_launcher_main(Datum);
 
 static void disk_quota_sigterm(SIGNAL_ARGS);
 static void disk_quota_sighup(SIGNAL_ARGS);
@@ -78,7 +78,7 @@ static List *get_database_list(void);
 static int64 get_size_in_mb(char *str);
 static void refresh_worker_list(void);
 static void set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type);
-static int start_worker(char* dbname);
+static int	start_worker(char *dbname);
 
 /*
  * Entrypoint of diskquota module.
@@ -118,14 +118,14 @@ _PG_init(void)
 		return;
 
 	DefineCustomStringVariable("diskquota.monitor_databases",
-								gettext_noop("database list with disk quota monitored."),
-								NULL,
-								&diskquota_monitored_database_list,
-								"",
-								PGC_SIGHUP, GUC_LIST_INPUT,
-								NULL,
-								NULL,
-								NULL);
+							   gettext_noop("database list with disk quota monitored."),
+							   NULL,
+							   &diskquota_monitored_database_list,
+							   "",
+							   PGC_SIGHUP, GUC_LIST_INPUT,
+							   NULL,
+							   NULL,
+							   NULL);
 
 	DefineCustomIntVariable("diskquota.max_active_tables",
 							"max number of active tables monitored by disk-quota",
@@ -141,9 +141,9 @@ _PG_init(void)
 							NULL);
 
 	/* start disk quota launcher only on master */
-	if (Gp_role != GP_ROLE_DISPATCH) 
+	if (Gp_role != GP_ROLE_DISPATCH)
 	{
-		return ;
+		return;
 	}
 
 	/* set up common data for diskquota launcher worker */
@@ -209,7 +209,8 @@ disk_quota_sighup(SIGNAL_ARGS)
 void
 disk_quota_worker_main(Datum main_arg)
 {
-	char *dbname=MyBgworkerEntry->bgw_name;
+	char	   *dbname = MyBgworkerEntry->bgw_name;
+
 	ereport(LOG,
 			(errmsg("start disk quota worker process to monitor database:%s",
 					dbname)));
@@ -223,8 +224,11 @@ disk_quota_worker_main(Datum main_arg)
 
 	/* Connect to our database */
 	BackgroundWorkerInitializeConnection(dbname, NULL);
-	
-	/* Initialize diskquota related local hash map and refresh model immediately*/
+
+	/*
+	 * Initialize diskquota related local hash map and refresh model
+	 * immediately
+	 */
 	init_disk_quota_model();
 	refresh_disk_quota_model(true);
 
@@ -274,8 +278,8 @@ disk_quota_worker_main(Datum main_arg)
 void
 disk_quota_launcher_main(Datum main_arg)
 {
-	List *dblist;
-	ListCell *cell;
+	List	   *dblist;
+	ListCell   *cell;
 	HASHCTL		hash_ctl;
 
 	/* Establish signal handlers before unblocking signals. */
@@ -290,18 +294,18 @@ disk_quota_launcher_main(Datum main_arg)
 	hash_ctl.entrysize = sizeof(DiskQuotaWorkerEntry);
 
 	disk_quota_worker_map = hash_create("disk quota worker map",
-										  1024,
-										  &hash_ctl,
-										  HASH_ELEM);
+										1024,
+										&hash_ctl,
+										HASH_ELEM);
 
 	dblist = get_database_list();
 	ereport(LOG,
 			(errmsg("diskquota launcher started")));
 	foreach(cell, dblist)
 	{
-		char *db_name;
+		char	   *db_name;
 
-		db_name = (char *)lfirst(cell);
+		db_name = (char *) lfirst(cell);
 		if (db_name == NULL || *db_name == '\0')
 		{
 			ereport(LOG,
@@ -312,6 +316,7 @@ disk_quota_launcher_main(Datum main_arg)
 	}
 	/* free dblist */
 	list_free(dblist);
+
 	/*
 	 * Main loop: do this until the SIGTERM handler tells us to terminate
 	 */
@@ -326,8 +331,8 @@ disk_quota_launcher_main(Datum main_arg)
 		 * background process goes away immediately in an emergency.
 		 */
 		rc = WaitLatch(&MyProc->procLatch,
-						WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-						diskquota_naptime * 1000L);
+					   WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
+					   diskquota_naptime * 1000L);
 		ResetLatch(&MyProc->procLatch);
 
 		/* emergency bailout if postmaster has died */
@@ -341,7 +346,11 @@ disk_quota_launcher_main(Datum main_arg)
 		{
 			got_sighup = false;
 			ProcessConfigFile(PGC_SIGHUP);
-			/* terminate not monitored worker process and start new worker process */
+
+			/*
+			 * terminate not monitored worker process and start new worker
+			 * process
+			 */
 			refresh_worker_list();
 		}
 
@@ -356,8 +365,8 @@ disk_quota_launcher_main(Datum main_arg)
 static List *
 get_database_list(void)
 {
-	List		*monitor_db_list = NIL;
-	char		*dbstr;
+	List	   *monitor_db_list = NIL;
+	char	   *dbstr;
 
 	dbstr = pstrdup(diskquota_monitored_database_list);
 
@@ -371,20 +380,20 @@ get_database_list(void)
 		return NULL;
 	}
 
-	/* 
-	 * We only allow to minitor at most 10 databases 
-	 * truncate the list if there are more than 10 databases in list.
+	/*
+	 * We only allow to minitor at most 10 databases truncate the list if
+	 * there are more than 10 databases in list.
 	 */
 	if (list_length(monitor_db_list) > MAX_NUM_MONITORED_DB)
 	{
 		ereport(WARNING,
 				(errmsg("Currently diskquota could monitor at most 10 databases."
 						"GUC monitor_databases:'%s' contains more than"
-						"10 databases, additional databases will be ignored.",
+						" 10 databases, additional databases will be ignored.",
 						diskquota_monitored_database_list)));
 		monitor_db_list = list_truncate(monitor_db_list, MAX_NUM_MONITORED_DB);
 	}
-	
+
 	pfree(dbstr);
 	/* dblist should be list_free by the caller */
 	return monitor_db_list;
@@ -398,36 +407,37 @@ get_database_list(void)
 static void
 refresh_worker_list(void)
 {
-	List *monitor_dblist;
-	ListCell *cell;
-	bool flag = false;
-	bool found;
+	List	   *monitor_dblist;
+	ListCell   *cell;
+	bool		flag = false;
+	bool		found;
 	DiskQuotaWorkerEntry *hash_entry;
 	HASH_SEQ_STATUS status;
 
 	monitor_dblist = get_database_list();
+
 	/*
-	 * refresh the worker process based on the configuration file change.
-	 * step 1 is to terminate worker processes whose connected database
-	 * not in monitor database list.
+	 * refresh the worker process based on the configuration file change. step
+	 * 1 is to terminate worker processes whose connected database not in
+	 * monitor database list.
 	 */
 	ereport(LOG,
 			(errmsg("Refresh monitored database list.")));
 	hash_seq_init(&status, disk_quota_worker_map);
 
-	while ((hash_entry = (DiskQuotaWorkerEntry*) hash_seq_search(&status)) != NULL)
+	while ((hash_entry = (DiskQuotaWorkerEntry *) hash_seq_search(&status)) != NULL)
 	{
 		flag = false;
 		foreach(cell, monitor_dblist)
 		{
-			char *db_name;
+			char	   *db_name;
 
-			db_name = (char *)lfirst(cell);
+			db_name = (char *) lfirst(cell);
 			if (db_name == NULL || *db_name == '\0')
 			{
 				continue;
 			}
-			if (strcmp(db_name, hash_entry->dbname) == 0 )
+			if (strcmp(db_name, hash_entry->dbname) == 0)
 			{
 				flag = true;
 				break;
@@ -436,27 +446,27 @@ refresh_worker_list(void)
 		if (!flag)
 		{
 			TerminateBackgroundWorker(hash_entry->handle);
-			(DiskQuotaWorkerEntry *)hash_search(disk_quota_worker_map,
-												(void *)hash_entry->dbname,
-												HASH_REMOVE, NULL);
+			(DiskQuotaWorkerEntry *) hash_search(disk_quota_worker_map,
+												 (void *) hash_entry->dbname,
+												 HASH_REMOVE, NULL);
 		}
 	}
 
 	/* step 2: start new worker which first appears in monitor database list. */
 	foreach(cell, monitor_dblist)
 	{
-		DiskQuotaWorkerEntry* workerentry;
-		char *db_name;
-		pid_t pid;
+		DiskQuotaWorkerEntry *workerentry;
+		char	   *db_name;
+		pid_t		pid;
 
-		db_name = (char *)lfirst(cell);
+		db_name = (char *) lfirst(cell);
 		if (db_name == NULL || *db_name == '\0')
 		{
 			continue;
 		}
-		workerentry = (DiskQuotaWorkerEntry *)hash_search(disk_quota_worker_map,
-															(void *)db_name,
-															HASH_FIND, &found);
+		workerentry = (DiskQuotaWorkerEntry *) hash_search(disk_quota_worker_map,
+														   (void *) db_name,
+														   HASH_FIND, &found);
 		if (found)
 		{
 			/* in case worker is not in BGWH_STARTED mode, restart it. */
@@ -477,14 +487,14 @@ refresh_worker_list(void)
  * Dynamically launch an disk quota worker process.
  */
 static int
-start_worker(char* dbname)
+start_worker(char *dbname)
 {
 	BackgroundWorker worker;
 	BackgroundWorkerHandle *handle;
 	BgwHandleStatus status;
 	pid_t		pid;
-	bool found;
-	DiskQuotaWorkerEntry* workerentry;
+	bool		found;
+	DiskQuotaWorkerEntry *workerentry;
 
 	memset(&worker, 0, sizeof(BackgroundWorker));
 	worker.bgw_flags = BGWORKER_SHMEM_ACCESS |
@@ -507,18 +517,18 @@ start_worker(char* dbname)
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_RESOURCES),
 				 errmsg("could not start background process"),
-			   errhint("More details may be available in the server log.")));
+				 errhint("More details may be available in the server log.")));
 	if (status == BGWH_POSTMASTER_DIED)
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_RESOURCES),
-			  errmsg("cannot start background processes without postmaster"),
+				 errmsg("cannot start background processes without postmaster"),
 				 errhint("Kill all remaining database processes and restart the database.")));
 	Assert(status == BGWH_STARTED);
 
 	/* put the worker handle into the worker map */
-	workerentry = (DiskQuotaWorkerEntry *)hash_search(disk_quota_worker_map,
-														(void *)dbname,
-														HASH_ENTER, &found);
+	workerentry = (DiskQuotaWorkerEntry *) hash_search(disk_quota_worker_map,
+													   (void *) dbname,
+													   HASH_ENTER, &found);
 	if (!found)
 	{
 		workerentry->handle = handle;
@@ -534,10 +544,10 @@ start_worker(char* dbname)
 Datum
 set_role_quota(PG_FUNCTION_ARGS)
 {
-	Oid roleoid;
-	char *rolname;
-	char *sizestr;
-	int64 quota_limit_mb;
+	Oid			roleoid;
+	char	   *rolname;
+	char	   *sizestr;
+	int64		quota_limit_mb;
 
 	if (!superuser())
 	{
@@ -564,10 +574,11 @@ set_role_quota(PG_FUNCTION_ARGS)
 Datum
 set_schema_quota(PG_FUNCTION_ARGS)
 {
-	Oid namespaceoid;
-	char *nspname;
-	char *sizestr;
-	int64 quota_limit_mb;
+	Oid			namespaceoid;
+	char	   *nspname;
+	char	   *sizestr;
+	int64		quota_limit_mb;
+
 	if (!superuser())
 	{
 		ereport(ERROR,
@@ -580,7 +591,7 @@ set_schema_quota(PG_FUNCTION_ARGS)
 	namespaceoid = get_namespace_oid(nspname, false);
 
 	sizestr = text_to_cstring(PG_GETARG_TEXT_PP(1));
-	sizestr = str_tolower(sizestr, strlen(sizestr),  DEFAULT_COLLATION_OID);
+	sizestr = str_tolower(sizestr, strlen(sizestr), DEFAULT_COLLATION_OID);
 	quota_limit_mb = get_size_in_mb(sizestr);
 
 	set_quota_internal(namespaceoid, quota_limit_mb, NAMESPACE_QUOTA);
@@ -594,14 +605,14 @@ set_schema_quota(PG_FUNCTION_ARGS)
 static void
 set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type)
 {
-	int ret;
+	int			ret;
 	StringInfoData buf;
-	
+
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
-					"select true from diskquota.quota_config where targetoid = %u"
-					" and quotatype =%d",
-					targetoid, type);
+					 "select true from diskquota.quota_config where targetoid = %u"
+					 " and quotatype =%d",
+					 targetoid, type);
 
 	SPI_connect();
 
@@ -609,14 +620,14 @@ set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type)
 	if (ret != SPI_OK_SELECT)
 		elog(ERROR, "cannot select quota setting table: error code %d", ret);
 
-	/* if the schema or role's quota has been set before*/
+	/* if the schema or role's quota has been set before */
 	if (SPI_processed == 0 && quota_limit_mb > 0)
 	{
 		resetStringInfo(&buf);
 		initStringInfo(&buf);
 		appendStringInfo(&buf,
-					"insert into diskquota.quota_config values(%u,%d,%ld);",
-					targetoid, type, quota_limit_mb);
+						 "insert into diskquota.quota_config values(%u,%d,%ld);",
+						 targetoid, type, quota_limit_mb);
 		ret = SPI_execute(buf.data, false, 0);
 		if (ret != SPI_OK_INSERT)
 			elog(ERROR, "cannot insert into quota setting table, error code %d", ret);
@@ -626,25 +637,26 @@ set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type)
 		resetStringInfo(&buf);
 		initStringInfo(&buf);
 		appendStringInfo(&buf,
-					"delete from diskquota.quota_config where targetoid=%u"
-					" and quotatype=%d;",
-					targetoid, type);
+						 "delete from diskquota.quota_config where targetoid=%u"
+						 " and quotatype=%d;",
+						 targetoid, type);
 		ret = SPI_execute(buf.data, false, 0);
 		if (ret != SPI_OK_DELETE)
 			elog(ERROR, "cannot delete item from quota setting table, error code %d", ret);
 	}
-	else if(SPI_processed > 0 && quota_limit_mb > 0)
+	else if (SPI_processed > 0 && quota_limit_mb > 0)
 	{
 		resetStringInfo(&buf);
 		initStringInfo(&buf);
 		appendStringInfo(&buf,
-					"update diskquota.quota_config set quotalimitMB = %ld where targetoid=%u"
-					" and quotatype=%d;",
-					quota_limit_mb, targetoid, type);
+						 "update diskquota.quota_config set quotalimitMB = %ld where targetoid=%u"
+						 " and quotatype=%d;",
+						 quota_limit_mb, targetoid, type);
 		ret = SPI_execute(buf.data, false, 0);
 		if (ret != SPI_OK_UPDATE)
 			elog(ERROR, "cannot update quota setting table, error code %d", ret);
 	}
+
 	/*
 	 * And finish our transaction.
 	 */
@@ -658,10 +670,11 @@ set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type)
 static int64
 get_size_in_mb(char *str)
 {
-	char		*strptr, *endptr;
+	char	   *strptr,
+			   *endptr;
 	char		saved_char;
-	Numeric	num;
-	int64	result;
+	Numeric		num;
+	int64		result;
 	bool		have_digits = false;
 
 	/* Skip leading whitespace */
@@ -708,7 +721,7 @@ get_size_in_mb(char *str)
 	if (*endptr == 'e' || *endptr == 'E')
 	{
 		long		exponent;
-		char		*cp;
+		char	   *cp;
 
 		/*
 		 * Note we might one day support EB units, so if what follows 'E'
@@ -761,9 +774,9 @@ get_size_in_mb(char *str)
 			multiplier = ((int64) 1024);
 
 		else if (pg_strcasecmp(strptr, "tb") == 0)
-			multiplier = ((int64) 1024) * 1024 ;
+			multiplier = ((int64) 1024) * 1024;
 		else if (pg_strcasecmp(strptr, "pb") == 0)
-			multiplier = ((int64) 1024) * 1024 * 1024 ;
+			multiplier = ((int64) 1024) * 1024 * 1024;
 		else
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),

@@ -2,7 +2,7 @@
  *
  * enforcment.c
  *
- * This code registers enforcement hooks to cancel the query which exceeds 
+ * This code registers enforcement hooks to cancel the query which exceeds
  * the quota limit.
  *
  * Copyright (c) 2018-Present Pivotal Software, Inc.
@@ -31,8 +31,8 @@ static DispatcherCheckPerms_hook_type prev_DispatcherCheckPerms_hook;
 static void diskquota_free_callback(ResourceReleasePhase phase, bool isCommit, bool isTopLevel, void *arg);
 
 /* result relation need to be checked in dispatcher */
-static Oid checked_reloid_list[CHECKED_OID_LIST_NUM];
-static int checked_reloid_list_count = 0;
+static Oid	checked_reloid_list[CHECKED_OID_LIST_NUM];
+static int	checked_reloid_list_count = 0;
 
 /*
  * Initialize enforcement hooks.
@@ -45,11 +45,11 @@ init_disk_quota_enforcement(void)
 	ExecutorCheckPerms_hook = quota_check_ExecCheckRTPerms;
 
 	/* enforcement hook during query is loading data */
-	prev_DispatcherCheckPerms_hook =DispatcherCheckPerms_hook;
+	prev_DispatcherCheckPerms_hook = DispatcherCheckPerms_hook;
 	DispatcherCheckPerms_hook = quota_check_DispatcherCheckPerms;
-	
+
 	/* setup and reset the result relaiton checked list */
-	memset(checked_reloid_list, 0, sizeof(Oid)*CHECKED_OID_LIST_NUM);
+	memset(checked_reloid_list, 0, sizeof(Oid) * CHECKED_OID_LIST_NUM);
 	RegisterResourceReleaseCallback(diskquota_free_callback, NULL);
 }
 
@@ -60,9 +60,9 @@ init_disk_quota_enforcement(void)
  */
 static void
 diskquota_free_callback(ResourceReleasePhase phase,
-					 bool isCommit,
-					 bool isTopLevel,
-					 void *arg)
+						bool isCommit,
+						bool isTopLevel,
+						void *arg)
 {
 
 	checked_reloid_list_count = 0;
@@ -70,7 +70,7 @@ diskquota_free_callback(ResourceReleasePhase phase,
 }
 
 /*
- * Enforcement hook function before query is loading data. Throws an error if 
+ * Enforcement hook function before query is loading data. Throws an error if
  * you try to INSERT, UPDATE or COPY into a table, and the quota has been exceeded.
  */
 static bool
@@ -87,16 +87,16 @@ quota_check_ExecCheckRTPerms(List *rangeTable, bool ereport_on_violation)
 			continue;
 
 		/*
-		 * Only check quota on inserts. UPDATEs may well increase
-		 * space usage too, but we ignore that for now.
+		 * Only check quota on inserts. UPDATEs may well increase space usage
+		 * too, but we ignore that for now.
 		 */
 		if ((rte->requiredPerms & ACL_INSERT) == 0 && (rte->requiredPerms & ACL_UPDATE) == 0)
 			continue;
 
 		/*
-		 * Given table oid, check whether the quota limit of table's 
-		 * schema or table's owner are reached.
-		 * This function will ereport(ERROR) when quota limit exceeded.
+		 * Given table oid, check whether the quota limit of table's schema or
+		 * table's owner are reached. This function will ereport(ERROR) when
+		 * quota limit exceeded.
 		 */
 		quota_check_common(rte->relid);
 		checked_reloid_list[checked_reloid_list_count++] = rte->relid;
@@ -112,15 +112,17 @@ quota_check_ExecCheckRTPerms(List *rangeTable, bool ereport_on_violation)
 static bool
 quota_check_DispatcherCheckPerms(void)
 {
-	int i;
+	int			i;
+
 	/* Perform the check as the relation's owner and namespace */
-	for(i = 0; i< checked_reloid_list_count; i++)
+	for (i = 0; i < checked_reloid_list_count; i++)
 	{
-		Oid relid = checked_reloid_list[i];
+		Oid			relid = checked_reloid_list[i];
+
 		/*
-		 * Given table oid, check whether the quota limit of table's 
-		 * schema or table's owner are reached.
-		 * This function will ereport(ERROR) when quota limit exceeded.
+		 * Given table oid, check whether the quota limit of table's schema or
+		 * table's owner are reached. This function will ereport(ERROR) when
+		 * quota limit exceeded.
 		 */
 		quota_check_common(relid);
 	}
