@@ -7,7 +7,7 @@
  * Copyright (c) 2018-Present Pivotal Software, Inc.
  *
  * IDENTIFICATION
- *		gpcontrib/gp_diskquota/activetable.c
+ *		gpcontrib/gp_diskquota/gp_activetable.c
  *
  * -------------------------------------------------------------------------
  */
@@ -206,7 +206,7 @@ report_active_table_helper(const RelFileNodeBackend *relFileNode)
 
 /*
  *  Hook function in smgr to report the active table
- *  information and stroe them in active table shared memory
+ *  information and store them in active table shared memory
  *  diskquota worker will consuming these active tables and
  *  recalculate their file size to update diskquota model.
  */
