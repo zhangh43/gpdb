@@ -351,7 +351,7 @@ flush_local_black_map(void)
 			if (blackentry == NULL)
 			{
 				elog(WARNING, "Shared disk quota black map size limit reached."
-					 "Some out-of-limit schemas or roles will lost"
+					 "Some out-of-limit schemas or roles will be lost"
 					 "in blacklist.");
 			}
 			else

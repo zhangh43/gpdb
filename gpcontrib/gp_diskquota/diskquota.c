@@ -74,7 +74,7 @@ void		disk_quota_launcher_main(Datum);
 
 static void disk_quota_sigterm(SIGNAL_ARGS);
 static void disk_quota_sighup(SIGNAL_ARGS);
-static List *get_database_list(void);
+static List *get_database_list(bool *is_refresh);
 static int64 get_size_in_mb(char *str);
 static void refresh_worker_list(void);
 static void set_quota_internal(Oid targetoid, int64 quota_limit_mb, QuotaType type);
@@ -281,6 +281,7 @@ disk_quota_launcher_main(Datum main_arg)
 	List	   *dblist;
 	ListCell   *cell;
 	HASHCTL		hash_ctl;
+	bool		is_refresh = false;
 
 	/* Establish signal handlers before unblocking signals. */
 	pqsignal(SIGHUP, disk_quota_sighup);
@@ -298,21 +299,25 @@ disk_quota_launcher_main(Datum main_arg)
 										&hash_ctl,
 										HASH_ELEM);
 
-	dblist = get_database_list();
 	ereport(LOG,
 			(errmsg("diskquota launcher started")));
-	foreach(cell, dblist)
-	{
-		char	   *db_name;
 
-		db_name = (char *) lfirst(cell);
-		if (db_name == NULL || *db_name == '\0')
+	dblist = get_database_list(&is_refresh);
+	if (is_refresh)
+	{
+		foreach(cell, dblist)
 		{
-			ereport(LOG,
-					(errmsg("invalid db name='%s' in diskquota.monitor_databases", db_name)));
-			continue;
+			char	   *db_name;
+
+			db_name = (char *) lfirst(cell);
+			if (db_name == NULL || *db_name == '\0')
+			{
+				ereport(LOG,
+						(errmsg("invalid db name='%s' in diskquota.monitor_databases", db_name)));
+				continue;
+			}
+			start_worker(db_name);
 		}
-		start_worker(db_name);
 	}
 	/* free dblist */
 	list_free(dblist);
@@ -360,14 +365,18 @@ disk_quota_launcher_main(Datum main_arg)
 }
 
 /*
- * database list found in GUC diskquota.monitored_database_list
+ * Extract database list in GUC diskquota.monitored_database_list
+ * Parameter is_refresh is used to indicate whether to refresh the
+ * monitored database list when GUC monitored_database_list changed.
+ * If GUC contains more than 10 databases, is_refresh is set to false.
  */
 static List *
-get_database_list(void)
+get_database_list(bool *is_refresh)
 {
 	List	   *monitor_db_list = NIL;
 	char	   *dbstr;
 
+	*is_refresh = true;
 	dbstr = pstrdup(diskquota_monitored_database_list);
 
 	if (!SplitIdentifierString(dbstr, ',', &monitor_db_list))
@@ -386,6 +395,7 @@ get_database_list(void)
 	 */
 	if (list_length(monitor_db_list) > MAX_NUM_MONITORED_DB)
 	{
+		*is_refresh = false;
 		ereport(WARNING,
 				(errmsg("Currently diskquota could monitor at most 10 databases."
 						"GUC monitor_databases:'%s' contains more than"
@@ -410,11 +420,21 @@ refresh_worker_list(void)
 	List	   *monitor_dblist;
 	ListCell   *cell;
 	bool		flag = false;
+	bool		is_refresh = false;
 	bool		found;
 	DiskQuotaWorkerEntry *hash_entry;
 	HASH_SEQ_STATUS status;
 
-	monitor_dblist = get_database_list();
+	monitor_dblist = get_database_list(&is_refresh);
+	if (!is_refresh)
+	{
+		ereport(WARNING,
+				(errmsg("Failed to refresh monitored database. GUC "
+						"monitor_databases:'%s' should contain less than "
+						"10 databases.",
+						diskquota_monitored_database_list)));
+		return;
+	}
 
 	/*
 	 * refresh the worker process based on the configuration file change. step
