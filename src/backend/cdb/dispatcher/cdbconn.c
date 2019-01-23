@@ -693,6 +693,13 @@ MPPnoticeReceiver(void *arg, const PGresult *res)
 void
 forwardQENotices(void)
 {
+	/*
+	 * If MyProcPort is NULL, there is no client, so no need to forward notice.
+	 * One example is that there is no client for a background worker. 
+	 */
+	if (MyProcPort == NULL)
+		return;
+
 	while (qeNotices_head)
 	{
 		QENotice *notice;;
