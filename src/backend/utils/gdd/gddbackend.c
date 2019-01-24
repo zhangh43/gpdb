@@ -327,7 +327,7 @@ GlobalDeadLockDetectorMain(int argc, char *argv[])
 	/* Now we can mark our PGPROC entry with the database ID */
 	/* (We assume this is an atomic store so no lock is needed) */
 	MyProc->databaseId = MyDatabaseId;
-
+	Assert(MyDatabaseId != 0);
 	fullpath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
 
 	SetDatabasePath(fullpath);
