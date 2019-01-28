@@ -2498,7 +2498,7 @@ StartTransaction(void)
 	 * until the end of transaction, do this update inside a transaction
 	 * because it does a catalog lookup.
 	 */
-	if (DistributedTransactionContext == DTX_CONTEXT_QD_DISTRIBUTED_CAPABLE)
+	if (Gp_role == GP_ROLE_DISPATCH && OidIsValid(MyDatabaseId))
 		cdbcomponent_updateCdbComponents();
 
 	/*
