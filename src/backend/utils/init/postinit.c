@@ -797,6 +797,7 @@ InitPostgres(const char *in_dbname, Oid dboid, const char *username,
 		 * authentication involves reading pg_authid.  Heap access is not
 		 * possible on mirror, which is in standby mode.
 		 */
+		Assert(MyProcPort != NULL);
 		FakeClientAuthentication(MyProcPort);
 		InitializeSessionUserIdStandalone();
 		am_superuser = true;

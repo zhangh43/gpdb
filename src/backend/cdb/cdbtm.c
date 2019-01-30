@@ -1240,10 +1240,24 @@ ChangeToSuperuser()
 		oldcontext = MemoryContextSwitchTo(TopMemoryContext);
 		newuser = getSuperuser(&userOid);
 		MemoryContextSwitchTo(oldcontext);
-
-		olduser = MyProcPort->user_name;
-		SetSessionUserId(userOid, true);
-		MyProcPort->user_name = newuser;
+		/* Normal client has MyProcPort struct.*/
+		if (MyProcPort)
+		{
+			olduser = MyProcPort->user_name;
+			SetSessionUserId(userOid, true);
+			MyProcPort->user_name = newuser;
+		}
+		/*
+		 * Background worker doesn't need to store olduser info.
+		 * It use GetAuthenticatedUserId() to restore old user.
+		 */
+		else
+		{
+			SetSessionUserId(userOid, true);
+			oldcontext = MemoryContextSwitchTo(TopMemoryContext);
+			pfree(newuser);
+			MemoryContextSwitchTo(oldcontext);
+		}
 	}
 
 	return olduser;
@@ -1256,11 +1270,15 @@ RestoreToUser(char *olduser)
 
 	if (!IsAuthenticatedUserSuperUser())
 	{
-		oldcontext = MemoryContextSwitchTo(TopMemoryContext);
-		pfree(MyProcPort->user_name);
-		MemoryContextSwitchTo(oldcontext);
+		if (MyProcPort)
+		{
+			oldcontext = MemoryContextSwitchTo(TopMemoryContext);
+			pfree(MyProcPort->user_name);
+			MemoryContextSwitchTo(oldcontext);
 
-		MyProcPort->user_name = olduser;
+			MyProcPort->user_name = olduser;
+		}
+		/* Background worker also use GetAuthenticatedUserId() to reset session user. */
 		SetSessionUserId(GetAuthenticatedUserId(), false);
 	}
 }
