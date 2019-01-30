@@ -1152,6 +1152,7 @@ WalSndWriteData(LogicalDecodingContext *ctx, XLogRecPtr lsn, TransactionId xid,
 		/* Sleep until something happens or we time out */
 		ImmediateInterruptOK = true;
 		CHECK_FOR_INTERRUPTS();
+		Assert(MyProcPort);
 		WaitLatchOrSocket(&MyWalSnd->latch, wakeEvents,
 						  MyProcPort->sock, sleeptime);
 		ImmediateInterruptOK = false;
@@ -1317,6 +1318,7 @@ WalSndWaitForWal(XLogRecPtr loc)
 
 		ImmediateInterruptOK = true;
 		CHECK_FOR_INTERRUPTS();
+		Assert(MyProcPort);
 		WaitLatchOrSocket(&MyWalSnd->latch, wakeEvents,
 						  MyProcPort->sock, sleeptime);
 		ImmediateInterruptOK = false;
@@ -2017,6 +2019,7 @@ WalSndLoop(WalSndSendDataCallback send_data)
 			/* Sleep until something happens or we time out */
 			ImmediateInterruptOK = true;
 			CHECK_FOR_INTERRUPTS();
+			Assert(MyProcPort);
 			WaitLatchOrSocket(&MyWalSnd->latch, wakeEvents,
 							  MyProcPort->sock, sleeptime);
 			ImmediateInterruptOK = false;
