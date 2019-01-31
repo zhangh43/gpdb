@@ -1254,9 +1254,7 @@ ChangeToSuperuser()
 		else
 		{
 			SetSessionUserId(userOid, true);
-			oldcontext = MemoryContextSwitchTo(TopMemoryContext);
 			pfree(newuser);
-			MemoryContextSwitchTo(oldcontext);
 		}
 	}
 
@@ -1266,16 +1264,11 @@ ChangeToSuperuser()
 static void
 RestoreToUser(char *olduser)
 {
-	MemoryContext oldcontext;
-
 	if (!IsAuthenticatedUserSuperUser())
 	{
 		if (MyProcPort)
 		{
-			oldcontext = MemoryContextSwitchTo(TopMemoryContext);
 			pfree(MyProcPort->user_name);
-			MemoryContextSwitchTo(oldcontext);
-
 			MyProcPort->user_name = olduser;
 		}
 		/* Background worker also use GetAuthenticatedUserId() to reset session user. */
