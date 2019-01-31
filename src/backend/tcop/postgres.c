@@ -5879,9 +5879,6 @@ log_disconnections(int code, Datum arg __attribute__((unused)))
 				minutes,
 				seconds;
 
-	/* ensure port is not NULL */
-	if (port == NULL)
-		return;
 	TimestampDifference(port->SessionStartTime,
 						GetCurrentTimestamp(),
 						&secs, &usecs);

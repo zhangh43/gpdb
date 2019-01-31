@@ -859,7 +859,6 @@ RemoveSocketFiles(void)
 static void
 pq_set_nonblocking(bool nonblocking)
 {
-	Assert(MyProcPort);
 	if (MyProcPort->noblock == nonblocking)
 		return;
 
@@ -897,8 +896,6 @@ pq_set_nonblocking(bool nonblocking)
 static int
 pq_recvbuf(void)
 {
-	Assert(MyProcPort);
-
 	if (PqRecvPointer > 0)
 	{
 		if (PqRecvLength > PqRecvPointer)
@@ -966,8 +963,6 @@ pq_recvbuf(void)
 bool
 pq_waitForDataUsingSelect(void)
 {
-	Assert(MyProcPort);
-
 	if ( PqRecvPointer < PqRecvLength)
 	{
 		/* we already have data in the buffer ... so done */
@@ -1064,8 +1059,6 @@ pq_getbyte_if_available(unsigned char *c)
 	int			r;
 
 	Assert(PqCommReadingMsg);
-
-	Assert(MyProcPort);
 
 	if (PqRecvPointer < PqRecvLength)
 	{
@@ -1386,7 +1379,6 @@ pq_send_mutex_lock()
 	int count = PQ_BUSY_TEST_COUNT_IN_EXITING;
 	int mutex_res;
 
-	Assert(MyProcPort);
 	do
 	{
 		mutex_res = pthread_mutex_trylock(&send_mutex);
@@ -1539,7 +1531,6 @@ internal_flush(void)
 	char	   *bufptr = PqSendBuffer + PqSendStart;
 	char	   *bufend = PqSendBuffer + PqSendPointer;
 
-	Assert(MyProcPort);
 	while (bufptr < bufend)
 	{
 		int			r;
