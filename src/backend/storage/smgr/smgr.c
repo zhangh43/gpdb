@@ -38,12 +38,18 @@
  */
 static HTAB *SMgrRelationHash = NULL;
 
+/* hash table for SMgrRelation_ao*/
+static HTAB *SMgrRelationaoHash = NULL;
+
 static SMgrRelation first_unowned_reln = NULL;
+static SMgrRelation_ao first_unowned_reln_ao = NULL;
 
 /* local function prototypes */
 static void smgrshutdown(int code, Datum arg);
 static void add_to_unowned_list(SMgrRelation reln);
+static void add_to_unowned_list_ao(SMgrRelation_ao reln);
 static void remove_from_unowned_list(SMgrRelation reln);
+static void remove_from_unowned_list_ao(SMgrRelation_ao reln);
 
 
 /*
@@ -343,20 +349,6 @@ smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 							isRedo);
 
 	mdcreate(reln, forknum, isRedo);
-}
-
-/*
- *		smgrcreate_ao() -- Create a new AO relation segment.
- *		Given a RelFileNode, cause the underlying disk file for the
- *		AO segment to be created.
- *
- *		If isRedo is true, it is okay for the underlying file to exist
- *		already because we are in a WAL replay sequence.
- */
-void
-smgrcreate_ao(RelFileNodeBackend rnode, int32 segmentFileNum, bool isRedo)
-{
-	mdcreate_ao(rnode, segmentFileNum, isRedo);
 }
 
 /*
@@ -692,4 +684,226 @@ AtEOXact_SMgr(void)
 		Assert(first_unowned_reln->smgr_owner == NULL);
 		smgrclose(first_unowned_reln);
 	}
+}
+
+
+/*
+ * Below are smgr interfaces for AO/CO tables
+ */
+
+/*
+ *	smgropen_ao() -- Return an SMgrRelation_ao object, creating it if need be.
+ *
+ *		This does not attempt to actually open the underlying file.
+ */
+SMgrRelation_ao
+smgropen_ao(RelFileNode rnode, BackendId backend)
+{
+	RelFileNodeBackend brnode;
+	SMgrRelation_ao reln;
+	bool		found;
+
+	/* GPDB: don't support MyBackendId as a possible backend. */
+	Assert(backend == InvalidBackendId || backend == TempRelBackendId);
+
+	if (SMgrRelationaoHash == NULL)
+	{
+		/* First time through: initialize the hash table */
+		HASHCTL		ctl;
+
+		MemSet(&ctl, 0, sizeof(ctl));
+		ctl.keysize = sizeof(RelFileNodeBackend);
+		ctl.entrysize = sizeof(SMgrRelationData_ao);
+		ctl.hash = tag_hash;
+		SMgrRelationaoHash = hash_create("smgr relation table for ao", 400,
+									   &ctl, HASH_ELEM | HASH_FUNCTION);
+		first_unowned_reln_ao = NULL;
+	}
+
+	/* Look up or create an entry */
+	brnode.node = rnode;
+	brnode.backend = backend;
+	reln = (SMgrRelation_ao) hash_search(SMgrRelationaoHash,
+									  (void *) &brnode,
+									  HASH_ENTER, &found);
+
+	/* Initialize it if not present before */
+	if (!found)
+	{
+		/* hash_search already filled in the lookup key */
+		reln->smgr_owner = NULL;
+		reln->smgr_which = 0;	/* we only have md.c at present */
+
+		/* First time through: initialize the hash table */
+		md_init_fd_table_ao(reln);
+
+		/* it has no owner yet */
+		add_to_unowned_list_ao(reln);
+	}
+
+	return reln;
+}
+
+/*
+ * smgrsetowner_ao() -- Establish a long-lived reference to an SMgrRelation_ao object
+ *
+ * There can be only one owner at a time; this is sufficient since currently
+ * the only such owners exist in the relcache.
+ */
+void
+smgrsetowner_ao(SMgrRelation_ao *owner, SMgrRelation_ao reln)
+{
+	/* We don't support "disowning" an SMgrRelation here, use smgrclearowner */
+	Assert(owner != NULL);
+
+	/*
+	 * First, unhook any old owner.  (Normally there shouldn't be any, but it
+	 * seems possible that this can happen during swap_relation_files()
+	 * depending on the order of processing.  It's ok to close the old
+	 * relcache entry early in that case.)
+	 *
+	 * If there isn't an old owner, then the reln should be in the unowned
+	 * list, and we need to remove it.
+	 */
+	if (reln->smgr_owner)
+		*(reln->smgr_owner) = NULL;
+	else
+		remove_from_unowned_list_ao(reln);
+
+	/* Now establish the ownership relationship. */
+	reln->smgr_owner = owner;
+	*owner = reln;
+}
+
+/*
+ * smgrclearowner() -- Remove long-lived reference to an SMgrRelation object
+ *					   if one exists
+ */
+void
+smgrclearowner_ao(SMgrRelation_ao *owner, SMgrRelation_ao reln)
+{
+	/* Do nothing if the SMgrRelation object is not owned by the owner */
+	if (reln->smgr_owner != owner)
+		return;
+
+	/* unset the owner's reference */
+	*owner = NULL;
+
+	/* unset our reference to the owner */
+	reln->smgr_owner = NULL;
+
+	add_to_unowned_list_ao(reln);
+}
+
+/*
+ * add_to_unowned_list_ao -- link an SMgrRelation_ao onto the unowned list
+ *
+ * Check remove_from_unowned_list_ao()'s comments for performance
+ * considerations.
+ */
+static void
+add_to_unowned_list_ao(SMgrRelation_ao reln)
+{
+	/* place it at head of the list (to make smgrsetowner cheap) */
+	reln->next_unowned_reln_ao = first_unowned_reln_ao;
+	first_unowned_reln_ao = reln;
+}
+
+/*
+ * remove_from_unowned_list_ao -- unlink an SMgrRelation_ao from the unowned list
+ *
+ * If the reln is not present in the list, nothing happens.  Typically this
+ * would be caller error, but there seems no reason to throw an error.
+ *
+ * In the worst case this could be rather slow; but in all the cases that seem
+ * likely to be performance-critical, the reln being sought will actually be
+ * first in the list.  Furthermore, the number of unowned relns touched in any
+ * one transaction shouldn't be all that high typically.  So it doesn't seem
+ * worth expending the additional space and management logic needed for a
+ * doubly-linked list.
+ */
+static void
+remove_from_unowned_list_ao(SMgrRelation_ao reln)
+{
+	SMgrRelation_ao *link;
+	SMgrRelation_ao cur;
+
+	for (link = &first_unowned_reln_ao, cur = *link;
+		 cur != NULL;
+		 link = &cur->next_unowned_reln_ao, cur = *link)
+	{
+		if (cur == reln)
+		{
+			*link = cur->next_unowned_reln_ao;
+			cur->next_unowned_reln_ao = NULL;
+			break;
+		}
+	}
+}
+
+/*
+ *		smgrcreate_ao() -- Create a new AO relation segment.
+ *		Given a RelFileNode, cause the underlying disk file for the
+ *		AO segment to be created.
+ *
+ *		If isRedo is true, it is okay for the underlying file to exist
+ *		already because we are in a WAL replay sequence.
+ */
+void
+smgrcreate_ao(SMgrRelation_ao reln, int32 segmentFileNum, bool isRedo)
+{
+	mdcreate_ao(reln, segmentFileNum, isRedo);
+}
+
+/*
+ *  smgrwrite_ao() -- Append data into segment file of AO table.
+ *      This is used to write data for AO table. Since AO table doesn't
+ *      use BufferManager, it doesn't write at block level but flush data
+ *      to disk when AO buffer is full. Unlike heap table which calculate
+ *      the segment file based on block number, AO segment file doesn't
+ *      have size limit and the target segment file is specified before
+ *      the AO table is being inserted.
+ *
+ *      Note that AO table only supports append data at the end of the file,
+ *      as a result, smgrextend_ao and smgrwrite_ao has the same semantic, we
+ *      only keep smgrwrite_ao for simplicity.
+ *
+ *      skipFsync flag is not needed, AO table doesn't use bgwriter's fsyncing,
+ */
+int
+smgrwrite_ao(SMgrRelation_ao reln, int segmentFileNum, char *buffer, int len)
+{
+	return mdwrite_ao(reln, segmentFileNum, buffer, len);
+}
+
+/*
+ *
+ */
+void smgrseek_ao(SMgrRelation_ao reln, int segmentFileNum, int64 seekpos)
+{
+	mdseek_ao(reln, segmentFileNum, seekpos);
+}
+
+/*
+ *
+ */
+void smgrfsync_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	mdfsync_ao(reln, segmentFileNum);
+}
+
+/*
+ *
+ */
+void smgrclosefile_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	mdclosefile_ao(reln, segmentFileNum);
+}
+
+/*
+ *
+ */
+bool smgrexists_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	return mdexists_ao(reln, segmentFileNum);
 }

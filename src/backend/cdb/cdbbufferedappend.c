@@ -55,7 +55,8 @@ BufferedAppendInit(BufferedAppend *bufferedAppend,
 				   int32 memoryLen,
 				   int32 maxBufferLen,
 				   int32 maxLargeWriteLen,
-				   char *relationName)
+				   char *relationName,
+				   Relation rel)
 {
 	Assert(bufferedAppend != NULL);
 	Assert(memory != NULL);
@@ -94,9 +95,11 @@ BufferedAppendInit(BufferedAppend *bufferedAppend,
 	/*
 	 * File level members.
 	 */
-	bufferedAppend->file = -1;
 	bufferedAppend->filePathName = NULL;
 	bufferedAppend->fileLen = 0;
+
+	/* AO Relation members. */
+	bufferedAppend->aoi_rel = rel;
 }
 
 /*
@@ -108,7 +111,6 @@ BufferedAppendInit(BufferedAppend *bufferedAppend,
  */
 void
 BufferedAppendSetFile(BufferedAppend *bufferedAppend,
-					  File file,
 					  RelFileNodeBackend relFileNode,
 					  int32 segmentFileNum,
 					  char *filePathName,
@@ -127,7 +129,6 @@ BufferedAppendSetFile(BufferedAppend *bufferedAppend,
 	Assert(eof >= 0);
 
 	bufferedAppend->largeWritePosition = eof;
-	bufferedAppend->file = file;
 	bufferedAppend->relFileNode = relFileNode;
 	bufferedAppend->segmentFileNum = segmentFileNum;
 	bufferedAppend->filePathName = filePathName;
@@ -146,6 +147,8 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 	int32		bytestotal;
 	uint8	   *largeWriteMemory;
 
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(bufferedAppend->aoi_rel);
 #ifdef USE_ASSERT_CHECKING
 	{
 		int64		currentWritePosition;
@@ -176,9 +179,11 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 	{
 		int32		byteswritten;
 
-		byteswritten = FileWrite(bufferedAppend->file,
-								 (char *) largeWriteMemory + bytestotal,
-								 bytesleft);
+		byteswritten = smgrwrite_ao(bufferedAppend->aoi_rel->rd_smgr_ao,
+				bufferedAppend->segmentFileNum,
+				(char *) largeWriteMemory + bytestotal,
+				bytesleft);
+
 		if (byteswritten < 0)
 			ereport(ERROR,
 					(errcode_for_file_access(),
@@ -414,7 +419,6 @@ BufferedAppendCompleteFile(BufferedAppend *bufferedAppend,
 
 	bufferedAppend->fileLen = 0;
 	bufferedAppend->fileLen_uncompressed = 0;
-	bufferedAppend->file = -1;
 	bufferedAppend->filePathName = NULL;
 }
 

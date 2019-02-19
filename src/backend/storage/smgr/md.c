@@ -123,6 +123,12 @@ typedef struct _MdfdVec
 	struct _MdfdVec *mdfd_chain;	/* next segment, or NULL */
 } MdfdVec;
 
+typedef struct _Mdfd_ao
+{
+	int		mdfd_segno;		/* segment number, from 0 */
+	File		mdfd_vfd;		/* fd number in fd.c's pool */
+} Mdfd_ao;
+
 static MemoryContext MdCxt;		/* context for all md.c allocations */
 
 
@@ -182,6 +188,7 @@ static void mdunlinkfork(RelFileNodeBackend rnode, ForkNumber forkNum,
 			 bool isRedo, char relstorage);
 static MdfdVec *mdopen(SMgrRelation reln, ForkNumber forknum,
 	   ExtensionBehavior behavior);
+static File mdopen_ao(SMgrRelation_ao reln, int segmentFileNum);
 static void register_dirty_segment(SMgrRelation reln, ForkNumber forknum,
 					   MdfdVec *seg);
 static void register_unlink(RelFileNodeBackend rnode);
@@ -328,13 +335,13 @@ mdcreate(SMgrRelation reln, ForkNumber forkNum, bool isRedo)
  * If isRedo is true, it's okay for the file to exist already.
  */
 void
-mdcreate_ao(RelFileNodeBackend rnode, int32 segmentFileNum, bool isRedo)
+mdcreate_ao(SMgrRelation_ao reln, int32 segmentFileNum, bool isRedo)
 {
 	char	   *path;
 	char		buf[MAXPGPATH];
 	File		fd;
 
-	path = aorelpath(rnode, segmentFileNum);
+	path = aorelpath(reln->smgr_rnode, segmentFileNum);
 
 	fd = PathNameOpenFile(path, O_RDWR | O_CREAT | O_EXCL | PG_BINARY, 0600);
 
@@ -658,6 +665,81 @@ mdopen(SMgrRelation reln, ForkNumber forknum, ExtensionBehavior behavior)
 }
 
 /*
+ * mdopen_ao() -- Open the specified AO relation segment file.
+ *
+ * Note that for AO table, data will be written into one segment
+ * file per QE. So we need to specify the segmentFileNum to open
+ * the target segment file.
+ *
+ * Store the opened segment file handler into md_fd hashtable.
+ */
+static File
+mdopen_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	File		fd;
+	char 	*path;
+	bool found;
+	struct _Mdfd_ao *mfd;
+
+	mfd = (struct _Mdfd_ao*) hash_search(reln->ao_md_fd_table,
+											  (void *) &segmentFileNum,
+											  HASH_ENTER, &found);
+	/* open segment file if it's not opened yet */
+	if (found)
+	{
+		return mfd->mdfd_vfd;
+	}
+	else
+	{
+		mfd->mdfd_segno = segmentFileNum;
+
+		path = aorelpath(reln->smgr_rnode, segmentFileNum);
+
+		errno = 0;
+		int			fileFlags = O_RDWR | PG_BINARY;
+		fd = PathNameOpenFile(path, fileFlags, 0600);
+		if (fd < 0)
+			ereport(ERROR,
+					(errcode_for_file_access(),
+					 errmsg("could not open segment file \"%s\": %m",
+							path)));
+		mfd->mdfd_vfd = fd;
+	}
+
+	return fd;
+}
+
+/*
+ *
+ */
+void
+mdseek_ao(SMgrRelation_ao reln, int segmentFileNum, int64 seekpos)
+{
+	File fd;
+	int64		seekResult;
+
+	fd = mdopen_ao(reln, segmentFileNum);
+
+	/*
+	 * Seek to the logical EOF write position.
+	 */
+	seekResult = FileSeek(fd, seekpos, SEEK_SET);
+	if (seekResult != seekpos)
+	{
+		/*TODO: also clear the hash table*/
+		FileClose(fd);
+
+		ereport(ERROR,
+			(errcode_for_file_access(),
+			 errmsg("Error on seek segment file %d  FileSeek offset = " INT64_FORMAT ".  Error code = %d (%s)",
+					fd,
+					seekpos,
+					(int) seekResult,
+					strerror((int) seekResult))));
+	}
+}
+
+/*
  *	mdclose() -- Close the specified relation, if it isn't closed already.
  */
 void
@@ -839,6 +921,22 @@ mdwrite(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 	if (!skipFsync && !SmgrIsTemp(reln))
 		register_dirty_segment(reln, forknum, v);
 }
+
+/*
+ *	mdwrite() -- Write the supplied block at the appropriate location.
+ *
+ *		This is to be used only for updating already-existing blocks of a
+ *		relation (ie, those before the current EOF).  To extend a relation,
+ *		use mdextend().
+ */
+int
+mdwrite_ao(SMgrRelation_ao reln, int segmentFileNum, char *buffer, int len)
+{
+	File fd;
+	fd = mdopen_ao(reln, segmentFileNum);
+	return FileWrite(fd, buffer, len);
+}
+
 
 /*
  *	mdnblocks() -- Get the number of blocks stored in a relation.
@@ -1898,4 +1996,64 @@ _mdnblocks(SMgrRelation reln, ForkNumber forknum, MdfdVec *seg)
 						FilePathName(seg->mdfd_vfd))));
 	/* note that this calculation will ignore any partial block at EOF */
 	return (BlockNumber) (len / BLCKSZ);
+}
+
+/*
+ *
+ */
+void
+md_init_fd_table_ao(SMgrRelation_ao reln)
+{
+	/* First time through: initialize the hash table */
+	HASHCTL		ctl;
+
+	MemSet(&ctl, 0, sizeof(ctl));
+	ctl.keysize = sizeof(int);
+	ctl.entrysize = sizeof(struct _Mdfd_ao);
+	ctl.hash = tag_hash;
+	reln->ao_md_fd_table = hash_create("smgr relation table for AO", 400,
+										   &ctl, HASH_ELEM | HASH_FUNCTION);
+}
+
+/*
+ *
+ */
+void mdfsync_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	File fd;
+	fd = mdopen_ao(reln, segmentFileNum);
+	if (FileSync(fd) != 0)
+		ereport(ERROR,
+			(errcode_for_file_access(),
+			 errmsg("Could not flush (fsync) segment file %d to disk: %m",
+					fd)));
+	return;
+
+}
+
+/*
+ *
+ */
+void mdclosefile_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	File fd;
+	fd = mdopen_ao(reln, segmentFileNum);
+	FileClose(fd);
+	hash_search(reln->ao_md_fd_table,
+			(void *) &segmentFileNum,
+			HASH_REMOVE, NULL);
+}
+
+/*
+ *
+ */
+bool mdexists_ao(SMgrRelation_ao reln, int segmentFileNum)
+{
+	bool found;
+
+	hash_search(reln->ao_md_fd_table,
+			(void *) &segmentFileNum,
+			HASH_FIND, &found);
+
+	return found;
 }

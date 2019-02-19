@@ -75,6 +75,40 @@ typedef struct SMgrRelationData
 
 typedef SMgrRelationData *SMgrRelation;
 
+/*
+ * Similar to SMgrRelationData, SMgrRelationData_ao is used to cache
+ * file handles for AO tables.
+ *
+ * Different from SMgrRelationData, SMgrRelationData_ao has only one
+ * AO FORK. Also there is no concept of BlockNumber. Segment files are
+ * not calculated by BlockNumber, but are specified by segno.
+ *
+ * File handles are stored in hash table instead of link list to support
+ * random access based on segno.
+ */
+typedef struct SMgrRelationData_ao
+{
+	/* rnode is the hashtable lookup key, so it must be first! */
+	RelFileNodeBackend smgr_rnode;		/* relation physical identifier */
+
+	/* pointer to owning pointer, or NULL if none */
+	struct SMgrRelationData_ao **smgr_owner;
+
+	/*
+	 * Fields below here are intended to be private to smgr.c and its
+	 * submodules.  Do not touch them from elsewhere.
+	 */
+	int			smgr_which;		/* storage manager selector */
+
+	/* for aomd.c */
+	struct HTAB *ao_md_fd_table;
+
+	/* if unowned, list link in list of all unowned SMgrRelation_aos */
+	struct SMgrRelationData_ao *next_unowned_reln_ao;
+} SMgrRelationData_ao;
+
+typedef SMgrRelationData_ao *SMgrRelation_ao;
+
 #define SmgrIsTemp(smgr) \
 	RelFileNodeBackendIsTemp((smgr)->smgr_rnode)
 
@@ -87,7 +121,7 @@ extern void smgrclose(SMgrRelation reln);
 extern void smgrcloseall(void);
 extern void smgrclosenode(RelFileNodeBackend rnode);
 extern void smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo);
-extern void smgrcreate_ao(RelFileNodeBackend rnode, int32 segmentFileNum, bool isRedo);
+extern void smgrcreate_ao(SMgrRelation_ao reln, int32 segmentFileNum, bool isRedo);
 extern void smgrdounlink(SMgrRelation reln, bool isRedo, char relstorage);
 extern void smgrdounlinkall(SMgrRelation *rels, int nrels, bool isRedo, char *relstorages);
 extern void smgrextend(SMgrRelation reln, ForkNumber forknum,
@@ -107,6 +141,15 @@ extern void smgrsync(void);
 extern void smgrpostckpt(void);
 extern void AtEOXact_SMgr(void);
 
+/* for AO table */
+extern SMgrRelation_ao smgropen_ao(RelFileNode rnode, BackendId backend);
+extern void smgrsetowner_ao(SMgrRelation_ao *owner, SMgrRelation_ao reln);
+extern void smgrclearowner_ao(SMgrRelation_ao *owner, SMgrRelation_ao reln);
+extern int smgrwrite_ao(SMgrRelation_ao reln, int segmentFileNum, char *buffer, int len);
+extern void smgrseek_ao(SMgrRelation_ao reln, int segmentFileNum, int64 seekpos);
+extern void smgrfsync_ao(SMgrRelation_ao reln, int segmentFileNum);
+extern void smgrclosefile_ao(SMgrRelation_ao reln, int segmentFileNum);
+extern bool smgrexists_ao(SMgrRelation_ao reln, int segmentFileNum);
 
 /* internals: move me elsewhere -- ay 7/94 */
 
@@ -114,8 +157,9 @@ extern void AtEOXact_SMgr(void);
 extern void mdinit(void);
 extern void mdclose(SMgrRelation reln, ForkNumber forknum);
 extern void mdcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo);
-extern void mdcreate_ao(RelFileNodeBackend rnode, int32 segmentFileNum, bool isRedo);
+extern void mdcreate_ao(SMgrRelation_ao reln, int32 segmentFileNum, bool isRedo);
 extern bool mdexists(SMgrRelation reln, ForkNumber forknum);
+extern bool mdexists_ao(SMgrRelation_ao reln, int segmentFileNum);
 extern void mdunlink(RelFileNodeBackend rnode, ForkNumber forknum, bool isRedo, char relstorage);
 extern void mdextend(SMgrRelation reln, ForkNumber forknum,
 		 BlockNumber blocknum, char *buffer, bool skipFsync);
@@ -125,6 +169,7 @@ extern void mdread(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 	   char *buffer);
 extern void mdwrite(SMgrRelation reln, ForkNumber forknum,
 		BlockNumber blocknum, char *buffer, bool skipFsync);
+extern int mdwrite_ao(SMgrRelation_ao reln, int segmentFileNum, char *buffer, int len);
 extern BlockNumber mdnblocks(SMgrRelation reln, ForkNumber forknum);
 extern void mdtruncate(SMgrRelation reln, ForkNumber forknum,
 					   BlockNumber nblocks);
@@ -140,6 +185,10 @@ extern void ForgetRelationFsyncRequests(RelFileNode rnode, ForkNumber forknum);
 extern void ForgetDatabaseFsyncRequests(Oid dbid);
 extern void DropRelationFiles(RelFileNodeWithStorageType *delrels, int ndelrels, bool isRedo);
 
+extern void mdseek_ao(SMgrRelation_ao reln, int segmentFileNum, int64 seekpos);
+extern void mdfsync_ao(SMgrRelation_ao reln, int segmentFileNum);
+extern void mdclosefile_ao(SMgrRelation_ao reln, int segmentFileNum);
+extern void md_init_fd_table_ao(SMgrRelation_ao reln);
 /* smgrtype.c */
 extern Datum smgrout(PG_FUNCTION_ARGS);
 extern Datum smgrin(PG_FUNCTION_ARGS);

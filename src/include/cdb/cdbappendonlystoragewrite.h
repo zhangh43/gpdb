@@ -174,6 +174,9 @@ typedef struct AppendOnlyStorageWrite
 
 	bool needsWAL;
 
+	/* AO Relation pointer */
+	Relation		aoi_rel;
+
 } AppendOnlyStorageWrite;
 
 extern void AppendOnlyStorageWrite_Init(AppendOnlyStorageWrite *storageWrite,
@@ -194,7 +197,8 @@ extern void AppendOnlyStorageWrite_OpenFile(AppendOnlyStorageWrite *storageWrite
 								int64 logicalEof,
 								int64 fileLen_uncompressed,
 								RelFileNodeBackend *relFileNode,
-								int32 segmentFileNum);
+								int32 segmentFileNum,
+								Relation rel);
 extern void AppendOnlyStorageWrite_FlushAndCloseFile(AppendOnlyStorageWrite *storageWrite,
 											 int64 *newLogicalEof,
 											 int64 *fileLen_uncompressed);

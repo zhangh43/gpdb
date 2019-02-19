@@ -70,6 +70,9 @@ typedef struct DatumStreamWrite
 	 */
 	int64		eof;
 	int64		eofUncompress;
+
+	/* AO Relation pointer */
+	Relation		aoi_rel;
 }	DatumStreamWrite;
 
 typedef enum DatumStreamLargeObjectState
@@ -324,5 +327,7 @@ extern void *datumstreamread_get_upgrade_space(DatumStreamRead *datumStream,
  */
 extern void datumstreamread_block_content(DatumStreamRead * acc);
 extern bool init_datumstream_checksum(char *compName, bool checksum);
+
+extern void set_relation(DatumStreamWrite *dsw, Relation reln);
 
 #endif   /* DATUMSTREAM_H */

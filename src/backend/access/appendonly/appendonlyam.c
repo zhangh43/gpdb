@@ -428,6 +428,9 @@ SetCurrentFileSegForWrite(AppendOnlyInsertDesc aoInsertDesc)
 	int64		varblockcount;
 	int32		fileSegNo;
 
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(aoInsertDesc->aoi_rel);
+
 	rnode.node = aoInsertDesc->aoi_rel->rd_node;
 	rnode.backend = aoInsertDesc->aoi_rel->rd_backend;
 
@@ -500,7 +503,8 @@ SetCurrentFileSegForWrite(AppendOnlyInsertDesc aoInsertDesc)
 									eof,
 									eof_uncompressed,
 									&rnode,
-									aoInsertDesc->cur_segno);
+									aoInsertDesc->cur_segno,
+									aoInsertDesc->aoi_rel);
 
 	/* reset counts */
 	aoInsertDesc->insertCount = 0;
@@ -2593,6 +2597,9 @@ appendonly_insert_init(Relation rel, int segno, bool update_mode)
 
 	StringInfoData titleBuf;
 
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(rel);
+
 	/*
 	 * Get the pg_appendonly information for this table
 	 */
@@ -2715,6 +2722,12 @@ appendonly_insert_init(Relation rel, int segno, bool update_mode)
 	aoInsertDesc->storageWrite.compression_functions = fns;
 	aoInsertDesc->storageWrite.compressionState = cs;
 	aoInsertDesc->storageWrite.verifyWriteCompressionState = verifyCs;
+	/*
+	 * Set relation pointer for storageWrite and bufferedAppend
+	 * TODO: merge into AppendOnlyStorageWrite_Init()
+	 */
+	aoInsertDesc->storageWrite.aoi_rel = rel;
+	aoInsertDesc->storageWrite.bufferedAppend.aoi_rel = rel;
 
 	elogif(Debug_appendonly_print_insert, LOG,
 		   "Append-only insert initialize for table '%s' segment file %u "

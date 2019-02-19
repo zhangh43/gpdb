@@ -76,6 +76,9 @@ typedef struct BufferedAppend
     int64                fileLen;
     int64				 fileLen_uncompressed; /* for calculating compress ratio */
 
+    /* AO Relation pointer */
+    	Relation		aoi_rel;
+
 } BufferedAppend;
 
 /*
@@ -99,14 +102,14 @@ extern void BufferedAppendInit(
 	int32          memoryLen,
 	int32          maxBufferLen,
 	int32          maxLargeWriteLen,
-	char           *relationName);
+	char           *relationName,
+	Relation 	   rel);
 
 /*
  * Takes an open file handle for the next file.
  */
 extern void BufferedAppendSetFile(
     BufferedAppend       *bufferedAppend,
-    File 				 file,
 	RelFileNodeBackend	 relfilenode,
 	int32				 segmentFileNum,
     char				 *filePathName,

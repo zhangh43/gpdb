@@ -164,7 +164,8 @@ open_ds_write(Relation rel, DatumStreamWrite **ds, TupleDesc relationTupleDesc,
 										RelationGetRelationName(rel),
 										/* title */ titleBuf.data,
 										RelationNeedsWAL(rel));
-
+		/* Set Relation ptr */
+		set_relation(ds[i], rel);
 	}
 }
 
@@ -825,6 +826,9 @@ aocs_insert_init(Relation rel, int segno, bool update_mode)
 	AOCSInsertDesc desc;
 	TupleDesc	tupleDesc;
 	int64		firstSequence = 0;
+
+	/* Open SMgrRelation_ao */
+	RelationOpenSmgr(rel);
 
 	desc = (AOCSInsertDesc) palloc0(sizeof(AOCSInsertDescData));
 	desc->aoi_rel = rel;
@@ -1802,6 +1806,9 @@ aocs_addcol_init(Relation rel,
 	desc->rel = rel;
 	desc->cur_segno = -1;
 
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(rel);
+
 	/*
 	 * Rewrite catalog phase of alter table has updated catalog with info for
 	 * new columns, which is available through rel.
@@ -1826,6 +1833,8 @@ aocs_addcol_init(Relation rel,
 											   attr, RelationGetRelationName(rel),
 											   titleBuf.data,
 											   RelationNeedsWAL(rel));
+		/* Set Relation Ptr */
+		set_relation(desc->dsw[i], rel);
 	}
 	return desc;
 }

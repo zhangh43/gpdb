@@ -191,6 +191,7 @@ typedef struct RelationData
 	 */
 	Form_pg_appendonly rd_appendonly;
 	struct HeapTupleData *rd_aotuple;		/* all of pg_appendonly tuple */
+	struct SMgrRelationData_ao *rd_smgr_ao;	/* cached file handle, or NULL */
 
 	/* use "struct" here to avoid needing to include pgstat.h: */
 	struct PgStat_TableStatus *pgstat_info;		/* statistics collection area */
@@ -456,7 +457,9 @@ typedef struct ViewOptions
  */
 #define RelationOpenSmgr(relation) \
 	do { \
-		if ((relation)->rd_smgr == NULL) \
+		if ((relation)->rd_smgr_ao == NULL && relstorage_is_ao((relation)->rd_rel->relstorage)) \
+			smgrsetowner_ao(&((relation)->rd_smgr_ao), smgropen_ao((relation)->rd_node, (relation)->rd_backend)); \
+		if  ((relation)->rd_smgr == NULL) \
 			smgrsetowner(&((relation)->rd_smgr), smgropen((relation)->rd_node, (relation)->rd_backend)); \
 	} while (0)
 

@@ -34,6 +34,7 @@
 #include "storage/gp_compress.h"
 #include "utils/faultinjector.h"
 #include "utils/guc.h"
+#include "utils/rel.h"
 
 
 /*----------------------------------------------------------------
@@ -146,7 +147,8 @@ AppendOnlyStorageWrite_Init(AppendOnlyStorageWrite *storageWrite,
 					   memoryLen,
 					    /* maxBufferLen */ storageWrite->maxBufferWithCompressionOverrrunLen,
 					   storageWrite->largeWriteLen,
-					   relationName);
+					   relationName,
+					   storageWrite->aoi_rel);
 
 	elogif(Debug_appendonly_print_insert || Debug_appendonly_print_append_block, LOG,
 		   "Append-Only Storage Write initialize for table '%s' (compression = %s, compression level %d, maximum buffer length %d, large write length %d)",
@@ -168,7 +170,6 @@ AppendOnlyStorageWrite_Init(AppendOnlyStorageWrite *storageWrite,
 		Assert(storageWrite->verifyWriteBuffer == NULL);
 	}
 
-	storageWrite->file = -1;
 	storageWrite->formatVersion = -1;
 	storageWrite->needsWAL = needsWAL;
 
@@ -260,11 +261,14 @@ AppendOnlyStorageWrite_TransactionCreateFile(AppendOnlyStorageWrite *storageWrit
 {
 	Assert(segmentFileNum > 0);
 
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(storageWrite->aoi_rel);
+
 	/* The file might already exist. that's OK */
 	// WALREP_FIXME: Pass isRedo == true, so that you don't get an error if it
 	// exists already. That's currently OK, but in the future, other things
 	// might depend on the isRedo flag, like whether to WAL-log the creation.
-	smgrcreate_ao(*relFileNode, segmentFileNum, true);
+	smgrcreate_ao(storageWrite->aoi_rel->rd_smgr_ao, segmentFileNum, true);
 
 	/*
 	 * Create a WAL record, so that the segfile is also created after crash or
@@ -295,16 +299,18 @@ AppendOnlyStorageWrite_OpenFile(AppendOnlyStorageWrite *storageWrite,
 								int64 logicalEof,
 								int64 fileLen_uncompressed,
 								RelFileNodeBackend *relFileNode,
-								int32 segmentFileNum)
+								int32 segmentFileNum,
+								Relation rel)
 {
-	File		file;
-	int64		seekResult;
 	MemoryContext oldMemoryContext;
 
 	Assert(storageWrite != NULL);
 	Assert(storageWrite->isActive);
 
 	Assert(filePathName != NULL);
+
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(rel);
 
 	/*
 	 * Assume that we only write in the current latest format. (it's redundant
@@ -316,40 +322,10 @@ AppendOnlyStorageWrite_OpenFile(AppendOnlyStorageWrite *storageWrite,
 				 errmsg("cannot write append-only table version %d", version)));
 
 	/*
-	 * Open or create the file for write.
+	 *
 	 */
-	char	   *path = aorelpath(*relFileNode, segmentFileNum);
+	smgrseek_ao(rel->rd_smgr_ao, segmentFileNum, logicalEof);
 
-	errno = 0;
-
-	int			fileFlags = O_RDWR | PG_BINARY;
-	file = PathNameOpenFile(path, fileFlags, 0600);
-	if (file < 0)
-		ereport(ERROR,
-				(errcode_for_file_access(),
-				 errmsg("Append-only Storage Write could not open segment file %s \"%s\" for relation \"%s\": %m",
-						path, filePathName,
-						storageWrite->relationName)));
-
-	/*
-	 * Seek to the logical EOF write position.
-	 */
-	seekResult = FileSeek(file, logicalEof, SEEK_SET);
-	if (seekResult != logicalEof)
-	{
-		FileClose(file);
-
-		ereport(ERROR,
-				(errcode(ERRCODE_IO_ERROR),
-				 errmsg("Append-only Storage Write error on segment file '%s' for relation '%s'.  FileSeek offset = " INT64_FORMAT ".  Error code = %d (%s)",
-						filePathName,
-						storageWrite->relationName,
-						logicalEof,
-						(int) seekResult,
-						strerror((int) seekResult))));
-	}
-
-	storageWrite->file = file;
 	storageWrite->formatVersion = version;
 	storageWrite->startEof = logicalEof;
 	storageWrite->relFileNode = *relFileNode;
@@ -373,7 +349,6 @@ AppendOnlyStorageWrite_OpenFile(AppendOnlyStorageWrite *storageWrite,
 	 * Tell the BufferedAppend module about the file we just opened.
 	 */
 	BufferedAppendSetFile(&storageWrite->bufferedAppend,
-						  storageWrite->file,
 						  storageWrite->relFileNode,
 						  storageWrite->segmentFileNum,
 						  storageWrite->segmentFileName,
@@ -467,7 +442,10 @@ AppendOnlyStorageWrite_FlushAndCloseFile(
 	Assert(storageWrite != NULL);
 	Assert(storageWrite->isActive);
 
-	if (storageWrite->file == -1)
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(storageWrite->aoi_rel);
+
+	if (!smgrexists_ao(storageWrite->aoi_rel->rd_smgr_ao, storageWrite->segmentFileNum))
 	{
 		*newLogicalEof = 0;
 		*fileLen_uncompressed = 0;
@@ -494,15 +472,10 @@ AppendOnlyStorageWrite_FlushAndCloseFile(
 	 * We must take care of fsynching to disk ourselves since the fd API won't
 	 * do it for us.
 	 */
+	smgrfsync_ao(storageWrite->aoi_rel->rd_smgr_ao, storageWrite->segmentFileNum);
 
-	if (FileSync(storageWrite->file) != 0)
-		ereport(ERROR,
-				(errcode_for_file_access(),
-				 errmsg("Could not flush (fsync) Append-Only segment file '%s' to disk for relation '%s': %m",
-						storageWrite->segmentFileName,
-						storageWrite->relationName)));
+	smgrclosefile_ao(storageWrite->aoi_rel->rd_smgr_ao, storageWrite->segmentFileNum);
 
-	storageWrite->file = -1;
 	storageWrite->formatVersion = -1;
 
 	MemSet(&storageWrite->relFileNode, 0, sizeof(RelFileNode));
@@ -526,7 +499,10 @@ AppendOnlyStorageWrite_TransactionFlushAndCloseFile(AppendOnlyStorageWrite *stor
 	Assert(storageWrite != NULL);
 	Assert(storageWrite->isActive);
 
-	if (storageWrite->file == -1)
+	/* Open it at the smgr level if not already done */
+	RelationOpenSmgr(storageWrite->aoi_rel);
+
+	if (!smgrexists_ao(storageWrite->aoi_rel->rd_smgr_ao, storageWrite->segmentFileNum))
 	{
 		*newLogicalEof = 0;
 		*fileLen_uncompressed = 0;

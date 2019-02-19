@@ -818,7 +818,8 @@ datumstreamwrite_open_file(DatumStreamWrite *ds, char *fn, int64 eof, int64 eofU
 									eof,
 									eofUncompressed,
 									relFileNode,
-									segmentFileNum);
+									segmentFileNum,
+									ds->aoi_rel);
 
 	ds->need_close_file = true;
 }
@@ -1619,3 +1620,14 @@ datumstreamread_get_upgrade_space(DatumStreamRead *ds, size_t len)
 
 	return ds->datum_upgrade_buffer;
 }
+
+/*
+ * Set relation pointer for DatumStreamWrite and its sub struct.
+ */
+void set_relation(DatumStreamWrite *dsw, Relation rel)
+{
+	dsw->aoi_rel = rel;
+	dsw->ao_write.aoi_rel = rel;
+	dsw->ao_write.bufferedAppend.aoi_rel = rel;
+}
+
