@@ -146,4 +146,20 @@ extern Datum smgrin(PG_FUNCTION_ARGS);
 extern Datum smgreq(PG_FUNCTION_ARGS);
 extern Datum smgrne(PG_FUNCTION_ARGS);
 
+/*
+ * Hooks for extensions to collect statistics from I/O functions
+ * One example is to record the active relfilenode information.
+ */
+typedef void (*file_create_hook_type)(RelFileNodeBackend rnode);
+extern PGDLLIMPORT file_create_hook_type file_create_hook;
+
+typedef void (*file_extend_hook_type)(RelFileNodeBackend rnode, int length);
+extern PGDLLIMPORT file_extend_hook_type file_extend_hook;
+
+typedef void (*file_truncate_hook_type)(RelFileNodeBackend rnode);
+extern PGDLLIMPORT file_truncate_hook_type file_truncate_hook;
+
+typedef void (*file_unlink_hook_type)(RelFileNodeBackend rnode);
+extern PGDLLIMPORT file_unlink_hook_type file_unlink_hook;
+
 #endif   /* SMGR_H */
