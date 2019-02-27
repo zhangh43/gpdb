@@ -200,6 +200,14 @@ TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
 					    relname)));
 	if (RelationNeedsWAL(rel))
 		xlog_ao_truncate(rel->rd_node, segFileNum, offset);
+
+	if (file_truncate_hook)
+	{
+		RelFileNodeBackend rnode;
+		rnode.node = rel->rd_node;
+		rnode.backend = rel->rd_backend;
+		(*file_truncate_hook)(rnode);
+	}
 }
 
 struct mdunlink_ao_callback_ctx {
@@ -374,6 +382,18 @@ copy_append_only_data(RelFileNode src, RelFileNode dst,
 	copyFiles.useWal = useWal;
 
     ao_foreach_extent_file(copy_append_only_data_perFile, &copyFiles);
+
+    /*
+     * copy destination relation size changed
+     * but we don't know the exact length.
+     */
+	if (file_extend_hook)
+	{
+		RelFileNodeBackend rnode;
+		rnode.node = dst;
+		rnode.backend = backendid;
+		(*file_extend_hook)(rnode, 0);
+	}
 }
 
 static bool
