@@ -824,18 +824,12 @@ execute_extension_script(CreateExtensionStmt *stmt,
 
 	if (client_min_messages < WARNING)
 	{
-		(void) set_config_option("client_min_messages", "warning",
-								 PGC_USERSET, PGC_S_SESSION,
-								 GUC_ACTION_SAVE, true, 0);
 		/* need to dispatch to all segments*/
 		A_Const const_value = {.type = T_A_Const, .val = {.type = T_String, .val.str = pstrdup("warning")}};
 		SetPGVariable("client_min_messages", list_make1(&const_value), true);
 	}
 	if (log_min_messages < WARNING)
 	{
-		(void) set_config_option("log_min_messages", "warning",
-								 PGC_SUSET, PGC_S_SESSION,
-								 GUC_ACTION_SAVE, true, 0);
 		/* need to dispatch to all segments*/
 		A_Const const_value = {.type = T_A_Const, .val = {.type = T_String, .val.str = pstrdup("warning")}};
 		SetPGVariable("log_min_messages", list_make1(&const_value), true);
@@ -861,10 +855,6 @@ execute_extension_script(CreateExtensionStmt *stmt,
 		if (reqname)
 			appendStringInfo(&pathbuf, ", %s", quote_identifier(reqname));
 	}
-
-	(void) set_config_option("search_path", pathbuf.data,
-							 PGC_USERSET, PGC_S_SESSION,
-							 GUC_ACTION_SAVE, true, 0);
 
 	/* need to dispatch 'set search_path' to all segments*/
 	A_Const path_const = {.type = T_A_Const, .val = {.type = T_String, .val.str = pathbuf.data}};
