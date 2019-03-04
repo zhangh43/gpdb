@@ -814,17 +814,32 @@ execute_extension_script(CreateExtensionStmt *stmt,
 	 * We use the equivalent of a function SET option to allow the setting to
 	 * persist for exactly the duration of the script execution.  guc.c also
 	 * takes care of undoing the setting on error.
+	 *
+	 * Note that some GUCs like 'client_min_message','search_path' will be
+	 * modified on the fly without explicit `SET` command to dispatch them.
+	 * As a result, we should dispatch them manually with SetPGVariable
+	 * function.
 	 */
 	save_nestlevel = NewGUCNestLevel();
 
 	if (client_min_messages < WARNING)
+	{
 		(void) set_config_option("client_min_messages", "warning",
 								 PGC_USERSET, PGC_S_SESSION,
 								 GUC_ACTION_SAVE, true, 0);
+		/* need to dispatch to all segments*/
+		A_Const const_value = {.type = T_A_Const, .val = {.type = T_String, .val.str = pstrdup("warning")}};
+		SetPGVariable("client_min_messages", list_make1(&const_value), true);
+	}
 	if (log_min_messages < WARNING)
+	{
 		(void) set_config_option("log_min_messages", "warning",
 								 PGC_SUSET, PGC_S_SESSION,
 								 GUC_ACTION_SAVE, true, 0);
+		/* need to dispatch to all segments*/
+		A_Const const_value = {.type = T_A_Const, .val = {.type = T_String, .val.str = pstrdup("warning")}};
+		SetPGVariable("log_min_messages", list_make1(&const_value), true);
+	}
 
 	/*
 	 * Set up the search path to contain the target schema, then the schemas
@@ -850,6 +865,10 @@ execute_extension_script(CreateExtensionStmt *stmt,
 	(void) set_config_option("search_path", pathbuf.data,
 							 PGC_USERSET, PGC_S_SESSION,
 							 GUC_ACTION_SAVE, true, 0);
+
+	/* need to dispatch 'set search_path' to all segments*/
+	A_Const path_const = {.type = T_A_Const, .val = {.type = T_String, .val.str = pathbuf.data}};
+	SetPGVariable("search_path", list_make1(&path_const), true);
 
 	/*
 	 * Set creating_extension and related variables so that
