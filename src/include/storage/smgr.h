@@ -147,13 +147,14 @@ extern Datum smgreq(PG_FUNCTION_ARGS);
 extern Datum smgrne(PG_FUNCTION_ARGS);
 
 /*
- * Hooks for extensions to collect statistics from I/O functions
- * One example is to record the active relfilenode information.
+ * Hook for plugins to collect statistics from storage functions
+ * For example, disk quota extension will use these hooks to
+ * detect active tables.
  */
 typedef void (*file_create_hook_type)(RelFileNodeBackend rnode);
 extern PGDLLIMPORT file_create_hook_type file_create_hook;
 
-typedef void (*file_extend_hook_type)(RelFileNodeBackend rnode, int length);
+typedef void (*file_extend_hook_type)(RelFileNodeBackend rnode);
 extern PGDLLIMPORT file_extend_hook_type file_extend_hook;
 
 typedef void (*file_truncate_hook_type)(RelFileNodeBackend rnode);

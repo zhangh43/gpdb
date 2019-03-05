@@ -33,8 +33,9 @@
 #include "utils/inval.h"
 
 /*
- * Hook for plugins to collect statistics from smgr functions
- * One example is to record the active relfilenode information.
+ * Hook for plugins to collect statistics from storage functions
+ * For example, disk quota extension will use these hooks to
+ * detect active tables.
  */
 file_create_hook_type file_create_hook = NULL;
 file_extend_hook_type file_extend_hook = NULL;
@@ -539,7 +540,7 @@ smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 {
 	mdextend(reln, forknum, blocknum, buffer, skipFsync);
 	if (file_extend_hook)
-		(*file_extend_hook)(reln->smgr_rnode, BLCKSZ);
+		(*file_extend_hook)(reln->smgr_rnode);
 }
 
 /*

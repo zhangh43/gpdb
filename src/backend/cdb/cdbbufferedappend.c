@@ -190,7 +190,7 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 		bytestotal += byteswritten;
 
 		if (file_extend_hook)
-			(*file_extend_hook)(bufferedAppend->relFileNode, byteswritten);
+			(*file_extend_hook)(bufferedAppend->relFileNode);
 	}
 
 	elogif(Debug_appendonly_print_append_block, LOG,

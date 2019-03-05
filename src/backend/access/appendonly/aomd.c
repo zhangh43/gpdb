@@ -383,16 +383,12 @@ copy_append_only_data(RelFileNode src, RelFileNode dst,
 
     ao_foreach_extent_file(copy_append_only_data_perFile, &copyFiles);
 
-    /*
-     * copy destination relation size changed
-     * but we don't know the exact length.
-     */
 	if (file_extend_hook)
 	{
 		RelFileNodeBackend rnode;
 		rnode.node = dst;
 		rnode.backend = backendid;
-		(*file_extend_hook)(rnode, 0);
+		(*file_extend_hook)(rnode);
 	}
 }
 
