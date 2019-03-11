@@ -38,6 +38,7 @@
 #include "catalog/pg_class.h"
 #include "catalog/heap.h"
 #include "cdb/cdbgang.h"
+#include "utils/guc.h"
 
 static Bitmapset *bitmapsetRead(void);
 
@@ -2978,6 +2979,22 @@ _readGpPolicy(void)
 	READ_DONE();
 }
 
+/*
+ * _readGUCNode
+ */
+static GUCNode *
+_readGUCNode(void)
+{
+	READ_LOCALS(GUCNode);
+
+	READ_STRING_FIELD(name);
+	READ_STRING_FIELD(value);
+	READ_ENUM_FIELD(context, GucContext);
+	READ_ENUM_FIELD(source, GucSource);
+
+	READ_DONE();
+}
+
 
 static void *
 readNodeBinary(void)
@@ -3844,6 +3861,9 @@ readNodeBinary(void)
 				break;
 			case T_AlterTableMoveAllStmt:
 				return_value = _readAlterTableMoveAllStmt();
+				break;
+			case T_GUCNode:
+				return_value = _readGUCNode();
 				break;
 			default:
 				return_value = NULL; /* keep the compiler silent */

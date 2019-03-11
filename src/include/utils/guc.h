@@ -190,6 +190,21 @@ typedef enum
 	GUC_ACTION_SAVE				/* function SET option, or temp assignment */
 } GucAction;
 
+
+/*
+ * Serialized form of GUC. This is used when GUC are
+ * serialized, when dispatching GUCs from QD to QEs.
+ */
+typedef struct GUCNode
+{
+	NodeTag		type;
+
+	char		   *name;
+	char		   *value;
+	GucContext	context;
+	GucSource	source;
+} GUCNode;
+
 #define GUC_QUALIFIER_SEPARATOR '.'
 
 /*
@@ -220,12 +235,26 @@ typedef enum
 #define GUC_DISALLOW_IN_AUTO_FILE	0x00010000	/* can't set in PG_AUTOCONF_FILENAME */
 
 /* GPDB speific */
+/*
+ * Fixme: flag GUC_GPDB_ADDOPT indicates which GUC need to be sync
+ * between QD and QE. Need to go through and recheck this flag for
+ * each GUCs.
+ */
 #define GUC_GPDB_ADDOPT        0x00020000  /* Send by cdbgang */
 #define GUC_DISALLOW_USER_SET  0x00040000 /* Do not allow this GUC to be set by the user */
+#define GUC_GPDB_DTX  0x00080000 /* Distributed transaction related GUCs */
 
 /* GUC lists for gp_guc_list_show().  (List of struct config_generic) */
 extern List    *gp_guc_list_for_explain;
 extern List    *gp_guc_list_for_no_plan;
+
+/*
+ * GUC value changed or transaction abort will turn on this flag
+ * to indicate GUC need to be sync between QD and QE
+ */
+extern bool guc_need_sync_session;
+/* Changed GUC list which need to be pass to QE from QD */
+extern List *guc_list_need_sync_global;
 
 /* GUC vars that are actually declared in guc.c, rather than elsewhere */
 extern bool log_duration;

@@ -24,6 +24,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 2
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -32,6 +36,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 3
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -40,6 +48,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 4
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -48,6 +60,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 5
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -56,6 +72,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 6
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -64,6 +84,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 7
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -72,6 +96,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 8
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -80,6 +108,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 9
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -88,6 +120,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 10
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -96,6 +132,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 11
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -104,6 +144,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 12
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -112,6 +156,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 13
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -120,6 +168,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 14
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -128,6 +180,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 15
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -136,6 +192,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 16
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -144,6 +204,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 17
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -152,6 +216,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 18
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -160,6 +228,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 19
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;
@@ -168,6 +240,10 @@ SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
 
 -- 20
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 SET debug_dtm_action_segment=1;
 SET debug_dtm_action_target=protocol;

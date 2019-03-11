@@ -111,6 +111,18 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	Assert(DispatcherContext);
 	oldContext = MemoryContextSwitchTo(DispatcherContext);
 
+	/*
+	 * if flag guc_need_sync_session is true, should also mark
+	 * all the idle QEs also need to be synchronized.
+	 * For dtx command, need_sync flag should still be on.
+	 */
+	if (guc_need_sync_session)
+	{
+		setSyncFlagForIdleQEs();
+		if (!ds->isNonSyncGUCCommand)
+			guc_need_sync_session = false;
+	}
+
 	if (type == GANGTYPE_PRIMARY_WRITER)
 		segmentType = SEGMENTTYPE_EXPLICT_WRITER;
 	/* for extended query like cursor, must specify a reader */
@@ -125,6 +137,17 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 
 	ds->allocatedGangs = lcons(newGang, ds->allocatedGangs);
 	ds->largestGangSize = Max(ds->largestGangSize, newGang->size);
+
+	/* If any QE need sync GUC, set the whole dispatch state to sync GUC.*/
+	for (i = 0; i < newGang->size; i++)
+	{
+		if(newGang->db_descriptors[i]->guc_need_sync)
+		{
+			ds->guc_need_sync = true;
+			if (!ds->isNonSyncGUCCommand)
+				newGang->db_descriptors[i]->guc_need_sync = false;
+		}
+	}
 
 	ELOG_DISPATCHER_DEBUG("AllocateGang end.");
 
@@ -236,95 +259,13 @@ buildGangDefinition(List *segments, SegmentType segmentType)
 }
 
 /*
- * Add one GUC to the option string.
- */
-static void
-addOneOption(StringInfo string, struct config_generic *guc)
-{
-	Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
-	switch (guc->vartype)
-	{
-		case PGC_BOOL:
-			{
-				struct config_bool *bguc = (struct config_bool *) guc;
-
-				appendStringInfo(string, " -c %s=%s", guc->name, *(bguc->variable) ? "true" : "false");
-				break;
-			}
-		case PGC_INT:
-			{
-				struct config_int *iguc = (struct config_int *) guc;
-
-				appendStringInfo(string, " -c %s=%d", guc->name, *iguc->variable);
-				break;
-			}
-		case PGC_REAL:
-			{
-				struct config_real *rguc = (struct config_real *) guc;
-
-				appendStringInfo(string, " -c %s=%f", guc->name, *rguc->variable);
-				break;
-			}
-		case PGC_STRING:
-			{
-				struct config_string *sguc = (struct config_string *) guc;
-				const char *str = *sguc->variable;
-				int			i;
-
-				appendStringInfo(string, " -c %s=", guc->name);
-
-				/*
-				 * All whitespace characters must be escaped. See
-				 * pg_split_opts() in the backend.
-				 */
-				for (i = 0; str[i] != '\0'; i++)
-				{
-					if (isspace((unsigned char) str[i]))
-						appendStringInfoChar(string, '\\');
-
-					appendStringInfoChar(string, str[i]);
-				}
-				break;
-			}
-		case PGC_ENUM:
-			{
-				struct config_enum *eguc = (struct config_enum *) guc;
-				int			value = *eguc->variable;
-				const char *str = config_enum_lookup_by_value(eguc, value);
-				int			i;
-
-				appendStringInfo(string, " -c %s=", guc->name);
-
-				/*
-				 * All whitespace characters must be escaped. See
-				 * pg_split_opts() in the backend. (Not sure if an enum value
-				 * can have whitespace, but let's be prepared.)
-				 */
-				for (i = 0; str[i] != '\0'; i++)
-				{
-					if (isspace((unsigned char) str[i]))
-						appendStringInfoChar(string, '\\');
-
-					appendStringInfoChar(string, str[i]);
-				}
-				break;
-			}
-		default:
-			Insist(false);
-	}
-}
-
-/*
  * Add GUCs to option string.
  */
 char *
 makeOptions(void)
 {
-	struct config_generic **gucs = get_guc_variables();
-	int			ngucs = get_num_guc_variables();
 	CdbComponentDatabaseInfo *qdinfo = NULL;
 	StringInfoData string;
-	int			i;
 
 	initStringInfo(&string);
 
@@ -333,15 +274,6 @@ makeOptions(void)
 	qdinfo = cdbcomponent_getComponentInfo(MASTER_CONTENT_ID); 
 	appendStringInfo(&string, " -c gp_qd_hostname=%s", qdinfo->hostip);
 	appendStringInfo(&string, " -c gp_qd_port=%d", qdinfo->port);
-
-	for (i = 0; i < ngucs; ++i)
-	{
-		struct config_generic *guc = gucs[i];
-
-		if ((guc->flags & GUC_GPDB_ADDOPT) &&
-			(guc->context == PGC_USERSET || IsAuthenticatedUserSuperUser()))
-			addOneOption(&string, guc);
-	}
 
 	return string.data;
 }

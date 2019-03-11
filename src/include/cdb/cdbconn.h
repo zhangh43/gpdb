@@ -53,6 +53,7 @@ typedef struct SegmentDatabaseDescriptor
     char                   *whoami;         /* QE identifier for msgs */
 	bool					isWriter;
 	int						identifier;		/* unique identifier in the cdbcomponent segment pool */
+	bool						guc_need_sync;	/* whether need to sync guc to this segment db */
 } SegmentDatabaseDescriptor;
 
 SegmentDatabaseDescriptor *

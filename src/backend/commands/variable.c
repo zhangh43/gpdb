@@ -855,7 +855,7 @@ assign_session_authorization(const char *newval, void *extra)
 	role_auth_extra *myextra = (role_auth_extra *) extra;
 
 	/* Do nothing for the boot_val default of NULL */
-	if (!myextra)
+	if (!myextra || Gp_role != GP_ROLE_DISPATCH)
 		return;
 
 	SetSessionAuthorization(myextra->roleid, myextra->is_superuser);
@@ -938,6 +938,8 @@ assign_role(const char *newval, void *extra)
 {
 	role_auth_extra *myextra = (role_auth_extra *) extra;
 
+	if (Gp_role != GP_ROLE_DISPATCH)
+		return;
 	SetCurrentRoleId(myextra->roleid, myextra->is_superuser);
 }
 

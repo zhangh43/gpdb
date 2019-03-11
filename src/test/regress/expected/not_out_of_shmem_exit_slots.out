@@ -24,10 +24,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000582.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000072.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 142)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 59)
 -- 2
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -36,10 +40,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000588.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000082.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 143)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 60)
 -- 3
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -48,10 +56,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000594.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000092.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 144)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 61)
 -- 4
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -60,10 +72,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000600.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000102.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 145)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 62)
 -- 5
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -72,10 +88,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000606.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000112.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 146)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 63)
 -- 6
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -84,10 +104,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000612.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000122.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 147)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 64)
 -- 7
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -96,10 +120,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000618.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000132.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 148)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 65)
 -- 8
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -108,10 +136,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000624.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000142.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 149)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 66)
 -- 9
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -120,10 +152,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000630.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000152.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 150)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 67)
 -- 10
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -132,10 +168,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000636.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000162.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 151)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 68)
 -- 11
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -144,10 +184,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000642.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000172.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 152)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 69)
 -- 12
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -156,10 +200,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000648.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000182.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 153)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 70)
 -- 13
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -168,10 +216,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000654.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000192.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 154)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 71)
 -- 14
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -180,10 +232,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000660.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000202.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 155)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 72)
 -- 15
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -192,10 +248,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000666.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000212.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 156)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 73)
 -- 16
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -204,10 +264,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000672.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000222.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 157)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 74)
 -- 17
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -216,10 +280,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000678.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000232.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 158)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 75)
 -- 18
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -228,10 +296,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000684.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000242.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 159)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 76)
 -- 19
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -240,10 +312,14 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000690.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000252.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 160)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 77)
 -- 20
+RESET debug_dtm_action_segment;
+RESET debug_dtm_action_target;
+RESET debug_dtm_action_protocol;
+RESET debug_dtm_action;
 CREATE TEMP TABLE foo_stg AS SELECT * FROM foo;
 NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause -- Using column(s) named 'a' as the Greenplum Database data distribution key for this table.
 HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data. Make sure column(s) chosen are the optimal data distribution key to minimize skew.
@@ -252,6 +328,6 @@ SET debug_dtm_action_target=protocol;
 SET debug_dtm_action_protocol=commit_prepared;
 SET debug_dtm_action=fail_begin_command;
 DROP TABLE foo_stg;
-WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1518745234-0000000696.  Retrying ... try 1
+WARNING:  the distributed transaction 'Commit Prepared' broadcast failed to one or more segments for gid = 1552561439-0000000262.  Retrying ... try 1
 NOTICE:  Releasing segworker group to retry broadcast.
-WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 161)
+WARNING:  Any temporary tables for this session have been dropped because the gang was disconnected (session id = 78)
