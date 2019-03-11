@@ -30,6 +30,7 @@
 #include "nodes/plannodes.h"
 #include "nodes/relation.h"
 #include "utils/datum.h"
+#include "utils/guc.h"
 #include "cdb/cdbgang.h"
 
 
@@ -5007,6 +5008,19 @@ _copyDistributedBy(const DistributedBy *from)
 	return newnode;
 }
 
+static GUCNode *
+_copyGUCNode(const GUCNode *from)
+{
+	GUCNode *newnode = makeNode(GUCNode);
+
+	COPY_STRING_FIELD(name);
+	COPY_STRING_FIELD(value);
+	COPY_SCALAR_FIELD(context);
+	COPY_SCALAR_FIELD(source);
+
+	return newnode;
+}
+
 /* ****************************************************************
  *					pg_list.h copy functions
  * ****************************************************************
@@ -6028,6 +6042,9 @@ copyObject(const void *from)
 
 		case T_DistributedBy:
 			retval = _copyDistributedBy(from);
+			break;
+		case T_GUCNode:
+			retval = _copyGUCNode(from);
 			break;
 
 		default:

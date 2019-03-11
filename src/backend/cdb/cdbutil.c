@@ -1557,3 +1557,46 @@ getgpsegmentCount(void)
 
 	return numsegments;
 }
+
+/*
+ * Set guc_need_sync for QEs
+ * If global guc_need_sync flag is true, we need to set
+ * connection level guc_need_sync flag for all the existing QEs
+ */
+void setSyncFlagForIdleQEs(void)
+{
+	CdbComponentDatabases *cdbs;
+	ListCell   *le;
+	int i;
+
+	cdbs = cdbcomponent_getCdbComponents(true);
+
+	if (cdbs->entry_db_info != NULL)
+	{
+		for (i = 0; i < cdbs->total_entry_dbs; i++)
+		{
+			CdbComponentDatabaseInfo *cdi = &cdbs->entry_db_info[i];
+			foreach (le, cdi->freelist)
+			{
+				SegmentDatabaseDescriptor *segdbDesc =
+						(SegmentDatabaseDescriptor *)lfirst(le);
+				segdbDesc->guc_need_sync = true;
+			}
+		}
+	}
+
+	if (cdbs->segment_db_info != NULL)
+	{
+		for (i = 0; i < cdbs->total_segment_dbs; i++)
+		{
+			CdbComponentDatabaseInfo *cdi = &cdbs->segment_db_info[i];
+			foreach (le, cdi->freelist)
+			{
+				SegmentDatabaseDescriptor *segdbDesc =
+						(SegmentDatabaseDescriptor *)lfirst(le);
+				segdbDesc->guc_need_sync = true;
+			}
+		}
+	}
+	return ;
+}

@@ -252,6 +252,7 @@ static bool CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag);
 static bool CheckDebugDtmActionProtocol(DtxProtocolCommand dtxProtocolCommand,
 					DtxContextInfo *contextInfo);
 static bool renice_current_process(int nice_level);
+static void apply_guc_from_qd(const char * serializedGUC, int serializedGUClen);
 
 /*
  * Change the priority of the current process to the specified level
@@ -1042,7 +1043,8 @@ exec_mpp_query(const char *query_string,
 			   const char * serializedQuerytree, int serializedQuerytreelen,
 			   const char * serializedPlantree, int serializedPlantreelen,
 			   const char * serializedParams, int serializedParamslen,
-			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen)
+			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen,
+			   const char * serializedGUC, int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1087,6 +1089,9 @@ exec_mpp_query(const char *query_string,
 	 * will normally change current memory context.)
 	 */
 	start_xact_command();
+
+	/* apply GUC from QD */
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.	(While not strictly necessary,
@@ -1463,10 +1468,14 @@ static void
 exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 							  int flags, const char *loggingStr,
 							  const char *gid, DistributedTransactionId gxid,
-							  DtxContextInfo *contextInfo)
+							  DtxContextInfo *contextInfo,
+							  const char * serializedGUC, int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	const char *commandTag = loggingStr;
+
+	/* apply DTM specific GUC from QD */
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	if (log_statement == LOGSTMT_ALL)
 	{
@@ -1550,7 +1559,9 @@ CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag)
  * Execute a "simple Query" protocol message.
  */
 static void
-exec_simple_query(const char *query_string)
+exec_simple_query(const char *query_string,
+				const char * serializedGUC,
+				int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1588,6 +1599,9 @@ exec_simple_query(const char *query_string)
 	 * will normally change current memory context.)
 	 */
 	start_xact_command();
+
+	/* apply GUC from QD */
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.  (While not strictly necessary,
@@ -5244,7 +5258,7 @@ PostgresMain(int argc, char *argv[],
 					else if (am_ftshandler)
 						HandleFtsMessage(query_string);
 					else
-						exec_simple_query(query_string);
+						exec_simple_query(query_string, NULL, 0);
 
 					send_ready_for_query = true;
 				}
@@ -5265,6 +5279,7 @@ PostgresMain(int argc, char *argv[],
 					const char *serializedPlantree = NULL;
 					const char *serializedParams = NULL;
 					const char *serializedQueryDispatchDesc = NULL;
+					const char *serializedGUC = NULL;
 					const char *resgroupInfoBuf = NULL;
 
 					int query_string_len = 0;
@@ -5273,6 +5288,7 @@ PostgresMain(int argc, char *argv[],
 					int serializedPlantreelen = 0;
 					int serializedParamslen = 0;
 					int serializedQueryDispatchDesclen = 0;
+					int serializedGUClen;
 					int resgroupInfoLen = 0;
 					TimestampTz statementStart;
 					Oid suid;
@@ -5304,6 +5320,7 @@ PostgresMain(int argc, char *argv[],
 					serializedParamslen = pq_getmsgint(&input_message, 4);
 					serializedQueryDispatchDesclen = pq_getmsgint(&input_message, 4);
 					serializedDtxContextInfolen = pq_getmsgint(&input_message, 4);
+					serializedGUClen = pq_getmsgint(&input_message, 4);
 
 					/* read in the DTX context info */
 					if (serializedDtxContextInfolen == 0)
@@ -5328,6 +5345,9 @@ PostgresMain(int argc, char *argv[],
 
 					if (serializedQueryDispatchDesclen > 0)
 						serializedQueryDispatchDesc = pq_getmsgbytes(&input_message,serializedQueryDispatchDesclen);
+
+					if (serializedGUClen > 0)
+						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
 
 					/*
 					 * Always use the same GpIdentity.numsegments with QD on QEs
@@ -5386,7 +5406,7 @@ PostgresMain(int argc, char *argv[],
 						}
 						else
 						{
-							exec_simple_query(query_string);
+							exec_simple_query(query_string, serializedGUC, serializedGUClen);
 						}
 					}
 					else
@@ -5394,7 +5414,8 @@ PostgresMain(int argc, char *argv[],
 									   serializedQuerytree, serializedQuerytreelen,
 									   serializedPlantree, serializedPlantreelen,
 									   serializedParams, serializedParamslen,
-									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen);
+									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen,
+									   serializedGUC, serializedGUClen);
 
 					SetUserIdAndContext(GetOuterUserId(), false);
 
@@ -5418,6 +5439,9 @@ PostgresMain(int argc, char *argv[],
 
 					int serializedDtxContextInfolen;
 					const char *serializedDtxContextInfo;
+
+					int serializedGUClen;
+					const char *serializedGUC = NULL;
 
 					if (Gp_role != GP_ROLE_EXECUTE)
 						ereport(ERROR,
@@ -5457,9 +5481,15 @@ PostgresMain(int argc, char *argv[],
 
 					DtxContextInfo_Deserialize(serializedDtxContextInfo, serializedDtxContextInfolen, &TempDtxContextInfo);
 
+					serializedGUClen = pq_getmsgint(&input_message, 4);
+
+					if (serializedGUClen > 0)
+						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
+
 					pq_getmsgend(&input_message);
 
-					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo);
+					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo,
+											serializedGUC, serializedGUClen);
 
 					send_ready_for_query = true;
             	}
@@ -5895,4 +5925,29 @@ log_disconnections(int code, Datum arg __attribute__((unused)))
 					hours, minutes, seconds, msecs,
 					port->user_name, port->database_name, port->remote_host,
 				  port->remote_port[0] ? " port=" : "", port->remote_port)));
+}
+
+/*
+ * Apply GUCs from QD
+ */
+static void
+apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
+{
+	if (serializedGUC != NULL && serializedGUClen > 0)
+	{
+		ListCell   *lc;
+		GUCNode *guc;
+
+		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		Assert(IsA(guc_list, List));
+		foreach (lc, guc_list)
+		{
+			guc = (GUCNode *) lfirst(lc);
+			if (!guc || !IsA(guc, GUCNode))
+				elog(ERROR, "MPPEXEC: receive invalid guc");
+			set_config_option(guc->name, guc->value,
+							guc->context, guc->source,
+							0, true, 0);
+		}
+	}
 }
