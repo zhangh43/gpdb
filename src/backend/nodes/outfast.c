@@ -40,6 +40,7 @@
 #include "utils/datum.h"
 #include "catalog/heap.h"
 #include "cdb/cdbgang.h"
+#include "utils/guc.h"
 #include "utils/workfile_mgr.h"
 #include "parser/parsetree.h"
 
@@ -1275,6 +1276,18 @@ _outAlterTableSpaceOptionsStmt(StringInfo str, AlterTableSpaceOptionsStmt *node)
 	WRITE_BOOL_FIELD(isReset);
 }
 
+static void
+_outGUCNode(StringInfo str, GUCNode *node)
+{
+	WRITE_NODE_TYPE("GUCNODE");
+
+	WRITE_STRING_FIELD(name);
+	WRITE_STRING_FIELD(value);
+	WRITE_ENUM_FIELD(context, GucContext);
+	WRITE_ENUM_FIELD(source, GucSource);
+	WRITE_ENUM_FIELD(action, GucAction);
+}
+
 /*
  * _outNode -
  *	  converts a Node into binary string and append it to 'str'
@@ -2221,6 +2234,9 @@ _outNode(StringInfo str, void *obj)
 				break;
 			case T_AlterTableSpaceOptionsStmt:
 				_outAlterTableSpaceOptionsStmt(str, obj);
+				break;
+			case T_GUCNode:
+				_outGUCNode(str, obj);
 				break;
 			default:
 				elog(ERROR, "could not serialize unrecognized node type: %d",

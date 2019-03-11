@@ -5265,6 +5265,7 @@ PostgresMain(int argc, char *argv[],
 					const char *serializedPlantree = NULL;
 					const char *serializedParams = NULL;
 					const char *serializedQueryDispatchDesc = NULL;
+					const char *serializedGUC = NULL;
 					const char *resgroupInfoBuf = NULL;
 
 					int query_string_len = 0;
@@ -5273,6 +5274,7 @@ PostgresMain(int argc, char *argv[],
 					int serializedPlantreelen = 0;
 					int serializedParamslen = 0;
 					int serializedQueryDispatchDesclen = 0;
+					int serializedGUClen;
 					int resgroupInfoLen = 0;
 					TimestampTz statementStart;
 					Oid suid;
@@ -5304,6 +5306,7 @@ PostgresMain(int argc, char *argv[],
 					serializedParamslen = pq_getmsgint(&input_message, 4);
 					serializedQueryDispatchDesclen = pq_getmsgint(&input_message, 4);
 					serializedDtxContextInfolen = pq_getmsgint(&input_message, 4);
+					serializedGUClen = pq_getmsgint(&input_message, 4);
 
 					/* read in the DTX context info */
 					if (serializedDtxContextInfolen == 0)
@@ -5328,6 +5331,9 @@ PostgresMain(int argc, char *argv[],
 
 					if (serializedQueryDispatchDesclen > 0)
 						serializedQueryDispatchDesc = pq_getmsgbytes(&input_message,serializedQueryDispatchDesclen);
+
+					if (serializedGUClen > 0)
+						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
 
 					/*
 					 * Always use the same GpIdentity.numsegments with QD on QEs
@@ -5361,6 +5367,27 @@ PostgresMain(int argc, char *argv[],
 
 					if (cuid > 0)
 						SetUserIdAndContext(cuid, false); /* Set current userid */
+
+					/* apply GUC from QD */
+					if (serializedGUC != NULL && serializedGUClen > 0)
+					{
+						ListCell   *lc;
+						GUCNode *guc;
+
+						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+						if (!IsA(guc_list, List))
+							elog(ERROR, "could not deserialize query parameters");
+						foreach (lc, guc_list)
+						{
+							guc = (GUCNode *) lfirst(lc);
+							if (!guc || !IsA(guc, GUCNode))
+								elog(ERROR, "MPPEXEC: receive invalid guc");
+
+							set_config_option(guc->name, guc->value,
+												guc->context, guc->source,
+												0, true, 0);
+						}
+					}
 
 					if (serializedQuerytreelen==0 && serializedPlantreelen==0)
 					{

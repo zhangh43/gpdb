@@ -190,6 +190,23 @@ typedef enum
 	GUC_ACTION_SAVE				/* function SET option, or temp assignment */
 } GucAction;
 
+
+/*
+ * Serialized form of GUC. This is used when GUC are
+ * serialized, when dispatching GUCs from QD to QEs.
+ */
+typedef struct GUCNode
+{
+	NodeTag		type;
+
+	char		   *name;
+	char		   *value;
+	GucContext	context;
+	GucSource	source;
+	GucAction	action;
+
+} GUCNode;
+
 #define GUC_QUALIFIER_SEPARATOR '.'
 
 /*
@@ -226,6 +243,9 @@ typedef enum
 /* GUC lists for gp_guc_list_show().  (List of struct config_generic) */
 extern List    *gp_guc_list_for_explain;
 extern List    *gp_guc_list_for_no_plan;
+
+/* TRUE if any guc with GUC_GPDB_ADDOPT flag changed. */
+extern bool guc_need_sync_session;
 
 /* GUC vars that are actually declared in guc.c, rather than elsewhere */
 extern bool log_duration;

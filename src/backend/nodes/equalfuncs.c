@@ -33,6 +33,7 @@
 
 #include "nodes/relation.h"
 #include "utils/datum.h"
+#include "utils/guc.h"
 #include "catalog/gp_policy.h"
 
 
@@ -2723,6 +2724,19 @@ _equalXmlSerialize(const XmlSerialize *a, const XmlSerialize *b)
 	return true;
 }
 
+static bool
+_equalGUCNode(const GUCNode *a, const GUCNode *b)
+{
+	COMPARE_STRING_FIELD(name);
+	COMPARE_STRING_FIELD(value);
+
+	COMPARE_SCALAR_FIELD(context);
+	COMPARE_SCALAR_FIELD(source);
+	COMPARE_SCALAR_FIELD(action);
+
+	return true;
+}
+
 /*
  * Stuff from pg_list.h
  */
@@ -3498,6 +3512,9 @@ equal(const void *a, const void *b)
 			break;
 		case T_DistributedBy:
 			retval = _equalDistributedBy(a, b);
+			break;
+		case T_GUCNode:
+			retval = _equalGUCNode(a, b);
 			break;
 		default:
 			elog(ERROR, "unrecognized node type: %d",
