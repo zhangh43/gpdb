@@ -86,6 +86,7 @@
 #include "utils/tzparser.h"
 #include "utils/xml.h"
 #include "cdb/cdbdisp_query.h"
+#include "cdb/cdbutil.h"
 #include "cdb/cdbvars.h"
 
 #ifndef PG_KRB_SRVTAB
@@ -1325,7 +1326,7 @@ static struct config_bool ConfigureNamesBool[] =
 	{
 		{"check_function_bodies", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Check function bodies during CREATE FUNCTION."),
-			NULL
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&check_function_bodies,
 		true,
@@ -1336,7 +1337,8 @@ static struct config_bool ConfigureNamesBool[] =
 			gettext_noop("Enable input of NULL elements in arrays."),
 			gettext_noop("When turned on, unquoted NULL in an array input "
 						 "value means a null value; "
-						 "otherwise it is taken literally.")
+						 "otherwise it is taken literally."),
+			GUC_GPDB_NEED_SYNC
 		},
 		&Array_nulls,
 		true,
@@ -1514,7 +1516,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"allow_system_table_mods", PGC_USERSET, CUSTOM_OPTIONS,
 			gettext_noop("Allows modifications of the structure of system tables."),
 			NULL,
-			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL
+			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_NEED_SYNC
 		},
 		&allowSystemTableMods,
 		false,
@@ -1998,7 +2000,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"lock_timeout", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Sets the maximum allowed duration of any wait for a lock."),
 			gettext_noop("A value of 0 turns off the timeout."),
-			GUC_UNIT_MS
+			GUC_UNIT_MS | GUC_GPDB_NEED_SYNC
 		},
 		&LockTimeout,
 		0, 0, INT_MAX,
@@ -2008,7 +2010,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_min_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Minimum age at which VACUUM should freeze a table row."),
-			NULL
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_freeze_min_age,
 		50000000, 0, 1000000000,
@@ -2018,7 +2020,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Age at which VACUUM should scan whole table to freeze tuples."),
-			NULL
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2038,7 +2040,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_multixact_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Multixact age at which VACUUM should scan whole table to freeze tuples."),
-			NULL
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_multixact_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2048,7 +2050,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_defer_cleanup_age", PGC_SIGHUP, REPLICATION_MASTER,
 			gettext_noop("Number of transactions by which VACUUM and HOT cleanup should be deferred, if any."),
-			NULL
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_defer_cleanup_age,
 		0, 0, 1000000,
@@ -4310,6 +4312,10 @@ InitializeGUCOptions(void)
 
 	guc_dirty = false;
 
+	guc_need_sync_session = false;
+
+	guc_list_need_sync_global = NIL;
+
 	reporting_enabled = false;
 
 	/*
@@ -4673,6 +4679,8 @@ void
 ResetAllOptions(void)
 {
 	int			i;
+
+	guc_need_sync_session = true;
 
 	for (i = 0; i < num_guc_variables; i++)
 	{
@@ -5147,6 +5155,8 @@ AtEOXact_GUC(bool isCommit, int nestLevel)
 			/* Report new value if we changed it */
 			if (changed && (gconf->flags & GUC_REPORT))
 				ReportGUCOption(gconf);
+			if (changed)
+				guc_need_sync_session = true;
 		}						/* end of stack-popping loop */
 
 		if (stack != NULL)
@@ -5731,7 +5741,6 @@ parse_and_validate_value(struct config_generic * record,
 	return true;
 }
 
-
 /*
  * Sets option `name' to given value.
  *
@@ -5806,6 +5815,15 @@ set_config_option(const char *name, const char *value,
 		return 0;
 	}
 
+
+	if(Gp_role == GP_ROLE_DISPATCH)
+	{
+		/*
+		 * If GUC value changed, turn on flag guc_need_sync_session.
+		 */
+		guc_need_sync_session = true;
+		add_guc_to_sync_list(record, name, source, context);
+	}
 	/*
 	 * Check if option can be set by the user.
 	 */
@@ -7180,7 +7198,6 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 									 action,
 									 true,
 									 0);
-			DispatchSetPGVariable(stmt->name, stmt->args, stmt->is_local);
 			break;
 		case VAR_SET_MULTI:
 

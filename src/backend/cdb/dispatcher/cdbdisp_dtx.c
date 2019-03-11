@@ -53,7 +53,7 @@ typedef struct DispatchCommandDtxProtocolParms
 static DtxContextInfo TempQDDtxContextInfo = DtxContextInfo_StaticInit;
 
 static char *buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
-						  int *finalLen);
+						  int *finalLen, bool guc_need_sync);
 
 /*
  * CdbDispatchDtxProtocolCommand:
@@ -108,9 +108,9 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
 
-	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen);
-
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, twophaseSegments);
+
+	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen, ds->guc_need_sync);
 
 	Assert(primaryGang);
 
@@ -238,7 +238,7 @@ qdSerializeDtxContextInfo(int *size, bool wantSnapshot, bool inCursor,
  */
 static char *
 buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
-						 int *finalLen)
+						 int *finalLen, bool guc_need_sync)
 {
 	int			dtxProtocolCommand = (int) pDtxProtocolParms->dtxProtocolCommand;
 	int			flags = pDtxProtocolParms->flags;
@@ -247,11 +247,17 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	int			gxid = pDtxProtocolParms->gxid;
 	char	   *serializedDtxContextInfo = pDtxProtocolParms->serializedDtxContextInfo;
 	int			serializedDtxContextInfoLen = pDtxProtocolParms->serializedDtxContextInfoLen;
+	char		   *guc = NULL;
+	int			guc_len = 0;
 	int			tmp = 0;
 	int			len = 0;
 
 	int			loggingStrLen = strlen(dtxProtocolCommandLoggingStr) + 1;
 	int			gidLen = strlen(gid) + 1;
+
+	if (guc_need_sync)
+		guc = serializeGUC(&guc_len);
+
 	int			total_query_len = 1 /* 'T' */ +
 	sizeof(len) +
 	sizeof(dtxProtocolCommand) +
@@ -262,7 +268,9 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	gidLen +
 	sizeof(gxid) +
 	sizeof(serializedDtxContextInfoLen) +
-	serializedDtxContextInfoLen;
+	serializedDtxContextInfoLen +
+	sizeof(guc_len) +
+	guc_len;
 
 	char	   *shared_query = NULL;
 	char	   *pos = NULL;
@@ -311,6 +319,16 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	{
 		memcpy(pos, serializedDtxContextInfo, serializedDtxContextInfoLen);
 		pos += serializedDtxContextInfoLen;
+	}
+
+	tmp = htonl(guc_len);
+	memcpy(pos, &tmp, sizeof(tmp));
+	pos += sizeof(tmp);
+
+	if (guc_len > 0)
+	{
+		memcpy(pos, guc, guc_len);
+		pos += guc_len;
 	}
 
 	len = pos - shared_query - 1;

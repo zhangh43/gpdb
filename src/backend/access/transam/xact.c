@@ -3345,6 +3345,12 @@ AbortTransaction(void)
 	ProcArrayEndTransaction(MyProc, latestXid, false);
 
 	/*
+	 * Need to rollback dtx before GUC reset
+	 * Since dtm_debug GUCs will be dispatched to QEs.
+	 */
+	rollbackDtxTransaction();
+
+	/*
 	 * Post-abort cleanup.  See notes in CommitTransaction() concerning
 	 * ordering.  We can skip all of it if the transaction failed before
 	 * creating a resource owner.
@@ -3407,8 +3413,6 @@ AbortTransaction(void)
 	 * CleanupTransaction().
 	 */
 	TopTransactionStateData.transactionId = InvalidTransactionId;
-
-	rollbackDtxTransaction();
 
 	MyProc->localDistribXactData.state = LOCALDISTRIBXACT_STATE_NONE;
 
@@ -3522,6 +3526,11 @@ StartTransactionCommand(void)
 				 */
 				s->blockState = TBLOCK_STARTED;
 			}
+
+			/* QE needs to apply the GUCs passed from QD when StartTransaction()*/
+			if (Gp_role == GP_ROLE_EXECUTE)
+				apply_guc_from_qd(NULL, 0);
+
 			break;
 
 			/*

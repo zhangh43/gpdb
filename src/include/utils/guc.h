@@ -190,6 +190,38 @@ typedef enum
 	GUC_ACTION_SAVE				/* function SET option, or temp assignment */
 } GucAction;
 
+
+/*
+ * Serialized form of GUC. This is used when GUC are
+ * serialized, when dispatching GUCs from QD to QEs.
+ */
+typedef struct GUCNode
+{
+	NodeTag		type;
+
+	char		   *name;
+	char		   *value;
+	GucContext	context;
+	GucSource	source;
+} GUCNode;
+
+/*
+ * GUC entry in guc_list_need_sync_global
+ */
+typedef struct GUCEntry
+{
+	char		   *name;
+	/*
+	 * context and source history value before GUC
+	 * change happens. They will be passed to QE as
+	 * parameter of set_config_option.
+	 * GUC value is skipped here since we only need
+	 * the latest GUC value.
+	 */
+	GucContext	context;
+	GucSource	source;
+} GUCEntry;
+
 #define GUC_QUALIFIER_SEPARATOR '.'
 
 /*
@@ -227,6 +259,14 @@ typedef enum
 /* GUC lists for gp_guc_list_show().  (List of struct config_generic) */
 extern List    *gp_guc_list_for_explain;
 extern List    *gp_guc_list_for_no_plan;
+
+/*
+ * GUC value changed or transaction abort will turn on this flag
+ * to indicate GUC need to be sync between QD and QE
+ */
+extern bool guc_need_sync_session;
+/* Changed GUC list which need to be pass to QE from QD */
+extern List *guc_list_need_sync_global;
 
 /* GUC vars that are actually declared in guc.c, rather than elsewhere */
 extern bool log_duration;
@@ -770,5 +810,9 @@ extern bool gpvars_check_statement_mem(int *newval, void **extra, GucSource sour
 extern bool gpvars_check_gp_enable_gpperfmon(bool *newval, void **extra, GucSource source);
 extern bool gpvars_check_gp_gpperfmon_send_interval(int *newval, void **extra, GucSource source);
 extern int guc_name_compare(const char *namea, const char *nameb);
+
+/* Add GUCs which need sync into guc_list_need_sync_global */
+extern void add_guc_to_sync_list(struct config_generic *record, const char *name,
+		GucSource source, GucContext context);
 
 #endif   /* GUC_H */
