@@ -498,6 +498,12 @@ AtAbort_DispatcherState(void)
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
 
+	/*
+	 * No 2PC guaranteed, thus reset guc_need_sync_session
+	 * to true when xact abort
+	 */
+	guc_need_sync_session = true;
+
 	if (CurrentGangCreating != NULL)
 	{
 		RecycleGang(CurrentGangCreating, true);
@@ -528,6 +534,12 @@ AtSubAbort_DispatcherState(void)
 {
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
+
+	/*
+	 * No 2PC guaranteed, thus reset guc_need_sync_session
+	 * to true when xact abort
+	 */
+	guc_need_sync_session = true;
 
 	if (CurrentGangCreating != NULL)
 	{
