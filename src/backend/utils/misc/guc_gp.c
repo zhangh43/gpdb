@@ -103,6 +103,7 @@ List	   *gp_guc_list_for_no_plan;
 
 /* TRUE if any guc with GUC_GPDB_ADDOPT flag changed. */
 bool guc_need_sync_session;
+List *guc_list_need_sync_global;
 
 char	   *Debug_dtm_action_sql_command_tag;
 

@@ -505,6 +505,9 @@ AtAbort_DispatcherState(void)
 	 */
 	CdbResourceOwnerWalker(CurrentResourceOwner, cdbdisp_cleanupDispatcherHandle);
 
+	/* set all the QE to be need_syc*/
+	SetAllGangsNeedSync();
+
 	Assert(open_dispatcher_handles == NULL);
 
 	/*
@@ -531,6 +534,7 @@ AtSubAbort_DispatcherState(void)
 	}
 
 	CdbResourceOwnerWalker(CurrentResourceOwner, cdbdisp_cleanupDispatcherHandle);
+	/* set all the QE to be need_syc*/
 }
 
 void

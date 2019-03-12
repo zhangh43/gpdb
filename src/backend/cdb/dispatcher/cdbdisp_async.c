@@ -292,6 +292,26 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 
 		Assert(segdbDesc != NULL);
 
+		/**/
+		if(segdbDesc->guc_list_need_sync)
+		{
+			ListCell *lc;
+			foreach(lc, segdbDesc->guc_list_need_sync)
+			{
+			if (strcmp(NameStr(con->conname), (char *) lfirst(lc)) == 0)
+			{
+				match = true;
+					break;
+				}
+			}
+		}
+
+		/* If GUC need sync, append them into dispatch command text.*/
+		if(segdbDesc->guc_need_sync)
+		{
+			pParms->query_text = AddGUC(&pParms->query_text_len);
+		}
+
 		/*
 		 * Initialize the QE's CdbDispatchResult object.
 		 */

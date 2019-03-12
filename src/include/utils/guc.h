@@ -246,6 +246,7 @@ extern List    *gp_guc_list_for_no_plan;
 
 /* TRUE if any guc with GUC_GPDB_ADDOPT flag changed. */
 extern bool guc_need_sync_session;
+extern List *guc_list_need_sync_global;
 
 /* GUC vars that are actually declared in guc.c, rather than elsewhere */
 extern bool log_duration;
