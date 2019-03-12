@@ -2980,7 +2980,7 @@ _readGpPolicy(void)
 }
 
 /*
- * _readCurrentOfExpr
+ * _readGUCNode
  */
 static GUCNode *
 _readGUCNode(void)

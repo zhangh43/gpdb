@@ -625,7 +625,10 @@ cdbdisp_buildPlanQueryParms(struct QueryDesc *queryDesc,
 	pQueryParms->serializedParamslen = sparams_len;
 	pQueryParms->serializedQueryDispatchDesc = sddesc;
 	pQueryParms->serializedQueryDispatchDesclen = sddesc_len;
-	pQueryParms->serializedGUC = serializeGUC(&pQueryParms->serializedGUClen);
+	pQueryParms->serializedGUC = NULL;
+	pQueryParms->serializedGUClen = 0;
+	if (guc_need_sync_session)
+		pQueryParms->serializedGUC = serializeGUC(&pQueryParms->serializedGUClen);
 
 	/*
 	 * Serialize a version of our snapshot, and generate our transction
@@ -898,6 +901,7 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 		plantree_len +
 		params_len +
 		sddesc_len +
+		guc_len +
 		sizeof(numsegments) +
 		sizeof(resgroupInfo.len) +
 		resgroupInfo.len;
@@ -1413,7 +1417,7 @@ serializeGUC(int *len_p)
 	struct config_generic **gucs = get_guc_variables();
 	int			ngucs = get_num_guc_variables();
 	int			i;
-	List		   *guc_node_list;
+	List		   *guc_node_list  = NIL;
 
 	for (i = 0; i < ngucs; ++i)
 	{

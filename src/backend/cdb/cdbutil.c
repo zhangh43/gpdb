@@ -1551,3 +1551,40 @@ getgpsegmentCount(void)
 
 	return numsegments;
 }
+
+/*
+ * Allocated a segdb
+ *
+ * If thers is idle segdb in the freelist, return it, otherwise, initialize
+ * a new segdb.
+ *
+ * idle segdbs has an established connection with segment, but new segdb is
+ * not setup yet, callers need to establish the connection by themselves.
+ */
+List *
+cdbcomponent_getAllIdleQEs()
+{
+	CdbComponentDatabases *cdbs;
+	List *segmentDescs = NIL;
+	ListCell   *le;
+	int i;
+	int j;
+
+	cdbs = cdbcomponent_getCdbComponents(true);
+
+	if (cdbs->segment_db_info != NULL)
+	{
+		for (i = 0; i < cdbs->total_segment_dbs; i++)
+		{
+			CdbComponentDatabaseInfo *cdi = &cdbs->segment_db_info[i];
+			foreach (le, cdi->freelist)
+			{
+				SegmentDatabaseDescriptor *segdbDesc =
+						(SegmentDatabaseDescriptor *)lfirst(le);
+				segmentDescs = lappend(segmentDescs, segdbDesc);
+				segdbDesc->guc_need_sync = true;
+			}
+		}
+	}
+	return segmentDescs;
+}

@@ -5185,6 +5185,8 @@ AtEOXact_GUC(bool isCommit, int nestLevel)
 			/* Report new value if we changed it */
 			if (changed && (gconf->flags & GUC_REPORT))
 				ReportGUCOption(gconf);
+			if (changed)
+				guc_need_sync_session = true;
 		}						/* end of stack-popping loop */
 
 		if (stack != NULL)
@@ -6053,9 +6055,14 @@ set_config_option(const char *name, const char *value,
 		changeVal = false;
 	}
 
-	/* if GUC value changed, turn on flag guc_need_sync_session */
+	/*
+	 * If GUC value changed, turn on flag guc_need_sync_session.
+	 * Also turn on flag guc_need_sync for all the idled QEs.
+	 */
 	if (record->flags & GUC_GPDB_ADDOPT)
+	{
 		guc_need_sync_session = true;
+	}
 
 	/*
 	 * Evaluate value and set variable.
