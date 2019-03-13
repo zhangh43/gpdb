@@ -1349,7 +1349,7 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 {
 	StringInfoData string;
 	initStringInfo(&string);
-	Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
+	//Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
 	switch (guc->vartype)
 	{
 		case PGC_BOOL:
