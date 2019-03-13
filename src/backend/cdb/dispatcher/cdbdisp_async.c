@@ -300,9 +300,9 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		SegmentDatabaseDescriptor *segdbDesc = gp->db_descriptors[i];
 
 		Assert(segdbDesc != NULL);
-		elog(LOG,"hubertold: %d",pParms->query_text_len);
+		//elog(LOG,"hubertold: %d",pParms->query_text_len);
 
-		addSegdbSpecificParams(segdbDesc, pParms);
+		//addSegdbSpecificParams(segdbDesc, pParms);
 
 		/*
 		 * Initialize the QE's CdbDispatchResult object.
@@ -314,7 +314,7 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		}
 		pParms->dispatchResultPtrArray[pParms->dispatchCount++] = qeResult;
 
-		elog(LOG,"hubertnew: %d",pParms->query_text_len);
+		//elog(LOG,"hubertnew: %d",pParms->query_text_len);
 		dispatchCommand(qeResult, pParms->query_text, pParms->query_text_len);
 	}
 }
@@ -681,8 +681,6 @@ addSegdbSpecificParams(SegmentDatabaseDescriptor *segdbDesc, CdbDispatchCmdAsync
 	{
 		char *serialized_guc = NULL;
 		int serialized_guc_len = 0;
-		//struct config_generic **gucs = get_guc_variables();
-		//int			ngucs = get_num_guc_variables();
 		List		   *guc_node_list  = NIL;
 		ListCell *lc;
 

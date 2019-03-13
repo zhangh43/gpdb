@@ -104,7 +104,7 @@ static int fillSliceVector(SliceTable *sliceTable,
 				int len);
 
 static char *buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
-				   int *finalLen);
+				   int *finalLen, bool guc_need_sync);
 
 static DispatchCommandQueryParms *cdbdisp_buildPlanQueryParms(struct QueryDesc *queryDesc, bool planRequiresTxn);
 static DispatchCommandQueryParms *cdbdisp_buildUtilityQueryParms(struct Node *stmt, int flags, List *oid_assignments);
@@ -269,13 +269,13 @@ CdbDispatchSetCommand(const char *strCommand, bool cancelOnError)
 
 	ds = cdbdisp_makeDispatcherState(false);
 
-	queryText = buildGpQueryString(pQueryParms, &queryTextLength);
-
 	AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, cdbcomponent_getCdbComponentsList());
 
 	/* put all idle segment to a gang so QD can send SET command to them */
 	AllocateGang(ds, GANGTYPE_PRIMARY_READER, formIdleSegmentIdList());
 	
+	queryText = buildGpQueryString(pQueryParms, &queryTextLength, ds->guc_need_sync);
+
 	cdbdisp_makeDispatchResults(ds, list_length(ds->allocatedGangs), cancelOnError);
 	cdbdisp_makeDispatchParams (ds, list_length(ds->allocatedGangs), queryText, queryTextLength);
 
@@ -421,13 +421,13 @@ cdbdisp_dispatchCommandInternal(DispatchCommandQueryParms *pQueryParms,
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
 
-	queryText = buildGpQueryString(pQueryParms, &queryTextLength);
-
 	/*
 	 * Allocate a primary QE for every available segDB in the system.
 	 */
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, segments);
 	Assert(primaryGang);
+
+	queryText = buildGpQueryString(pQueryParms, &queryTextLength, ds->guc_need_sync);
 
 	cdbdisp_makeDispatchResults(ds, 1, flags & DF_CANCEL_ON_ERROR);
 	cdbdisp_makeDispatchParams (ds, 1, queryText, queryTextLength);
@@ -553,7 +553,8 @@ cdbdisp_buildUtilityQueryParms(struct Node *stmt,
 
 static DispatchCommandQueryParms *
 cdbdisp_buildPlanQueryParms(struct QueryDesc *queryDesc,
-							bool planRequiresTxn)
+							bool planRequiresTxn,
+							bool gucNeedSync)
 {
 	char	   *splan,
 			   *sddesc,
@@ -622,8 +623,6 @@ cdbdisp_buildPlanQueryParms(struct QueryDesc *queryDesc,
 	pQueryParms->serializedParamslen = sparams_len;
 	pQueryParms->serializedQueryDispatchDesc = sddesc;
 	pQueryParms->serializedQueryDispatchDesclen = sddesc_len;
-	pQueryParms->serializedGUC = NULL;
-	pQueryParms->serializedGUClen = 0;
 
 	/*
 	 * Serialize a version of our snapshot, and generate our transction
@@ -823,7 +822,7 @@ fillSliceVector(SliceTable *sliceTbl, int rootIdx,
  */
 static char *
 buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
-				   int *finalLen)
+				   int *finalLen, bool guc_need_sync)
 {
 	const char *command = pQueryParms->strCommand;
 	int			command_len;
@@ -837,6 +836,8 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 	int			sddesc_len = pQueryParms->serializedQueryDispatchDesclen;
 	const char *dtxContextInfo = pQueryParms->serializedDtxContextInfo;
 	int			dtxContextInfo_len = pQueryParms->serializedDtxContextInfolen;
+	const char *guc = NULL;
+	int			guc_len = 0;
 	int64		currentStatementStartTimestamp = GetCurrentStatementStartTimestamp();
 	Oid			sessionUserId = GetSessionUserId();
 	Oid			outerUserId = GetOuterUserId();
@@ -870,6 +871,9 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 	else
 		command_len = strlen(command) + 1;
 
+	if (guc_need_sync)
+		guc = serializeGUC(&guc_len);
+
 	initStringInfo(&resgroupInfo);
 	if (IsResGroupActivated())
 		SerializeResGroupInfo(&resgroupInfo);
@@ -887,12 +891,14 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 		sizeof(params_len) +
 		sizeof(sddesc_len) +
 		sizeof(dtxContextInfo_len) +
+		sizeof(guc_len) +
 		dtxContextInfo_len +
 		command_len +
 		querytree_len +
 		plantree_len +
 		params_len +
 		sddesc_len +
+		guc_len +
 		sizeof(numsegments) +
 		sizeof(resgroupInfo.len) +
 		resgroupInfo.len;
@@ -961,6 +967,10 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 	memcpy(pos, &tmp, sizeof(tmp));
 	pos += sizeof(tmp);
 
+	tmp = htonl(guc_len);
+	memcpy(pos, &tmp, sizeof(tmp));
+	pos += sizeof(tmp);
+
 	if (dtxContextInfo_len > 0)
 	{
 		memcpy(pos, dtxContextInfo, dtxContextInfo_len);
@@ -994,6 +1004,12 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 	{
 		memcpy(pos, sddesc, sddesc_len);
 		pos += sddesc_len;
+	}
+
+	if (guc_len > 0)
+	{
+		memcpy(pos, guc, guc_len);
+		pos += guc_len;
 	}
 
 	tmp = htonl(numsegments);
@@ -1085,7 +1101,7 @@ cdbdisp_dispatchX(QueryDesc* queryDesc,
 	nSlices = fillSliceVector(sliceTbl, rootIdx, sliceVector, nTotalSlices);
 
 	pQueryParms = cdbdisp_buildPlanQueryParms(queryDesc, planRequiresTxn);
-	queryText = buildGpQueryString(pQueryParms, &queryTextLength);
+	queryText = buildGpQueryString(pQueryParms, &queryTextLength, ds->guc_need_sync);
 
 	/*
 	 * Allocate result array with enough slots for QEs of primary gangs.
@@ -1325,6 +1341,105 @@ serializeParamListInfo(ParamListInfo paramLI, int *len_p)
 	return nodeToBinaryStringFast(sparams, len_p);
 }
 
+
+/*
+ * Add GUC value to the GUCNode.
+ */
+static void
+fillGucNode(GUCNode *guc_node, struct config_generic *guc)
+{
+	StringInfoData string;
+	initStringInfo(&string);
+	Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
+	switch (guc->vartype)
+	{
+		case PGC_BOOL:
+			{
+				struct config_bool *bguc = (struct config_bool *) guc;
+				appendStringInfo(&string, "%s", *(bguc->variable) ? "true" : "false");
+				break;
+			}
+		case PGC_INT:
+			{
+				struct config_int *iguc = (struct config_int *) guc;
+
+				appendStringInfo(&string, "%d", *iguc->variable);
+				break;
+			}
+		case PGC_REAL:
+			{
+				struct config_real *rguc = (struct config_real *) guc;
+
+				appendStringInfo(&string, "%f", *rguc->variable);
+				break;
+			}
+		case PGC_STRING:
+			{
+				struct config_string *sguc = (struct config_string *) guc;
+
+				appendStringInfo(&string, "%s", *sguc->variable);
+				break;
+			}
+		case PGC_ENUM:
+			{
+				struct config_enum *eguc = (struct config_enum *) guc;
+				int			value = *eguc->variable;
+				const char *str = config_enum_lookup_by_value(eguc, value);
+
+				appendStringInfo(&string, "%s", str);
+				break;
+			}
+		default:
+			Insist(false);
+	}
+	guc_node->value = pstrdup(string.data);
+	guc_node->name = pstrdup(guc->name);
+	guc_node->source = guc->source;
+	guc_node->context = guc->scontext;
+	guc_node->action = 0;
+}
+
+
+/*
+ * Serialization of GUC
+ *
+ * When a query is dispatched from QD to QE, we also need to dispatch any
+ * unsynchronized GUCs. Only GUCs with flag GUC_GPDB_ADDOPT and is different from
+ * default value need to be synchronized.
+ *
+ */
+char *
+serializeGUC(int *len_p)
+{
+	char *serialized_guc = NULL;
+	int serialized_guc_len = 0;
+	List		   *guc_node_list  = NIL;
+	ListCell *lc;
+
+	/*
+	 * Sync all the GUC which may changed in the session.
+	 * Since we don't need 2PC to ensure the GUC consistent
+	 * among QEs, we need to synchronize all the potential
+	 * changed GUCs to QEs.
+	 */
+	foreach(lc, guc_list_need_sync_global)
+	{
+		GUCNode *guc_node;
+		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
+
+		if ((guc != NULL) &&
+			(guc->flags & GUC_GPDB_ADDOPT) &&
+			(guc->context == PGC_USERSET || IsAuthenticatedUserSuperUser()))
+		{
+			guc_node = makeNode(GUCNode);
+			fillGucNode(guc_node, guc);
+			guc_node_list = lappend(guc_node_list, guc_node);
+		}
+	}
+
+	return nodeToBinaryStringFast(guc_node_list, &serialized_guc_len);
+}
+
 ParamListInfo
 deserializeParamListInfo(const char *str, int slen)
 {
@@ -1435,13 +1550,13 @@ CdbDispatchCopyStart(struct CdbCopy *cdbCopy, Node *stmt, int flags)
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
 
-	queryText = buildGpQueryString(pQueryParms, &queryTextLength);
-
 	/*
 	 * Allocate a primary QE for every available segDB in the system.
 	 */
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, cdbCopy->seglist);
 	Assert(primaryGang);
+
+	queryText = buildGpQueryString(pQueryParms, &queryTextLength, ds->guc_need_sync);
 
 	cdbdisp_makeDispatchResults(ds, 1, flags & DF_CANCEL_ON_ERROR);
 	cdbdisp_makeDispatchParams (ds, 1, queryText, queryTextLength);

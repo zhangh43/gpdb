@@ -136,6 +136,12 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	ds->allocatedGangs = lcons(newGang, ds->allocatedGangs);
 	ds->largestGangSize = Max(ds->largestGangSize, newGang->size);
 
+	/* If any QE need sync GUC, set the whole dispatch state to sync GUC.*/
+	for(i = 0; i < newGang->size; i++)
+	{
+		if(newGang->db_descriptors[i]->guc_need_sync)
+			ds->guc_need_sync = true;
+	}
 	ELOG_DISPATCHER_DEBUG("AllocateGang end.");
 
 	if (type == GANGTYPE_PRIMARY_WRITER)
