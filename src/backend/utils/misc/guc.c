@@ -7239,7 +7239,7 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 									 action,
 									 true,
 									 0);
-			DispatchSetPGVariable(stmt->name, stmt->args, stmt->is_local);
+			//DispatchSetPGVariable(stmt->name, stmt->args, stmt->is_local);
 			break;
 		case VAR_SET_MULTI:
 

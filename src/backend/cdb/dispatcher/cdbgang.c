@@ -350,14 +350,14 @@ makeOptions(void)
 	appendStringInfo(&string, " -c gp_qd_hostname=%s", qdinfo->hostip);
 	appendStringInfo(&string, " -c gp_qd_port=%d", qdinfo->port);
 
-	for (i = 0; i < ngucs; ++i)
+	/*for (i = 0; i < ngucs; ++i)
 	{
 		struct config_generic *guc = gucs[i];
 
 		if ((guc->flags & GUC_GPDB_ADDOPT) &&
 			(guc->context == PGC_USERSET || IsAuthenticatedUserSuperUser()))
 			addOneOption(&string, guc);
-	}
+	}*/
 
 	return string.data;
 }

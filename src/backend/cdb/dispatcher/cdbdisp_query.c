@@ -1410,8 +1410,6 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 char *
 serializeGUC(int *len_p)
 {
-	char *serialized_guc = NULL;
-	int serialized_guc_len = 0;
 	List		   *guc_node_list  = NIL;
 	ListCell *lc;
 
@@ -1436,7 +1434,7 @@ serializeGUC(int *len_p)
 		}
 	}
 
-	return nodeToBinaryStringFast(guc_node_list, &serialized_guc_len);
+	return nodeToBinaryStringFast(guc_node_list, len_p);
 }
 
 ParamListInfo
