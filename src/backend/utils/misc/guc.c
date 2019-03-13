@@ -6067,8 +6067,10 @@ set_config_option(const char *name, const char *value,
 	if (record->flags & GUC_GPDB_ADDOPT)
 	{
 		guc_need_sync_session = true;
+		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
 		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
 											pstrdup(name));
+		MemoryContextSwitchTo(oldContext);
 	}
 
 	/*
