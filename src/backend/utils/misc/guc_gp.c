@@ -630,7 +630,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"gp_use_legacy_hashops", PGC_USERSET, COMPAT_OPTIONS_PREVIOUS,
 			gettext_noop("If set, new tables will use legacy distribution hashops by default"),
 			NULL,
-			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&gp_use_legacy_hashops,
 		false,
@@ -1300,7 +1300,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"debug_abort_after_distributed_prepared", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Cause an abort after all segments are prepared but before the distributed commit is written."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_abort_after_distributed_prepared,
 		false,
@@ -3089,7 +3089,7 @@ struct config_int ConfigureNamesInt_gp[] =
 		{"debug_dtm_action_segment", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action segment."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_segment,
 		DEBUG_DTM_ACTION_SEGMENT_DEFAULT, -2, 1000,
@@ -3100,7 +3100,7 @@ struct config_int ConfigureNamesInt_gp[] =
 		{"debug_dtm_action_nestinglevel", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action transaction nesting level."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_nestinglevel,
 		DEBUG_DTM_ACTION_NESTINGLEVEL_DEFAULT, 0, 1000,

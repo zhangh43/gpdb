@@ -1325,7 +1325,7 @@ static struct config_bool ConfigureNamesBool[] =
 	{
 		{"check_function_bodies", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Check function bodies during CREATE FUNCTION."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&check_function_bodies,
 		true,
@@ -6061,19 +6061,6 @@ set_config_option(const char *name, const char *value,
 	}
 
 	/*
-	 * If GUC value changed, turn on flag guc_need_sync_session.
-	 * Also turn on flag guc_need_sync for all the idled QEs.
-	 */
-	if (record->flags & GUC_GPDB_ADDOPT)
-	{
-		guc_need_sync_session = true;
-		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
-										pstrdup(name));
-		MemoryContextSwitchTo(oldContext);
-	}
-
-	/*
 	 * Evaluate value and set variable.
 	 */
 	switch (record->vartype)
@@ -7239,6 +7226,7 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 									 action,
 									 true,
 									 0);
+
 			//DispatchSetPGVariable(stmt->name, stmt->args, stmt->is_local);
 			break;
 		case VAR_SET_MULTI:
@@ -7333,6 +7321,22 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 		case VAR_RESET_ALL:
 			ResetAllOptions();
 			break;
+	}
+
+	if(Gp_role == GP_ROLE_DISPATCH)
+	{
+		/*
+		 * If GUC value changed, turn on flag guc_need_sync_session.
+		 * Also turn on flag guc_need_sync for all the idled QEs.
+		 */
+		guc_need_sync_session = true;
+		if (stmt->name)
+		{
+			MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+			guc_list_need_sync_global = lappend(guc_list_need_sync_global,
+										pstrdup(stmt->name));
+			MemoryContextSwitchTo(oldContext);
+		}
 	}
 
 	if (stmt->kind == VAR_SET_DEFAULT ||
