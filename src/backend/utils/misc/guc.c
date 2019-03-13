@@ -4715,6 +4715,8 @@ ResetAllOptions(void)
 {
 	int			i;
 
+	guc_need_sync_session = true;
+
 	for (i = 0; i < num_guc_variables; i++)
 	{
 		struct config_generic *gconf = guc_variables[i];
@@ -6067,7 +6069,6 @@ set_config_option(const char *name, const char *value,
 		guc_need_sync_session = true;
 		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
 											pstrdup(name));
-		setSyncFlagForIdleQEs();
 	}
 
 	/*

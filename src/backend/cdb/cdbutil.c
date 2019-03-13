@@ -77,8 +77,6 @@ static HTAB *hostSegsHashTableInit(void);
 
 static int nextQEIdentifer(CdbComponentDatabases *cdbs);
 
-void setSyncFlagForIdleQEs();
-
 static HTAB *segment_ip_cache_htab = NULL;
 
 int numsegmentsFromQD = -1;

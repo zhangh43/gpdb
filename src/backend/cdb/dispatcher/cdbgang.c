@@ -111,6 +111,16 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	Assert(DispatcherContext);
 	oldContext = MemoryContextSwitchTo(DispatcherContext);
 
+	/*
+	 * if flag guc_need_sync_session is true, should also mark
+	 * all the idle QEs also need to be synchronized
+	 */
+	if (guc_need_sync_session)
+	{
+		setSyncFlagForIdleQEs();
+		guc_need_sync_session = false;
+	}
+
 	if (type == GANGTYPE_PRIMARY_WRITER)
 		segmentType = SEGMENTTYPE_EXPLICT_WRITER;
 	/* for extended query like cursor, must specify a reader */
