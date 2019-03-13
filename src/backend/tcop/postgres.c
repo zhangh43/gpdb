@@ -5374,7 +5374,7 @@ PostgresMain(int argc, char *argv[],
 						ListCell   *lc;
 						GUCNode *guc;
 
-						StartTransactionCommand();
+
 						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
 						Assert(IsA(guc_list, List));
 						foreach (lc, guc_list)
@@ -5382,12 +5382,12 @@ PostgresMain(int argc, char *argv[],
 							guc = (GUCNode *) lfirst(lc);
 							if (!guc || !IsA(guc, GUCNode))
 								elog(ERROR, "MPPEXEC: receive invalid guc");
-
+							StartTransactionCommand();
 							set_config_option(guc->name, guc->value,
 												guc->context, guc->source,
 												0, true, 0);
+							CommitTransactionCommand();
 						}
-						CommitTransactionCommand();
 					}
 
 					if (serializedQuerytreelen==0 && serializedPlantreelen==0)
@@ -5499,7 +5499,6 @@ PostgresMain(int argc, char *argv[],
 						ListCell   *lc;
 						GUCNode *guc;
 
-						StartTransactionCommand();
 						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
 						Assert(IsA(guc_list, List));
 						foreach (lc, guc_list)
@@ -5507,12 +5506,12 @@ PostgresMain(int argc, char *argv[],
 							guc = (GUCNode *) lfirst(lc);
 							if (!guc || !IsA(guc, GUCNode))
 								elog(ERROR, "MPPEXEC: receive invalid guc");
-
+							StartTransactionCommand();
 							set_config_option(guc->name, guc->value,
 												guc->context, guc->source,
 												0, true, 0);
+							CommitTransactionCommand();
 						}
-						CommitTransactionCommand();
 					}
 
 					pq_getmsgend(&input_message);
