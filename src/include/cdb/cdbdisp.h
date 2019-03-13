@@ -143,6 +143,9 @@ CdbDispatchHandleError(struct CdbDispatcherState *ds);
 void
 cdbdisp_cancelDispatch(CdbDispatcherState *ds);
 
+void
+cdbdisp_resetSegdbState(CdbDispatcherState *ds);
+
 /*
  * Allocate memory and initialize CdbDispatcherState.
  *

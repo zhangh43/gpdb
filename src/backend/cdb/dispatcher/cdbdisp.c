@@ -390,8 +390,6 @@ void
 cdbdisp_resetSegdbState(CdbDispatcherState *ds)
 {
 	ListCell *lc;
-	CdbDispatchResults *results;
-	dispatcher_handle_t *h;
 
 	if (!ds)
 		return;

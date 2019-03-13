@@ -77,6 +77,8 @@ static HTAB *hostSegsHashTableInit(void);
 
 static int nextQEIdentifer(CdbComponentDatabases *cdbs);
 
+void setSyncFlagForIdleQEs();
+
 static HTAB *segment_ip_cache_htab = NULL;
 
 int numsegmentsFromQD = -1;
@@ -1564,10 +1566,8 @@ getgpsegmentCount(void)
 void setSyncFlagForIdleQEs()
 {
 	CdbComponentDatabases *cdbs;
-	//List *segmentDescs = NIL;
 	ListCell   *le;
 	int i;
-	int j;
 
 	cdbs = cdbcomponent_getCdbComponents(true);
 
@@ -1580,7 +1580,6 @@ void setSyncFlagForIdleQEs()
 			{
 				SegmentDatabaseDescriptor *segdbDesc =
 						(SegmentDatabaseDescriptor *)lfirst(le);
-				//segmentDescs = lappend(segmentDescs, segdbDesc);
 				segdbDesc->guc_need_sync = true;
 			}
 		}
