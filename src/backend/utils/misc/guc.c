@@ -6064,11 +6064,14 @@ set_config_option(const char *name, const char *value,
 	 * If GUC value changed, turn on flag guc_need_sync_session.
 	 * Also turn on flag guc_need_sync for all the idled QEs.
 	 */
-	guc_need_sync_session = true;
-	MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-	guc_list_need_sync_global = lappend(guc_list_need_sync_global,
+	if (record->flags & GUC_GPDB_ADDOPT)
+	{
+		guc_need_sync_session = true;
+		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
 										pstrdup(name));
-	MemoryContextSwitchTo(oldContext);
+		MemoryContextSwitchTo(oldContext);
+	}
 
 	/*
 	 * Evaluate value and set variable.

@@ -1424,7 +1424,7 @@ serializeGUC(int *len_p)
 		GUCNode *guc_node;
 		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
 
-		if (guc != NULL)
+		if (guc != NULL && (guc->flags & GUC_GPDB_ADDOPT))
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc);
