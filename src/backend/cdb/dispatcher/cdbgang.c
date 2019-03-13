@@ -140,7 +140,10 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	for(i = 0; i < newGang->size; i++)
 	{
 		if(newGang->db_descriptors[i]->guc_need_sync)
+		{
 			ds->guc_need_sync = true;
+			newGang->db_descriptors[i]->guc_need_sync = false;
+		}
 	}
 	ELOG_DISPATCHER_DEBUG("AllocateGang end.");
 
