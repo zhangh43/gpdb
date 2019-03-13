@@ -1428,6 +1428,7 @@ serializeGUC(int *len_p)
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc);
+			elog(NOTICE,"hubert:%s:%s",guc_node->name,guc_node->value);
 			guc_node_list = lappend(guc_node_list, guc_node);
 		}
 	}

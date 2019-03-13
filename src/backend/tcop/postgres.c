@@ -1042,7 +1042,8 @@ exec_mpp_query(const char *query_string,
 			   const char * serializedQuerytree, int serializedQuerytreelen,
 			   const char * serializedPlantree, int serializedPlantreelen,
 			   const char * serializedParams, int serializedParamslen,
-			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen)
+			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen,
+			   const char * serializedGUC, int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1087,6 +1088,26 @@ exec_mpp_query(const char *query_string,
 	 * will normally change current memory context.)
 	 */
 	start_xact_command();
+
+	/* apply GUC from QD */
+	if (serializedGUC != NULL && serializedGUClen > 0)
+	{
+		ListCell   *lc;
+		GUCNode *guc;
+
+
+		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		Assert(IsA(guc_list, List));
+		foreach (lc, guc_list)
+		{
+			guc = (GUCNode *) lfirst(lc);
+			if (!guc || !IsA(guc, GUCNode))
+				elog(ERROR, "MPPEXEC: receive invalid guc");
+			set_config_option(guc->name, guc->value,
+								guc->context, guc->source,
+								0, true, 0);
+		}
+	}
 
 	/*
 	 * Zap any pre-existing unnamed statement.	(While not strictly necessary,
@@ -1550,7 +1571,8 @@ CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag)
  * Execute a "simple Query" protocol message.
  */
 static void
-exec_simple_query(const char *query_string)
+exec_simple_query(const char *query_string,
+		const char * serializedGUC, int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1588,6 +1610,26 @@ exec_simple_query(const char *query_string)
 	 * will normally change current memory context.)
 	 */
 	start_xact_command();
+
+	/* apply GUC from QD */
+	if (serializedGUC != NULL && serializedGUClen > 0)
+	{
+		ListCell   *lc;
+		GUCNode *guc;
+
+
+		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		Assert(IsA(guc_list, List));
+		foreach (lc, guc_list)
+		{
+			guc = (GUCNode *) lfirst(lc);
+			if (!guc || !IsA(guc, GUCNode))
+				elog(ERROR, "MPPEXEC: receive invalid guc");
+			set_config_option(guc->name, guc->value,
+								guc->context, guc->source,
+								0, true, 0);
+		}
+	}
 
 	/*
 	 * Zap any pre-existing unnamed statement.  (While not strictly necessary,
@@ -5244,7 +5286,7 @@ PostgresMain(int argc, char *argv[],
 					else if (am_ftshandler)
 						HandleFtsMessage(query_string);
 					else
-						exec_simple_query(query_string);
+						exec_simple_query(query_string, NULL, 0);
 
 					send_ready_for_query = true;
 				}
@@ -5368,28 +5410,6 @@ PostgresMain(int argc, char *argv[],
 					if (cuid > 0)
 						SetUserIdAndContext(cuid, false); /* Set current userid */
 
-					/* apply GUC from QD */
-					if (serializedGUC != NULL && serializedGUClen > 0)
-					{
-						ListCell   *lc;
-						GUCNode *guc;
-
-
-						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-						Assert(IsA(guc_list, List));
-						foreach (lc, guc_list)
-						{
-							guc = (GUCNode *) lfirst(lc);
-							if (!guc || !IsA(guc, GUCNode))
-								elog(ERROR, "MPPEXEC: receive invalid guc");
-							StartTransactionCommand();
-							set_config_option(guc->name, guc->value,
-												guc->context, guc->source,
-												0, true, 0);
-							CommitTransactionCommand();
-						}
-					}
-
 					if (serializedQuerytreelen==0 && serializedPlantreelen==0)
 					{
 						if (strncmp(query_string, "BEGIN", 5) == 0)
@@ -5414,7 +5434,7 @@ PostgresMain(int argc, char *argv[],
 						}
 						else
 						{
-							exec_simple_query(query_string);
+							exec_simple_query(query_string, serializedGUC, serializedGUClen);
 						}
 					}
 					else
@@ -5422,7 +5442,8 @@ PostgresMain(int argc, char *argv[],
 									   serializedQuerytree, serializedQuerytreelen,
 									   serializedPlantree, serializedPlantreelen,
 									   serializedParams, serializedParamslen,
-									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen);
+									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen,
+									   serializedGUC, serializedGUClen);
 
 					SetUserIdAndContext(GetOuterUserId(), false);
 
@@ -5494,6 +5515,7 @@ PostgresMain(int argc, char *argv[],
 						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
 
 					/* apply GUC from QD */
+					/*
 					if (serializedGUC != NULL && serializedGUClen > 0)
 					{
 						ListCell   *lc;
@@ -5512,7 +5534,7 @@ PostgresMain(int argc, char *argv[],
 												0, true, 0);
 							CommitTransactionCommand();
 						}
-					}
+					}*/
 
 					pq_getmsgend(&input_message);
 
