@@ -111,13 +111,6 @@ static void dispatchCommand(CdbDispatchResult *dispatchResult,
 				const char *query_text,
 				int query_text_len);
 
-static void addSegdbSpecificParams(SegmentDatabaseDescriptor *segdbDesc,
-				CdbDispatchCmdAsync *pParms);
-
-static void dispatchParamAppend(CdbDispatchCmdAsync *pParms,
-				char *serialized_guc,
-				int serialized_guc_len);
-
 static void checkDispatchResult(CdbDispatcherState *ds,
 					bool wait);
 
@@ -300,9 +293,6 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		SegmentDatabaseDescriptor *segdbDesc = gp->db_descriptors[i];
 
 		Assert(segdbDesc != NULL);
-		//elog(LOG,"hubertold: %d",pParms->query_text_len);
-
-		//addSegdbSpecificParams(segdbDesc, pParms);
 
 		/*
 		 * Initialize the QE's CdbDispatchResult object.
@@ -314,7 +304,6 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		}
 		pParms->dispatchResultPtrArray[pParms->dispatchCount++] = qeResult;
 
-		//elog(LOG,"hubertnew: %d",pParms->query_text_len);
 		dispatchCommand(qeResult, pParms->query_text, pParms->query_text_len);
 	}
 }
@@ -611,178 +600,6 @@ dispatchCommand(CdbDispatchResult *dispatchResult,
 	dispatchResult->hasDispatched = true;
 
 	ELOG_DISPATCHER_DEBUG("Command dispatched to QE (%s)", dispatchResult->segdbDesc->whoami);
-}
-
-/*
- * Add GUC value to the GUCNode.
- */
-static void
-fillGucNode(GUCNode *guc_node, struct config_generic *guc)
-{
-	StringInfoData string;
-	initStringInfo(&string);
-	Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
-	switch (guc->vartype)
-	{
-		case PGC_BOOL:
-			{
-				struct config_bool *bguc = (struct config_bool *) guc;
-				appendStringInfo(&string, "%s", *(bguc->variable) ? "true" : "false");
-				break;
-			}
-		case PGC_INT:
-			{
-				struct config_int *iguc = (struct config_int *) guc;
-
-				appendStringInfo(&string, "%d", *iguc->variable);
-				break;
-			}
-		case PGC_REAL:
-			{
-				struct config_real *rguc = (struct config_real *) guc;
-
-				appendStringInfo(&string, "%f", *rguc->variable);
-				break;
-			}
-		case PGC_STRING:
-			{
-				struct config_string *sguc = (struct config_string *) guc;
-
-				appendStringInfo(&string, "%s", *sguc->variable);
-				break;
-			}
-		case PGC_ENUM:
-			{
-				struct config_enum *eguc = (struct config_enum *) guc;
-				int			value = *eguc->variable;
-				const char *str = config_enum_lookup_by_value(eguc, value);
-
-				appendStringInfo(&string, "%s", str);
-				break;
-			}
-		default:
-			Insist(false);
-	}
-	guc_node->value = pstrdup(string.data);
-	guc_node->name = pstrdup(guc->name);
-	guc_node->source = guc->source;
-	guc_node->context = guc->scontext;
-	guc_node->action = 0;
-}
-
-/*
- * Add segdb specific dispatch parameters.
- */
-static void
-addSegdbSpecificParams(SegmentDatabaseDescriptor *segdbDesc, CdbDispatchCmdAsync *pParms)
-{
-	/* Add GUC info if segdb need to sync GUC.*/
-	if(segdbDesc->guc_need_sync)
-	{
-		char *serialized_guc = NULL;
-		int serialized_guc_len = 0;
-		List		   *guc_node_list  = NIL;
-		ListCell *lc;
-
-		/*
-		 * Sync all the GUC which may changed in the session.
-		 * Since we don't need 2PC to ensure the GUC consistent
-		 * among QEs, we need to synchronize all the potential
-		 * changed GUCs to QEs.
-		 */
-		foreach(lc, guc_list_need_sync_global)
-		{
-			GUCNode *guc_node;
-			struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
-
-			if ((guc != NULL) &&
-				(guc->flags & GUC_GPDB_ADDOPT) &&
-				(guc->context == PGC_USERSET || IsAuthenticatedUserSuperUser()))
-			{
-				guc_node = makeNode(GUCNode);
-				fillGucNode(guc_node, guc);
-				guc_node_list = lappend(guc_node_list, guc_node);
-			}
-		}
-
-		serialized_guc=nodeToBinaryStringFast(guc_node_list, &serialized_guc_len);
-
-		dispatchParamAppend(pParms, serialized_guc, serialized_guc_len);
-
-		/* GUC will be synced, flag set back to True is transaction abort. */
-		segdbDesc->guc_need_sync = false;
-	}
-	else
-	{
-		dispatchParamAppend(pParms, NULL, 0);
-	}
-
-	return ;
-}
-
-/*
- *	Append additional info into dispatched text.
- *	For example, part of segdbs need to sync GUC
- *	state, and thus we need to pass additional GUC
- *	information in the dispatched command.
- */
-static void
-dispatchParamAppend(CdbDispatchCmdAsync *pParms,
-					char *serialized_guc,
-					int serialized_guc_len)
-{
-	char *shared_query;
-	char *pos;
-	int total_query_len;
-	int	tmp, len;
-
-	MemoryContext oldContext;
-
-	/*
-	 * Must allocate query text within DispatcherContext,
-	 */
-	Assert(DispatcherContext);
-	oldContext = MemoryContextSwitchTo(DispatcherContext);
-
-	total_query_len = strlen(pParms->query_text)
-			+ sizeof(serialized_guc_len)
-			+ serialized_guc_len;
-
-	shared_query = palloc0(total_query_len);
-
-	pos = shared_query;
-
-	memcpy(pos, pParms->query_text, strlen(pParms->query_text));
-	pos += strlen(pParms->query_text);
-
-	tmp = htonl(serialized_guc_len);
-	memcpy(pos, &tmp, sizeof(tmp));
-	pos += sizeof(tmp);
-
-	if (serialized_guc_len > 0)
-	{
-		memcpy(pos, serialized_guc, serialized_guc_len);
-		pos += serialized_guc_len;
-	}
-
-	len = pos - shared_query - 1;
-
-	/*
-	 * Revise the length placeholder
-	 */
-	tmp = htonl(len);
-	memcpy(shared_query + 1, &tmp, sizeof(len));
-
-	Assert(len + 1 == total_query_len);
-
-	/* free the old dispatch query_text and assign the new one */
-	pfree(pParms->query_text);
-	pParms->query_text = shared_query;
-	pParms->query_text_len = total_query_len;
-
-	MemoryContextSwitchTo(oldContext);
-
-	return;
 }
 
 /*

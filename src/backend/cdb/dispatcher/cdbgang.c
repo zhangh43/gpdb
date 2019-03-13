@@ -119,6 +119,7 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	{
 		setSyncFlagForIdleQEs();
 		guc_need_sync_session = false;
+		guc_need_sync_session_prior = guc_need_sync_session;
 	}
 
 	if (type == GANGTYPE_PRIMARY_WRITER)
