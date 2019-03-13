@@ -5374,9 +5374,9 @@ PostgresMain(int argc, char *argv[],
 						ListCell   *lc;
 						GUCNode *guc;
 
+						StartTransactionCommand();
 						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-						if (!IsA(guc_list, List))
-							elog(ERROR, "could not deserialize query parameters");
+						Assert(IsA(guc_list, List));
 						foreach (lc, guc_list)
 						{
 							guc = (GUCNode *) lfirst(lc);
@@ -5387,6 +5387,7 @@ PostgresMain(int argc, char *argv[],
 												guc->context, guc->source,
 												0, true, 0);
 						}
+						CommitTransactionCommand();
 					}
 
 					if (serializedQuerytreelen==0 && serializedPlantreelen==0)
@@ -5498,9 +5499,9 @@ PostgresMain(int argc, char *argv[],
 						ListCell   *lc;
 						GUCNode *guc;
 
+						StartTransactionCommand();
 						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-						if (!IsA(guc_list, List))
-							elog(ERROR, "could not deserialize query parameters");
+						Assert(IsA(guc_list, List));
 						foreach (lc, guc_list)
 						{
 							guc = (GUCNode *) lfirst(lc);
@@ -5511,6 +5512,7 @@ PostgresMain(int argc, char *argv[],
 												guc->context, guc->source,
 												0, true, 0);
 						}
+						CommitTransactionCommand();
 					}
 
 					pq_getmsgend(&input_message);
