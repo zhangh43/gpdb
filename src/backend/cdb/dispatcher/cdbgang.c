@@ -119,7 +119,6 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	{
 		setSyncFlagForIdleQEs();
 		guc_need_sync_session = false;
-		guc_need_sync_session_prior = guc_need_sync_session;
 	}
 
 	if (type == GANGTYPE_PRIMARY_WRITER)
@@ -337,11 +336,8 @@ addOneOption(StringInfo string, struct config_generic *guc)
 char *
 makeOptions(void)
 {
-	struct config_generic **gucs = get_guc_variables();
-	int			ngucs = get_num_guc_variables();
 	CdbComponentDatabaseInfo *qdinfo = NULL;
 	StringInfoData string;
-	int			i;
 
 	initStringInfo(&string);
 
@@ -350,15 +346,6 @@ makeOptions(void)
 	qdinfo = cdbcomponent_getComponentInfo(MASTER_CONTENT_ID); 
 	appendStringInfo(&string, " -c gp_qd_hostname=%s", qdinfo->hostip);
 	appendStringInfo(&string, " -c gp_qd_port=%d", qdinfo->port);
-
-	/*for (i = 0; i < ngucs; ++i)
-	{
-		struct config_generic *guc = gucs[i];
-
-		if ((guc->flags & GUC_GPDB_ADDOPT) &&
-			(guc->context == PGC_USERSET || IsAuthenticatedUserSuperUser()))
-			addOneOption(&string, guc);
-	}*/
 
 	return string.data;
 }
