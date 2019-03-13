@@ -86,6 +86,7 @@
 #include "utils/tzparser.h"
 #include "utils/xml.h"
 #include "cdb/cdbdisp_query.h"
+#include "cdb/cdbutil.h"
 #include "cdb/cdbvars.h"
 
 #ifndef PG_KRB_SRVTAB
