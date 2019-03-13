@@ -91,14 +91,8 @@ cdbconn_createSegmentDescriptor(struct CdbComponentDatabaseInfo *cdbinfo, int id
 	segdbDesc->identifier = identifier;
 	segdbDesc->isWriter = isWriter;
 
-	/*
-	 * whether new created gang need to sync GUCs
-	 * depend on guc_need_sync_session
-	 */
-	if (guc_need_sync_session)
-		segdbDesc->guc_need_sync = true;
-	else
-		segdbDesc->guc_need_sync = false;
+	/* New created gang always need to sync GUCs. */
+	segdbDesc->guc_need_sync = true;
 
 	MemoryContextSwitchTo(oldContext);
 	return segdbDesc;

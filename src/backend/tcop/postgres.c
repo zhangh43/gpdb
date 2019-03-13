@@ -5306,7 +5306,6 @@ PostgresMain(int argc, char *argv[],
 					serializedParamslen = pq_getmsgint(&input_message, 4);
 					serializedQueryDispatchDesclen = pq_getmsgint(&input_message, 4);
 					serializedDtxContextInfolen = pq_getmsgint(&input_message, 4);
-					serializedGUClen = pq_getmsgint(&input_message, 4);
 
 					/* read in the DTX context info */
 					if (serializedDtxContextInfolen == 0)
@@ -5332,9 +5331,6 @@ PostgresMain(int argc, char *argv[],
 					if (serializedQueryDispatchDesclen > 0)
 						serializedQueryDispatchDesc = pq_getmsgbytes(&input_message,serializedQueryDispatchDesclen);
 
-					if (serializedGUClen > 0)
-						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
-
 					/*
 					 * Always use the same GpIdentity.numsegments with QD on QEs
 					 */
@@ -5343,6 +5339,11 @@ PostgresMain(int argc, char *argv[],
 					resgroupInfoLen = pq_getmsgint(&input_message, 4);
 					if (resgroupInfoLen > 0)
 						resgroupInfoBuf = pq_getmsgbytes(&input_message, resgroupInfoLen);
+
+					serializedGUClen = pq_getmsgint(&input_message, 4);
+
+					if (serializedGUClen > 0)
+						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
 
 					pq_getmsgend(&input_message);
 

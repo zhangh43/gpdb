@@ -1561,11 +1561,10 @@ getgpsegmentCount(void)
  * idle segdbs has an established connection with segment, but new segdb is
  * not setup yet, callers need to establish the connection by themselves.
  */
-List *
-cdbcomponent_getAllIdleQEs()
+void setSyncFlagForIdleQEs()
 {
 	CdbComponentDatabases *cdbs;
-	List *segmentDescs = NIL;
+	//List *segmentDescs = NIL;
 	ListCell   *le;
 	int i;
 	int j;
@@ -1581,10 +1580,10 @@ cdbcomponent_getAllIdleQEs()
 			{
 				SegmentDatabaseDescriptor *segdbDesc =
 						(SegmentDatabaseDescriptor *)lfirst(le);
-				segmentDescs = lappend(segmentDescs, segdbDesc);
+				//segmentDescs = lappend(segmentDescs, segdbDesc);
 				segdbDesc->guc_need_sync = true;
 			}
 		}
 	}
-	return segmentDescs;
+	return ;
 }

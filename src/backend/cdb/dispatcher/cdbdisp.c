@@ -382,6 +382,41 @@ cdbdisp_cancelDispatch(CdbDispatcherState *ds)
 	cdbdisp_checkDispatchResult(ds, DISPATCH_WAIT_CANCEL);
 }
 
+/*
+ * Reset the segment_database_descriptors state for
+ * all the allocated gangs in this dispatcher state.
+ */
+void
+cdbdisp_resetSegdbState(CdbDispatcherState *ds)
+{
+	ListCell *lc;
+	CdbDispatchResults *results;
+	dispatcher_handle_t *h;
+
+	if (!ds)
+		return;
+
+	foreach(lc, ds->allocatedGangs)
+	{
+		Gang *gp = lfirst(lc);
+		int i;
+
+		/*
+		 * Loop through the segment_database_descriptors array and
+		 * reset the segdb state, for example the guc_need_sync flag
+		 */
+		if (gp)
+		{
+			for (i = 0; i < gp->size; i++)
+			{
+				SegmentDatabaseDescriptor *segdbDesc = gp->db_descriptors[i];
+				Assert(segdbDesc != NULL);
+				segdbDesc->guc_need_sync = true;
+			}
+		}
+	}
+}
+
 bool
 cdbdisp_checkForCancel(CdbDispatcherState *ds)
 {
@@ -479,6 +514,7 @@ cleanup_dispatcher_handle(dispatcher_handle_t *h)
 		return;
 	}
 
+	cdbdisp_resetSegdbState(h->dispatcherState);
 	cdbdisp_cancelDispatch(h->dispatcherState);
 	cdbdisp_destroyDispatcherState(h->dispatcherState);
 }
@@ -504,9 +540,6 @@ AtAbort_DispatcherState(void)
 	 * current resource owner and its children
 	 */
 	CdbResourceOwnerWalker(CurrentResourceOwner, cdbdisp_cleanupDispatcherHandle);
-
-	/* set all the QE to be need_syc*/
-	SetAllGangsNeedSync();
 
 	Assert(open_dispatcher_handles == NULL);
 
@@ -534,7 +567,6 @@ AtSubAbort_DispatcherState(void)
 	}
 
 	CdbResourceOwnerWalker(CurrentResourceOwner, cdbdisp_cleanupDispatcherHandle);
-	/* set all the QE to be need_syc*/
 }
 
 void

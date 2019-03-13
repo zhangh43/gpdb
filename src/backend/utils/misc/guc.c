@@ -6066,7 +6066,7 @@ set_config_option(const char *name, const char *value,
 		guc_need_sync_session = true;
 		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
 											pstrdup(name));
-		cdbcomponent_getAllIdleQEs();
+		setSyncFlagForIdleQEs();
 	}
 
 	/*
