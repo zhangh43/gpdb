@@ -300,6 +300,7 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		SegmentDatabaseDescriptor *segdbDesc = gp->db_descriptors[i];
 
 		Assert(segdbDesc != NULL);
+		elog(LOG,"hubertold: %d",pParms->query_text_len);
 
 		addSegdbSpecificParams(segdbDesc, pParms);
 
@@ -313,6 +314,7 @@ cdbdisp_dispatchToGang_async(struct CdbDispatcherState *ds,
 		}
 		pParms->dispatchResultPtrArray[pParms->dispatchCount++] = qeResult;
 
+		elog(LOG,"hubertnew: %d",pParms->query_text_len);
 		dispatchCommand(qeResult, pParms->query_text, pParms->query_text_len);
 	}
 }
