@@ -5447,6 +5447,9 @@ PostgresMain(int argc, char *argv[],
 					int serializedDtxContextInfolen;
 					const char *serializedDtxContextInfo;
 
+					int serializedGUClen;
+					const char *serializedGUC = NULL;
+
 					if (Gp_role != GP_ROLE_EXECUTE)
 						ereport(ERROR,
 								(errcode(ERRCODE_PROTOCOL_VIOLATION),
@@ -5484,6 +5487,32 @@ PostgresMain(int argc, char *argv[],
 						serializedDtxContextInfo = pq_getmsgbytes(&input_message,serializedDtxContextInfolen);
 
 					DtxContextInfo_Deserialize(serializedDtxContextInfo, serializedDtxContextInfolen, &TempDtxContextInfo);
+
+					serializedGUClen = pq_getmsgint(&input_message, 4);
+
+					if (serializedGUClen > 0)
+						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
+
+					/* apply GUC from QD */
+					if (serializedGUC != NULL && serializedGUClen > 0)
+					{
+						ListCell   *lc;
+						GUCNode *guc;
+
+						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+						if (!IsA(guc_list, List))
+							elog(ERROR, "could not deserialize query parameters");
+						foreach (lc, guc_list)
+						{
+							guc = (GUCNode *) lfirst(lc);
+							if (!guc || !IsA(guc, GUCNode))
+								elog(ERROR, "MPPEXEC: receive invalid guc");
+
+							set_config_option(guc->name, guc->value,
+												guc->context, guc->source,
+												0, true, 0);
+						}
+					}
 
 					pq_getmsgend(&input_message);
 
