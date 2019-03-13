@@ -553,8 +553,7 @@ cdbdisp_buildUtilityQueryParms(struct Node *stmt,
 
 static DispatchCommandQueryParms *
 cdbdisp_buildPlanQueryParms(struct QueryDesc *queryDesc,
-							bool planRequiresTxn,
-							bool gucNeedSync)
+							bool planRequiresTxn)
 {
 	char	   *splan,
 			   *sddesc,
