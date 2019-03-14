@@ -1630,7 +1630,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"debug_dtm_action_primary", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Specify if the primary or mirror segment is the target of the debug DTM action."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_primary,
 		DEBUG_DTM_ACTION_PRIMARY_DEFAULT, NULL, NULL, NULL
@@ -4707,7 +4707,7 @@ struct config_enum ConfigureNamesEnum_gp[] =
 		{"debug_dtm_action_protocol", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action protocol."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_protocol,
 		DTX_PROTOCOL_COMMAND_NONE, debug_dtm_action_protocol_options,

@@ -5865,7 +5865,7 @@ set_config_option(const char *name, const char *value,
 			MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
 			guc_list_need_sync_global = list_append_unique(guc_list_need_sync_global,
 										pstrdup(name));
-				MemoryContextSwitchTo(oldContext);
+			MemoryContextSwitchTo(oldContext);
 		}
 	}
 	/*
