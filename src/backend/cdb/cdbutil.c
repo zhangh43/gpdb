@@ -1569,6 +1569,20 @@ void setSyncFlagForIdleQEs()
 
 	cdbs = cdbcomponent_getCdbComponents(true);
 
+	if (cdbs->entry_db_info != NULL)
+	{
+		for (i = 0; i < cdbs->total_entry_dbs; i++)
+		{
+			CdbComponentDatabaseInfo *cdi = &cdbs->entry_db_info[i];
+			foreach (le, cdi->freelist)
+			{
+				SegmentDatabaseDescriptor *segdbDesc =
+						(SegmentDatabaseDescriptor *)lfirst(le);
+				segdbDesc->guc_need_sync = true;
+			}
+		}
+	}
+
 	if (cdbs->segment_db_info != NULL)
 	{
 		for (i = 0; i < cdbs->total_segment_dbs; i++)
