@@ -7332,10 +7332,17 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 		guc_need_sync_session = true;
 		if (stmt->name)
 		{
-			MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-			guc_list_need_sync_global = lappend(guc_list_need_sync_global,
-										pstrdup(stmt->name));
-			MemoryContextSwitchTo(oldContext);
+			struct config_generic *record;
+			record = find_option(stmt->name, true, elevel);
+			if (record && ((record->context & PGC_SUSET)
+					|| (record->context & PGC_USERSET)) )
+			{
+				MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+				guc_list_need_sync_global = lappend(guc_list_need_sync_global,
+											pstrdup(stmt->name));
+				MemoryContextSwitchTo(oldContext);
+			}
+
 		}
 	}
 
