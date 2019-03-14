@@ -1999,7 +1999,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"lock_timeout", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Sets the maximum allowed duration of any wait for a lock."),
 			gettext_noop("A value of 0 turns off the timeout."),
-			GUC_UNIT_MS
+			GUC_UNIT_MS | GUC_GPDB_ADDOPT
 		},
 		&LockTimeout,
 		0, 0, INT_MAX,
@@ -2009,7 +2009,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_min_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Minimum age at which VACUUM should freeze a table row."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&vacuum_freeze_min_age,
 		50000000, 0, 1000000000,
@@ -2019,7 +2019,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Age at which VACUUM should scan whole table to freeze tuples."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&vacuum_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2039,7 +2039,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_multixact_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Multixact age at which VACUUM should scan whole table to freeze tuples."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&vacuum_multixact_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2049,7 +2049,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_defer_cleanup_age", PGC_SIGHUP, REPLICATION_MASTER,
 			gettext_noop("Number of transactions by which VACUUM and HOT cleanup should be deferred, if any."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&vacuum_defer_cleanup_age,
 		0, 0, 1000000,

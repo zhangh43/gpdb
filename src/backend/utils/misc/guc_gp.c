@@ -1044,7 +1044,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"gp_debug_pgproc", PGC_POSTMASTER, DEVELOPER_OPTIONS,
 			gettext_noop("Print debug info relevant to PGPROC."),
 			NULL /* long description */ ,
-			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&gp_debug_pgproc,
 		false,
@@ -1055,7 +1055,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"gp_appendonly_verify_block_checksums", PGC_USERSET, DEVELOPER_OPTIONS,
 			gettext_noop("Verify the append-only block checksum when reading."),
 			NULL,
-			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL
+			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_ADDOPT
 		},
 		&gp_appendonly_verify_block_checksums,
 		true,
@@ -1066,7 +1066,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"gp_appendonly_verify_write_block", PGC_USERSET, DEVELOPER_OPTIONS,
 			gettext_noop("Verify the append-only block as it is being written."),
 			NULL,
-			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL
+			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_ADDOPT
 		},
 		&gp_appendonly_verify_write_block,
 		false,
@@ -1077,7 +1077,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 		{"gp_appendonly_compaction", PGC_SUSET, APPENDONLY_TABLES,
 			gettext_noop("Perform append-only compaction instead of eof truncation on vacuum."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL
+			GUC_SUPERUSER_ONLY | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_ADDOPT
 		},
 		&gp_appendonly_compaction,
 		true,
@@ -3226,7 +3226,7 @@ struct config_int ConfigureNamesInt_gp[] =
 		{"gp_appendonly_compaction_threshold", PGC_USERSET, APPENDONLY_TABLES,
 			gettext_noop("Threshold of the ratio of dirty data in a segment file over which the file"
 						 " will be compacted during lazy vacuum."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&gp_appendonly_compaction_threshold,
 		10, 0, 100,
@@ -3613,7 +3613,7 @@ struct config_int ConfigureNamesInt_gp[] =
 		{"gp_cached_segworkers_threshold", PGC_USERSET, GP_ARRAY_TUNING,
 			gettext_noop("Sets the maximum number of segment workers to cache between statements."),
 			NULL,
-			GUC_NOT_IN_SAMPLE
+			GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&gp_cached_gang_threshold,
 		5, 1, INT_MAX,
@@ -3853,7 +3853,7 @@ struct config_int ConfigureNamesInt_gp[] =
 	{
 		{"gp_reject_percent_threshold", PGC_USERSET, GP_ERROR_HANDLING,
 			gettext_noop("Reject limit in percent starts calculating after this number of rows processed"),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&gp_reject_percent_threshold,
 		300, 0, INT_MAX,
@@ -3936,7 +3936,7 @@ struct config_int ConfigureNamesInt_gp[] =
 	{
 		{"gp_autostats_on_change_threshold", PGC_USERSET, DEVELOPER_OPTIONS,
 			gettext_noop("Threshold for number of tuples added to table by CTAS or Insert-to to trigger autostats in on_change mode. See gp_autostats_mode."),
-			NULL
+			NULL, GUC_GPDB_ADDOPT
 		},
 		&gp_autostats_on_change_threshold,
 		INT_MAX, 0, INT_MAX,
@@ -3949,7 +3949,7 @@ struct config_int ConfigureNamesInt_gp[] =
 						 "aggregate computation will be rewritten based on the multi-phrase aggregation. "
 						 "The rest of grouping sets in the same query will not be rewritten."),
 			NULL,
-			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&gp_distinct_grouping_sets_threshold,
 		32, 0, 1024,
