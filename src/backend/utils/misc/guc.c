@@ -7333,7 +7333,7 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 		if (stmt->name)
 		{
 			struct config_generic *record;
-			record = find_option(stmt->name, true, elevel);
+			record = find_option(stmt->name, true, 0);
 			if (record && ((record->context & PGC_SUSET)
 					|| (record->context & PGC_USERSET)) )
 			{
