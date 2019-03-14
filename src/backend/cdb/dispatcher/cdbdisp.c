@@ -301,7 +301,7 @@ cdbdisp_makeDispatcherState(bool isExtendedQuery)
 	handle->dispatcherState->isExtendedQuery = isExtendedQuery;
 	handle->dispatcherState->allocatedGangs = NIL;
 	handle->dispatcherState->largestGangSize = 0;
-	handle->dispatcherState->isDtxProtocalCommand = false;
+	handle->dispatcherState->isNonSyncGUCCommand = false;
 
 	return handle->dispatcherState;
 }

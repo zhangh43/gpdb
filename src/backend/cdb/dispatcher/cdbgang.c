@@ -119,7 +119,7 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	if (guc_need_sync_session)
 	{
 		setSyncFlagForIdleQEs();
-		if (!ds->isDtxProtocalCommand)
+		if (!ds->isNonSyncGUCCommand)
 			guc_need_sync_session = false;
 	}
 
@@ -144,7 +144,7 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 		if(newGang->db_descriptors[i]->guc_need_sync)
 		{
 			ds->guc_need_sync = true;
-			if (!ds->isDtxProtocalCommand)
+			if (!ds->isNonSyncGUCCommand)
 				newGang->db_descriptors[i]->guc_need_sync = false;
 		}
 	}

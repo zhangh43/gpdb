@@ -421,6 +421,10 @@ cdbdisp_dispatchCommandInternal(DispatchCommandQueryParms *pQueryParms,
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
 
+	/* BEGIN commands do not sync GUCs */
+	if (pQueryParms->strCommand && strncmp(pQueryParms->strCommand, "BEGIN", 5) == 0)
+		ds->isNonSyncGUCCommand = true;
+
 	/*
 	 * Allocate a primary QE for every available segDB in the system.
 	 */
