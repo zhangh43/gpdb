@@ -45,6 +45,7 @@ typedef struct CdbDispatcherState
 	void *dispatchParams;
 	int	largestGangSize;
 	bool guc_need_sync;
+	bool isDtxProtocalCommand;
 } CdbDispatcherState;
 
 typedef struct DispatcherInternalFuncs

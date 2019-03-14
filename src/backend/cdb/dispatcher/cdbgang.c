@@ -115,7 +115,7 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	 * if flag guc_need_sync_session is true, should also mark
 	 * all the idle QEs also need to be synchronized
 	 */
-	if (guc_need_sync_session)
+	if (!ds->isDtxProtocalCommand && guc_need_sync_session)
 	{
 		setSyncFlagForIdleQEs();
 		guc_need_sync_session = false;
@@ -137,12 +137,15 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	ds->largestGangSize = Max(ds->largestGangSize, newGang->size);
 
 	/* If any QE need sync GUC, set the whole dispatch state to sync GUC.*/
-	for(i = 0; i < newGang->size; i++)
+	if (!ds->isDtxProtocalCommand)
 	{
-		if(newGang->db_descriptors[i]->guc_need_sync)
+		for (i = 0; i < newGang->size; i++)
 		{
-			ds->guc_need_sync = true;
-			newGang->db_descriptors[i]->guc_need_sync = false;
+			if(newGang->db_descriptors[i]->guc_need_sync)
+			{
+				ds->guc_need_sync = true;
+				newGang->db_descriptors[i]->guc_need_sync = false;
+			}
 		}
 	}
 	ELOG_DISPATCHER_DEBUG("AllocateGang end.");

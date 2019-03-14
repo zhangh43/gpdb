@@ -107,10 +107,11 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 	 * Dispatch the command.
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
+	ds->isDtxProtocalCommand = true;
 
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, twophaseSegments);
 
-	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen, ds->guc_need_sync);
+	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen, false);
 
 	Assert(primaryGang);
 
