@@ -1484,10 +1484,30 @@ static void
 exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 							  int flags, const char *loggingStr,
 							  const char *gid, DistributedTransactionId gxid,
-							  DtxContextInfo *contextInfo)
+							  DtxContextInfo *contextInfo,
+							  const char * serializedGUC, int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	const char *commandTag = loggingStr;
+
+	/* apply DTM specific GUC from QD */
+	if (serializedGUC != NULL && serializedGUClen > 0)
+	{
+		ListCell   *lc;
+		GUCNode *guc;
+
+		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		Assert(IsA(guc_list, List));
+		foreach (lc, guc_list)
+		{
+			guc = (GUCNode *) lfirst(lc);
+			if (!guc || !IsA(guc, GUCNode))
+				elog(ERROR, "MPPEXEC: receive invalid guc");
+			set_config_option(guc->name, guc->value,
+								guc->context, guc->source,
+								0, true, 0);
+		}
+	}
 
 	if (log_statement == LOGSTMT_ALL)
 	{
@@ -5514,32 +5534,10 @@ PostgresMain(int argc, char *argv[],
 					if (serializedGUClen > 0)
 						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
 
-					/* apply GUC from QD */
-					/*
-					if (serializedGUC != NULL && serializedGUClen > 0)
-					{
-						ListCell   *lc;
-						GUCNode *guc;
-
-						StartTransactionCommand();
-						List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-						Assert(IsA(guc_list, List));
-						foreach (lc, guc_list)
-						{
-							guc = (GUCNode *) lfirst(lc);
-							if (!guc || !IsA(guc, GUCNode))
-								elog(ERROR, "MPPEXEC: receive invalid guc");
-
-							set_config_option(guc->name, guc->value,
-												guc->context, guc->source,
-												0, true, 0);
-						}
-						//CommitTransactionCommand();
-					}*/
-
 					pq_getmsgend(&input_message);
 
-					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo);
+					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo,
+											serializedGUC, serializedGUClen);
 
 					send_ready_for_query = true;
             	}

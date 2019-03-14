@@ -113,12 +113,14 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 
 	/*
 	 * if flag guc_need_sync_session is true, should also mark
-	 * all the idle QEs also need to be synchronized
+	 * all the idle QEs also need to be synchronized.
+	 * For dtx command, need_sync flag should still be on.
 	 */
-	if (!ds->isDtxProtocalCommand && guc_need_sync_session)
+	if (guc_need_sync_session)
 	{
 		setSyncFlagForIdleQEs();
-		guc_need_sync_session = false;
+		if (!ds->isDtxProtocalCommand)
+			guc_need_sync_session = false;
 	}
 
 	if (type == GANGTYPE_PRIMARY_WRITER)
@@ -137,17 +139,16 @@ AllocateGang(CdbDispatcherState *ds, GangType type, List *segments)
 	ds->largestGangSize = Max(ds->largestGangSize, newGang->size);
 
 	/* If any QE need sync GUC, set the whole dispatch state to sync GUC.*/
-	if (!ds->isDtxProtocalCommand)
+	for (i = 0; i < newGang->size; i++)
 	{
-		for (i = 0; i < newGang->size; i++)
+		if(newGang->db_descriptors[i]->guc_need_sync)
 		{
-			if(newGang->db_descriptors[i]->guc_need_sync)
-			{
-				ds->guc_need_sync = true;
+			ds->guc_need_sync = true;
+			if (!ds->isDtxProtocalCommand)
 				newGang->db_descriptors[i]->guc_need_sync = false;
-			}
 		}
 	}
+
 	ELOG_DISPATCHER_DEBUG("AllocateGang end.");
 
 	if (type == GANGTYPE_PRIMARY_WRITER)

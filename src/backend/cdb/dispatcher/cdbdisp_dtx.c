@@ -111,7 +111,7 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, twophaseSegments);
 
-	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen, false);
+	queryText = buildGpDtxProtocolCommand(&dtxProtocolParms, &queryTextLen, ds->guc_need_sync);
 
 	Assert(primaryGang);
 
@@ -253,7 +253,7 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	int			gidLen = strlen(gid) + 1;
 
 	if (guc_need_sync)
-		guc = serializeGUC(&guc_len);
+		guc = serializeGUC(&guc_len, true);
 
 	int			total_query_len = 1 /* 'T' */ +
 	sizeof(len) +

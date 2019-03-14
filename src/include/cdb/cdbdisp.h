@@ -184,6 +184,6 @@ char *
 segmentsToContentStr(List *segments);
 
 extern char *
-serializeGUC(int *len_p);
+serializeGUC(int *len_p, bool isDtx);
 
 #endif   /* CDBDISP_H */

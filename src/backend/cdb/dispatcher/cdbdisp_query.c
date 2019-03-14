@@ -871,7 +871,7 @@ buildGpQueryString(DispatchCommandQueryParms *pQueryParms,
 		command_len = strlen(command) + 1;
 
 	if (guc_need_sync)
-		guc = serializeGUC(&guc_len);
+		guc = serializeGUC(&guc_len, false);
 
 	initStringInfo(&resgroupInfo);
 	if (IsResGroupActivated())
@@ -1408,7 +1408,7 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
  *
  */
 char *
-serializeGUC(int *len_p)
+serializeGUC(int *len_p, bool isDtx)
 {
 	List		   *guc_node_list  = NIL;
 	ListCell *lc;
@@ -1424,11 +1424,17 @@ serializeGUC(int *len_p)
 		GUCNode *guc_node;
 		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
 
-		if (guc != NULL)// && (guc->flags & GUC_GPDB_ADDOPT))
+		/*
+		 * Since we could not startxact in exec_mpp_dtx_protocol_command()
+		 * to set GUC, but some assign functions of GUC need transaction started.
+		 * So if it is dtx comamnd, then we only sync GUC with GUC_GPDB_DTX flags
+		 *
+		 */
+		if (guc != NULL &&
+			(!isDtx || (guc->flags & GUC_GPDB_DTX)))
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc);
-			//elog(NOTICE,"hubert:%s:%s",guc_node->name,guc_node->value);
 			guc_node_list = lappend(guc_node_list, guc_node);
 		}
 	}
