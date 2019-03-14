@@ -1336,7 +1336,8 @@ static struct config_bool ConfigureNamesBool[] =
 			gettext_noop("Enable input of NULL elements in arrays."),
 			gettext_noop("When turned on, unquoted NULL in an array input "
 						 "value means a null value; "
-						 "otherwise it is taken literally.")
+						 "otherwise it is taken literally."),
+			GUC_GPDB_ADDOPT
 		},
 		&Array_nulls,
 		true,
@@ -5851,6 +5852,22 @@ set_config_option(const char *name, const char *value,
 		return 0;
 	}
 
+
+	if(Gp_role == GP_ROLE_DISPATCH)
+	{
+		/*
+		 * If GUC value changed, turn on flag guc_need_sync_session.
+		 * Also turn on flag guc_need_sync for all the idled QEs.
+		 */
+		guc_need_sync_session = true;
+		if ((record->flags & GUC_GPDB_ADDOPT))
+		{
+			MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+			guc_list_need_sync_global = list_append_unique(guc_list_need_sync_global,
+										pstrdup(name));
+				MemoryContextSwitchTo(oldContext);
+		}
+	}
 	/*
 	 * Check if option can be set by the user.
 	 */
@@ -7321,29 +7338,6 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 		case VAR_RESET_ALL:
 			ResetAllOptions();
 			break;
-	}
-
-	if(Gp_role == GP_ROLE_DISPATCH)
-	{
-		/*
-		 * If GUC value changed, turn on flag guc_need_sync_session.
-		 * Also turn on flag guc_need_sync for all the idled QEs.
-		 */
-		guc_need_sync_session = true;
-		if (stmt->name)
-		{
-			struct config_generic *record;
-			record = find_option(stmt->name, true, 0);
-			if (record && ((record->context & PGC_SUSET)
-					|| (record->context & PGC_USERSET)) )
-			{
-				MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-				guc_list_need_sync_global = lappend(guc_list_need_sync_global,
-											pstrdup(stmt->name));
-				MemoryContextSwitchTo(oldContext);
-			}
-
-		}
 	}
 
 	if (stmt->kind == VAR_SET_DEFAULT ||

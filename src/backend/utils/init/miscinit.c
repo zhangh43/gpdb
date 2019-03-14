@@ -519,19 +519,6 @@ SetSessionAuthorization(Oid userid, bool is_superuser)
 	SetConfigOption("is_superuser",
 					is_superuser ? "on" : "off",
 					PGC_INTERNAL, PGC_S_OVERRIDE);
-
-	if(Gp_role == GP_ROLE_DISPATCH)
-	{
-		/*
-		 * If GUC value changed, turn on flag guc_need_sync_session.
-		 * Also turn on flag guc_need_sync for all the idled QEs.
-		 */
-		guc_need_sync_session = true;
-		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
-									pstrdup("is_superuser"));
-		MemoryContextSwitchTo(oldContext);
-	}
 }
 
 /*
@@ -595,19 +582,6 @@ SetCurrentRoleId(Oid roleid, bool is_superuser)
 	SetConfigOption("is_superuser",
 					is_superuser ? "on" : "off",
 					PGC_INTERNAL, PGC_S_OVERRIDE);
-
-	if(Gp_role == GP_ROLE_DISPATCH)
-	{
-		/*
-		 * If GUC value changed, turn on flag guc_need_sync_session.
-		 * Also turn on flag guc_need_sync for all the idled QEs.
-		 */
-		guc_need_sync_session = true;
-		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-		guc_list_need_sync_global = lappend(guc_list_need_sync_global,
-									pstrdup("is_superuser"));
-		MemoryContextSwitchTo(oldContext);
-	}
 }
 
 

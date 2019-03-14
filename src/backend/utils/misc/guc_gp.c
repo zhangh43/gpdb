@@ -4539,7 +4539,7 @@ struct config_string ConfigureNamesString_gp[] =
 		{"debug_dtm_action_sql_command_tag", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action sql command tag."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_sql_command_tag,
 		"",
@@ -4595,7 +4595,7 @@ struct config_string ConfigureNamesString_gp[] =
 		{"gp_auth_time_override", PGC_SIGHUP, DEVELOPER_OPTIONS,
 			gettext_noop("The timestamp used for enforcing time constraints."),
 			gettext_noop("For testing purposes only."),
-			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&gp_auth_time_override_str,
 		"",
@@ -4772,7 +4772,7 @@ struct config_enum ConfigureNamesEnum_gp[] =
 		{"debug_dtm_action", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action,
 		DEBUG_DTM_ACTION_NONE, debug_dtm_action_options,
@@ -4783,7 +4783,7 @@ struct config_enum ConfigureNamesEnum_gp[] =
 		{"debug_dtm_action_target", PGC_SUSET, DEVELOPER_OPTIONS,
 			gettext_noop("Sets the debug DTM action target."),
 			NULL,
-			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+			GUC_SUPERUSER_ONLY | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE | GUC_GPDB_ADDOPT
 		},
 		&Debug_dtm_action_target,
 		DEBUG_DTM_ACTION_TARGET_NONE, debug_dtm_action_target_options,
