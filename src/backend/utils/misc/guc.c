@@ -1515,7 +1515,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"allow_system_table_mods", PGC_USERSET, CUSTOM_OPTIONS,
 			gettext_noop("Allows modifications of the structure of system tables."),
 			NULL,
-			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL
+			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_ADDOPT
 		},
 		&allowSystemTableMods,
 		false,
