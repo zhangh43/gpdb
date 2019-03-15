@@ -5191,6 +5191,8 @@ AtEOXact_GUC(bool isCommit, int nestLevel)
 			/* Report new value if we changed it */
 			if (changed && (gconf->flags & GUC_REPORT))
 				ReportGUCOption(gconf);
+			if (changed)
+				guc_need_sync_session = true;
 		}						/* end of stack-popping loop */
 
 		if (stack != NULL)
