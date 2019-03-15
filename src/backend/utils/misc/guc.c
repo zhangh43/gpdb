@@ -5776,37 +5776,6 @@ parse_and_validate_value(struct config_generic * record,
 }
 
 /*
- * Add need sync GUCs into guc_list_need_sync_global
- */
-static void
-add_guc_to_sync_list(struct config_generic *record, const char *name)
-{
-	ListCell *lc;
-	char *cur_guc_name;
-	bool isexists;
-
-	/* Sync GUC with flag GUC_GPDB_ADDOPT */
-	if ((record->flags & GUC_GPDB_ADDOPT))
-	{
-		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
-		foreach (lc, guc_list_need_sync_global)
-		{
-			cur_guc_name = (char*)(lc);
-			if (strlen(name) != strlen(cur_guc_name))
-				continue;
-			if (strncmp(cur_guc_name, name, strlen(name)) == 0)
-			{
-				isexists = true;
-				break;
-			}
-		}
-		if (!isexists)
-			guc_list_need_sync_global = lappend(guc_list_need_sync_global, pstrdup(name));
-		MemoryContextSwitchTo(oldContext);
-	}
-}
-
-/*
  * Sets option `name' to given value.
  *
  * The value should be a string, which will be parsed and converted to

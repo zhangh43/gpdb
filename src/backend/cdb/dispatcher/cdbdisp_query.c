@@ -1379,7 +1379,7 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 			{
 				struct config_string *sguc = (struct config_string *) guc;
 
-				appendStringInfo(&string, "%s", *sguc->variable);
+				appendStringInfoString(&string, *sguc->variable);
 				break;
 			}
 		case PGC_ENUM:
@@ -1388,13 +1388,13 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 				int			value = *eguc->variable;
 				const char *str = config_enum_lookup_by_value(eguc, value);
 
-				appendStringInfo(&string, "%s", str);
+				appendStringInfoString(&string, str);
 				break;
 			}
 		default:
 			Insist(false);
 	}
-	guc_node->value = pstrdup(string.data);
+	guc_node->value = string.data;
 	guc_node->name = pstrdup(guc->name);
 	guc_node->source = guc->source;
 	guc_node->context = guc->scontext;
