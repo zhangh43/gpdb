@@ -1285,7 +1285,6 @@ _outGUCNode(StringInfo str, GUCNode *node)
 	WRITE_STRING_FIELD(value);
 	WRITE_ENUM_FIELD(context, GucContext);
 	WRITE_ENUM_FIELD(source, GucSource);
-	WRITE_ENUM_FIELD(action, GucAction);
 }
 
 /*

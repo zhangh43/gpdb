@@ -203,8 +203,6 @@ typedef struct GUCNode
 	char		   *value;
 	GucContext	context;
 	GucSource	source;
-	GucAction	action;
-
 } GUCNode;
 
 #define GUC_QUALIFIER_SEPARATOR '.'

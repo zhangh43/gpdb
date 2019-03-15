@@ -5191,8 +5191,6 @@ AtEOXact_GUC(bool isCommit, int nestLevel)
 			/* Report new value if we changed it */
 			if (changed && (gconf->flags & GUC_REPORT))
 				ReportGUCOption(gconf);
-			if (changed)
-				guc_need_sync_session = true;
 		}						/* end of stack-popping loop */
 
 		if (stack != NULL)
@@ -5857,7 +5855,6 @@ set_config_option(const char *name, const char *value,
 	{
 		/*
 		 * If GUC value changed, turn on flag guc_need_sync_session.
-		 * Also turn on flag guc_need_sync for all the idled QEs.
 		 */
 		guc_need_sync_session = true;
 		if ((record->flags & GUC_GPDB_ADDOPT))
@@ -6418,7 +6415,6 @@ set_config_option(const char *name, const char *value,
 									newextra);
 					conf->gen.source = source;
 					conf->gen.scontext = context;
-
 				}
 
 				if (makeDefault)
@@ -7243,8 +7239,6 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 									 action,
 									 true,
 									 0);
-
-			//DispatchSetPGVariable(stmt->name, stmt->args, stmt->is_local);
 			break;
 		case VAR_SET_MULTI:
 

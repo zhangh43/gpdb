@@ -245,8 +245,8 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	int			gxid = pDtxProtocolParms->gxid;
 	char	   *serializedDtxContextInfo = pDtxProtocolParms->serializedDtxContextInfo;
 	int			serializedDtxContextInfoLen = pDtxProtocolParms->serializedDtxContextInfoLen;
-	char 	   *guc = NULL;
-	int 			guc_len = 0;
+	char		   *guc = NULL;
+	int			guc_len = 0;
 	int			tmp = 0;
 	int			len = 0;
 

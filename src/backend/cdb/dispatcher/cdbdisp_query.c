@@ -95,7 +95,7 @@ typedef struct DispatchCommandQueryParms
 
 	/* serialized GUC values */
 	char	   *serializedGUC;
-	int			serializedGUClen;
+	int		serializedGUClen;
 } DispatchCommandQueryParms;
 
 static int fillSliceVector(SliceTable *sliceTable,
@@ -1353,7 +1353,6 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 {
 	StringInfoData string;
 	initStringInfo(&string);
-	//Assert(guc && (guc->flags & GUC_GPDB_ADDOPT));
 	switch (guc->vartype)
 	{
 		case PGC_BOOL:
@@ -1399,7 +1398,6 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 	guc_node->name = pstrdup(guc->name);
 	guc_node->source = guc->source;
 	guc_node->context = guc->scontext;
-	guc_node->action = 0;
 }
 
 
@@ -1407,8 +1405,7 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
  * Serialization of GUC
  *
  * When a query is dispatched from QD to QE, we also need to dispatch any
- * unsynchronized GUCs. Only GUCs with flag GUC_GPDB_ADDOPT and is different from
- * default value need to be synchronized.
+ * unsynchronized GUCs.
  *
  */
 char *
@@ -1418,7 +1415,6 @@ serializeGUC(int *len_p, bool isDtx)
 	ListCell *lc;
 
 	/*
-	 * Sync all the GUC which may changed in the session.
 	 * Since we don't need 2PC to ensure the GUC consistent
 	 * among QEs, we need to synchronize all the potential
 	 * changed GUCs to QEs.

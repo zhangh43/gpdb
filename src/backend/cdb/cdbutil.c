@@ -1553,13 +1553,9 @@ getgpsegmentCount(void)
 }
 
 /*
- * Allocated a segdb
- *
- * If thers is idle segdb in the freelist, return it, otherwise, initialize
- * a new segdb.
- *
- * idle segdbs has an established connection with segment, but new segdb is
- * not setup yet, callers need to establish the connection by themselves.
+ * Set guc_need_sync for QEs
+ * If global guc_need_sync flag is true, we need to set
+ * connection level guc_need_sync flag for all the existing QEs
  */
 void setSyncFlagForIdleQEs()
 {

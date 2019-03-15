@@ -2732,7 +2732,6 @@ _equalGUCNode(const GUCNode *a, const GUCNode *b)
 
 	COMPARE_SCALAR_FIELD(context);
 	COMPARE_SCALAR_FIELD(source);
-	COMPARE_SCALAR_FIELD(action);
 
 	return true;
 }

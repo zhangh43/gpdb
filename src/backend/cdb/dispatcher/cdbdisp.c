@@ -383,39 +383,6 @@ cdbdisp_cancelDispatch(CdbDispatcherState *ds)
 	cdbdisp_checkDispatchResult(ds, DISPATCH_WAIT_CANCEL);
 }
 
-/*
- * Reset the segment_database_descriptors state for
- * all the allocated gangs in this dispatcher state.
- */
-void
-cdbdisp_resetSegdbState(CdbDispatcherState *ds)
-{
-	ListCell *lc;
-
-	if (!ds)
-		return;
-
-	foreach(lc, ds->allocatedGangs)
-	{
-		Gang *gp = lfirst(lc);
-		int i;
-
-		/*
-		 * Loop through the segment_database_descriptors array and
-		 * reset the segdb state, for example the guc_need_sync flag
-		 */
-		if (gp)
-		{
-			for (i = 0; i < gp->size; i++)
-			{
-				SegmentDatabaseDescriptor *segdbDesc = gp->db_descriptors[i];
-				Assert(segdbDesc != NULL);
-				segdbDesc->guc_need_sync = true;
-			}
-		}
-	}
-}
-
 bool
 cdbdisp_checkForCancel(CdbDispatcherState *ds)
 {
@@ -513,7 +480,6 @@ cleanup_dispatcher_handle(dispatcher_handle_t *h)
 		return;
 	}
 
-	cdbdisp_resetSegdbState(h->dispatcherState);
 	cdbdisp_cancelDispatch(h->dispatcherState);
 	cdbdisp_destroyDispatcherState(h->dispatcherState);
 }
@@ -528,6 +494,10 @@ AtAbort_DispatcherState(void)
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
 
+	/*
+	 * No 2PC guaranteed, thus reset guc_need_sync_session
+	 * to true when xact abort
+	 */
 	guc_need_sync_session = true;
 
 	if (CurrentGangCreating != NULL)
@@ -561,6 +531,10 @@ AtSubAbort_DispatcherState(void)
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
 
+	/*
+	 * No 2PC guaranteed, thus reset guc_need_sync_session
+	 * to true when xact abort
+	 */
 	guc_need_sync_session = true;
 
 	if (CurrentGangCreating != NULL)

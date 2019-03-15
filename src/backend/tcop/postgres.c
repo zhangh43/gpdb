@@ -252,6 +252,7 @@ static bool CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag);
 static bool CheckDebugDtmActionProtocol(DtxProtocolCommand dtxProtocolCommand,
 					DtxContextInfo *contextInfo);
 static bool renice_current_process(int nice_level);
+static void apply_guc_from_qd(const char * serializedGUC, int serializedGUClen);
 
 /*
  * Change the priority of the current process to the specified level
@@ -1090,24 +1091,7 @@ exec_mpp_query(const char *query_string,
 	start_xact_command();
 
 	/* apply GUC from QD */
-	if (serializedGUC != NULL && serializedGUClen > 0)
-	{
-		ListCell   *lc;
-		GUCNode *guc;
-
-
-		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-		Assert(IsA(guc_list, List));
-		foreach (lc, guc_list)
-		{
-			guc = (GUCNode *) lfirst(lc);
-			if (!guc || !IsA(guc, GUCNode))
-				elog(ERROR, "MPPEXEC: receive invalid guc");
-			set_config_option(guc->name, guc->value,
-								guc->context, guc->source,
-								0, true, 0);
-		}
-	}
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.	(While not strictly necessary,
@@ -1491,23 +1475,7 @@ exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 	const char *commandTag = loggingStr;
 
 	/* apply DTM specific GUC from QD */
-	if (serializedGUC != NULL && serializedGUClen > 0)
-	{
-		ListCell   *lc;
-		GUCNode *guc;
-
-		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-		Assert(IsA(guc_list, List));
-		foreach (lc, guc_list)
-		{
-			guc = (GUCNode *) lfirst(lc);
-			if (!guc || !IsA(guc, GUCNode))
-				elog(ERROR, "MPPEXEC: receive invalid guc");
-			set_config_option(guc->name, guc->value,
-								guc->context, guc->source,
-								0, true, 0);
-		}
-	}
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	if (log_statement == LOGSTMT_ALL)
 	{
@@ -1592,7 +1560,8 @@ CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag)
  */
 static void
 exec_simple_query(const char *query_string,
-		const char * serializedGUC, int serializedGUClen)
+				const char * serializedGUC,
+				int serializedGUClen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1632,24 +1601,7 @@ exec_simple_query(const char *query_string,
 	start_xact_command();
 
 	/* apply GUC from QD */
-	if (serializedGUC != NULL && serializedGUClen > 0)
-	{
-		ListCell   *lc;
-		GUCNode *guc;
-
-
-		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
-		Assert(IsA(guc_list, List));
-		foreach (lc, guc_list)
-		{
-			guc = (GUCNode *) lfirst(lc);
-			if (!guc || !IsA(guc, GUCNode))
-				elog(ERROR, "MPPEXEC: receive invalid guc");
-			set_config_option(guc->name, guc->value,
-								guc->context, guc->source,
-								0, true, 0);
-		}
-	}
+	apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.  (While not strictly necessary,
@@ -5973,4 +5925,29 @@ log_disconnections(int code, Datum arg __attribute__((unused)))
 					hours, minutes, seconds, msecs,
 					port->user_name, port->database_name, port->remote_host,
 				  port->remote_port[0] ? " port=" : "", port->remote_port)));
+}
+
+/*
+ * Apply GUCs from QD
+ */
+static void
+apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
+{
+	if (serializedGUC != NULL && serializedGUClen > 0)
+	{
+		ListCell   *lc;
+		GUCNode *guc;
+
+		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		Assert(IsA(guc_list, List));
+		foreach (lc, guc_list)
+		{
+			guc = (GUCNode *) lfirst(lc);
+			if (!guc || !IsA(guc, GUCNode))
+				elog(ERROR, "MPPEXEC: receive invalid guc");
+			set_config_option(guc->name, guc->value,
+								guc->context, guc->source,
+								0, true, 0);
+		}
+	}
 }

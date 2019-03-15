@@ -2991,7 +2991,6 @@ _readGUCNode(void)
 	READ_STRING_FIELD(value);
 	READ_ENUM_FIELD(context, GucContext);
 	READ_ENUM_FIELD(source, GucSource);
-	READ_ENUM_FIELD(action, GucAction);
 
 	READ_DONE();
 }

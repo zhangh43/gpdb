@@ -5016,7 +5016,6 @@ _copyGUCNode(const GUCNode *from)
 	COPY_STRING_FIELD(value);
 	COPY_SCALAR_FIELD(context);
 	COPY_SCALAR_FIELD(source);
-	COPY_SCALAR_FIELD(action);
 
 	return newnode;
 }
