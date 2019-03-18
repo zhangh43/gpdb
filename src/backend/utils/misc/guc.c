@@ -5858,7 +5858,7 @@ set_config_option(const char *name, const char *value,
 		 * If GUC value changed, turn on flag guc_need_sync_session.
 		 */
 		guc_need_sync_session = true;
-		add_guc_to_sync_list(record, name);
+		add_guc_to_sync_list(name, value, context, source, action, changeVal, elevel, record->flags);
 	}
 	/*
 	 * Check if option can be set by the user.

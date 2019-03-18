@@ -5077,65 +5077,12 @@ check_gp_workfile_compression(bool *newval, void **extra, GucSource source)
 }
 
 /*
- * Add GUC value to the GUCNode.
- */
-static void
-fillGucNode(GUCNode *guc_node, struct config_generic *guc)
-{
-	StringInfoData string;
-	initStringInfo(&string);
-	switch (guc->vartype)
-	{
-		case PGC_BOOL:
-			{
-				struct config_bool *bguc = (struct config_bool *) guc;
-				appendStringInfo(&string, "%s", *(bguc->variable) ? "true" : "false");
-				break;
-			}
-		case PGC_INT:
-			{
-				struct config_int *iguc = (struct config_int *) guc;
-
-				appendStringInfo(&string, "%d", *iguc->variable);
-				break;
-			}
-		case PGC_REAL:
-			{
-				struct config_real *rguc = (struct config_real *) guc;
-
-				appendStringInfo(&string, "%f", *rguc->variable);
-				break;
-			}
-		case PGC_STRING:
-			{
-				struct config_string *sguc = (struct config_string *) guc;
-
-				appendStringInfoString(&string, *sguc->variable);
-				break;
-			}
-		case PGC_ENUM:
-			{
-				struct config_enum *eguc = (struct config_enum *) guc;
-				int			value = *eguc->variable;
-				const char *str = config_enum_lookup_by_value(eguc, value);
-
-				appendStringInfoString(&string, str);
-				break;
-			}
-		default:
-			Insist(false);
-	}
-	guc_node->value = string.data;
-	guc_node->name = pstrdup(guc->name);
-	guc_node->source = guc->source;
-	guc_node->context = guc->scontext;
-}
-
-/*
  * Add GUCs which need sync into guc_list_need_sync_global
  */
 void
-add_guc_to_sync_list(struct config_generic *record, const char *name)
+add_guc_to_sync_list(const char *name, const char *value,
+		  GucContext context, GucSource source,
+		  GucAction action, bool changeVal, int elevel, int flags)
 {
 	ListCell *lc;
 	char *cur_guc_name;
@@ -5143,7 +5090,7 @@ add_guc_to_sync_list(struct config_generic *record, const char *name)
 	GUCNode *guc_node;
 
 	/* Sync GUC with flag GUC_GPDB_ADDOPT */
-	if ((record->flags & GUC_GPDB_ADDOPT))
+	if ((flags & GUC_GPDB_ADDOPT))
 	{
 		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
 		foreach (lc, guc_list_need_sync_global)
@@ -5160,7 +5107,10 @@ add_guc_to_sync_list(struct config_generic *record, const char *name)
 		if (!isexists)
 		{
 			guc_node = makeNode(GUCNode);
-			fillGucNode(guc_node, record);
+			guc_node->value = pstrdup(value);
+			guc_node->name = pstrdup(name);
+			guc_node->source = source;
+			guc_node->context = context;
 			guc_list_need_sync_global = lappend(guc_list_need_sync_global, guc_node);
 		}
 		MemoryContextSwitchTo(oldContext);
