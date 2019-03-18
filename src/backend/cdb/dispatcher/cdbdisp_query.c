@@ -1349,7 +1349,7 @@ serializeParamListInfo(ParamListInfo paramLI, int *len_p)
  * Add GUC value to the GUCNode.
  */
 static void
-fillGucNode(GUCNode *guc_node, struct config_generic *guc)
+fillGucNode(GUCNode *guc_node, struct config_generic *guc, GucSource source, GucContext context)
 {
 	StringInfoData string;
 	initStringInfo(&string);
@@ -1396,8 +1396,8 @@ fillGucNode(GUCNode *guc_node, struct config_generic *guc)
 	}
 	guc_node->value = string.data;
 	guc_node->name = pstrdup(guc->name);
-	guc_node->source = guc->source;
-	guc_node->context = guc->scontext;
+	guc_node->source = source;
+	guc_node->context = context;
 }
 
 
@@ -1422,7 +1422,8 @@ serializeGUC(int *len_p, bool isDtx)
 	foreach(lc, guc_list_need_sync_global)
 	{
 		GUCNode *guc_node;
-		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
+		GUCEntry *entry = (GUCEntry *) lfirst(lc);
+		struct config_generic *guc = find_option(entry->name, false, 0);
 
 		/*
 		 * Since we could not startxact in exec_mpp_dtx_protocol_command()
@@ -1434,7 +1435,7 @@ serializeGUC(int *len_p, bool isDtx)
 			(!isDtx || (guc->flags & GUC_GPDB_DTX)))
 		{
 			guc_node = makeNode(GUCNode);
-			fillGucNode(guc_node, guc);
+			fillGucNode(guc_node, guc, entry->source, entry->context);
 			guc_node_list = lappend(guc_node_list, guc_node);
 		}
 	}
