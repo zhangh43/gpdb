@@ -205,6 +205,23 @@ typedef struct GUCNode
 	GucSource	source;
 } GUCNode;
 
+/*
+ * GUC entry in guc_list_need_sync_global
+ */
+typedef struct GUCEntry
+{
+	char		   *name;
+	/*
+	 * context and source history value before GUC
+	 * change happens. They will be passed to QE as
+	 * parameter of set_config_option.
+	 * GUC value is skipped here since we only need
+	 * the latest GUC value.
+	 */
+	GucContext	context;
+	GucSource	source;
+} GUCEntry;
+
 #define GUC_QUALIFIER_SEPARATOR '.'
 
 /*
@@ -797,6 +814,7 @@ extern bool gpvars_check_gp_gpperfmon_send_interval(int *newval, void **extra, G
 extern StdRdOptions *defaultStdRdOptions(char relkind);
 
 /* Add GUCs which need sync into guc_list_need_sync_global */
-extern void add_guc_to_sync_list(struct config_generic *record, const char *name);
+extern void add_guc_to_sync_list(struct config_generic *record, const char *name,
+		GucSource source, GucContext context);
 
 #endif   /* GUC_H */
