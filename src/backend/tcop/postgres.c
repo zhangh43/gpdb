@@ -5945,13 +5945,8 @@ apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 			guc = (GUCNode *) lfirst(lc);
 			if (!guc || !IsA(guc, GUCNode))
 				elog(ERROR, "MPPEXEC: receive invalid guc with node tag: %d", guc->type);
-			/*
-			 * Whether to change GUC value is determined at QD side.
-			 * As a result, we just set GucSource to highest value PGC_S_SESSION,
-			 * and set changeVal to True.
-			 */
 			set_config_option(guc->name, guc->value,
-							guc->context, PGC_S_SESSION,
+							guc->context, guc->source,
 							0, true, 0);
 		}
 	}

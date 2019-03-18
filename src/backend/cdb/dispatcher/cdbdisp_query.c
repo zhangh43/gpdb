@@ -1344,63 +1344,6 @@ serializeParamListInfo(ParamListInfo paramLI, int *len_p)
 	return nodeToBinaryStringFast(sparams, len_p);
 }
 
-
-/*
- * Add GUC value to the GUCNode.
- */
-static void
-fillGucNode(GUCNode *guc_node, struct config_generic *guc)
-{
-	StringInfoData string;
-	initStringInfo(&string);
-	switch (guc->vartype)
-	{
-		case PGC_BOOL:
-			{
-				struct config_bool *bguc = (struct config_bool *) guc;
-				appendStringInfo(&string, "%s", *(bguc->variable) ? "true" : "false");
-				break;
-			}
-		case PGC_INT:
-			{
-				struct config_int *iguc = (struct config_int *) guc;
-
-				appendStringInfo(&string, "%d", *iguc->variable);
-				break;
-			}
-		case PGC_REAL:
-			{
-				struct config_real *rguc = (struct config_real *) guc;
-
-				appendStringInfo(&string, "%f", *rguc->variable);
-				break;
-			}
-		case PGC_STRING:
-			{
-				struct config_string *sguc = (struct config_string *) guc;
-
-				appendStringInfoString(&string, *sguc->variable);
-				break;
-			}
-		case PGC_ENUM:
-			{
-				struct config_enum *eguc = (struct config_enum *) guc;
-				int			value = *eguc->variable;
-				const char *str = config_enum_lookup_by_value(eguc, value);
-
-				appendStringInfoString(&string, str);
-				break;
-			}
-		default:
-			Insist(false);
-	}
-	guc_node->value = string.data;
-	guc_node->name = pstrdup(guc->name);
-	guc_node->source = guc->source;
-	guc_node->context = guc->scontext;
-}
-
-
 /*
  * Serialization of GUC
  *
@@ -1421,8 +1364,8 @@ serializeGUC(int *len_p, bool isDtx)
 	 */
 	foreach(lc, guc_list_need_sync_global)
 	{
-		GUCNode *guc_node;
-		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
+		GUCNode *guc_node = (GUCNode *)lfirst(lc);
+		struct config_generic *guc = find_option(guc_node->name, false, 0);
 
 		/*
 		 * Since we could not startxact in exec_mpp_dtx_protocol_command()
@@ -1430,11 +1373,8 @@ serializeGUC(int *len_p, bool isDtx)
 		 * So if it is dtx comamnd, then we only sync GUC with GUC_GPDB_DTX flags
 		 *
 		 */
-		if (guc != NULL &&
-			(!isDtx || (guc->flags & GUC_GPDB_DTX)))
+		if (!isDtx || (guc->flags & GUC_GPDB_DTX))
 		{
-			guc_node = makeNode(GUCNode);
-			fillGucNode(guc_node, guc);
 			guc_node_list = lappend(guc_node_list, guc_node);
 		}
 	}
