@@ -5080,7 +5080,7 @@ check_gp_workfile_compression(bool *newval, void **extra, GucSource source)
  * Add GUCs which need sync into guc_list_need_sync_global
  */
 void
-add_guc_to_sync_list(struct config_generic *record, const char *name)
+add_guc_to_sync_list(struct config_generic *record, const char *name, GucSource source)
 {
 	ListCell *lc;
 	char *cur_guc_name;
@@ -5090,6 +5090,7 @@ add_guc_to_sync_list(struct config_generic *record, const char *name)
 	if ((record->flags & GUC_GPDB_ADDOPT))
 	{
 		MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+
 		foreach (lc, guc_list_need_sync_global)
 		{
 			cur_guc_name = (char*)(lc);
@@ -5102,7 +5103,12 @@ add_guc_to_sync_list(struct config_generic *record, const char *name)
 			}
 		}
 		if (!isexists)
-			guc_list_need_sync_global = lappend(guc_list_need_sync_global, pstrdup(name));
+		{
+			GUCEntry *entry = palloc(sizeof(GUCEntry));
+			entry->name = pstrdup(name);
+			entry->source = source;
+			guc_list_need_sync_global = lappend(guc_list_need_sync_global, entry);
+		}
 		MemoryContextSwitchTo(oldContext);
 	}
 }

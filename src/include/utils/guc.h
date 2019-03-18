@@ -205,6 +205,13 @@ typedef struct GUCNode
 	GucSource	source;
 } GUCNode;
 
+
+typedef struct GUCEntry
+{
+	char		   *name;
+	GucSource	source;
+} GUCEntry;
+
 #define GUC_QUALIFIER_SEPARATOR '.'
 
 /*
@@ -797,6 +804,6 @@ extern bool gpvars_check_gp_gpperfmon_send_interval(int *newval, void **extra, G
 extern StdRdOptions *defaultStdRdOptions(char relkind);
 
 /* Add GUCs which need sync into guc_list_need_sync_global */
-extern void add_guc_to_sync_list(struct config_generic *record, const char *name);
+extern void add_guc_to_sync_list(struct config_generic *record, const char *name, GucSource source);
 
 #endif   /* GUC_H */

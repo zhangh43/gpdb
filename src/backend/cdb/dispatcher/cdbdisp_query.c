@@ -1422,7 +1422,8 @@ serializeGUC(int *len_p, bool isDtx)
 	foreach(lc, guc_list_need_sync_global)
 	{
 		GUCNode *guc_node;
-		struct config_generic *guc = find_option((char *) lfirst(lc), false, 0);
+		GUCEntry *entry = (GUCEntry *) lfirst(lc);
+		struct config_generic *guc = find_option(entry->name, false, 0);
 
 		/*
 		 * Since we could not startxact in exec_mpp_dtx_protocol_command()
@@ -1435,6 +1436,7 @@ serializeGUC(int *len_p, bool isDtx)
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc);
+			guc_node->source = entry->source;
 			guc_node_list = lappend(guc_node_list, guc_node);
 		}
 	}
