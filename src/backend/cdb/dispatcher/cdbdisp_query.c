@@ -1558,6 +1558,10 @@ CdbDispatchCopyStart(struct CdbCopy *cdbCopy, Node *stmt, int flags)
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, cdbCopy->seglist);
 	Assert(primaryGang);
 
+	/*
+	 * Place buildGpQueryString after AllocateGang() since it needs the state
+	 * from allocated gangs to determine whether to include GUC info
+	 */
 	queryText = buildGpQueryString(pQueryParms, &queryTextLength, ds->guc_need_sync);
 
 	cdbdisp_makeDispatchResults(ds, 1, flags & DF_CANCEL_ON_ERROR);
