@@ -1375,7 +1375,7 @@ serializeGUC(int *len_p, bool isDtx)
 		 */
 		if (!isDtx || (guc->flags & GUC_GPDB_DTX))
 		{
-			guc_node_list = lappend(guc_node_list, guc_node);
+			guc_node_list = lappend(guc_node_list, copyObject(guc_node));
 		}
 	}
 

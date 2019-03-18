@@ -5161,7 +5161,7 @@ add_guc_to_sync_list(struct config_generic *record, const char *name)
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, record);
-			guc_list_need_sync_global = lappend(guc_list_need_sync_global, pstrdup(name));
+			guc_list_need_sync_global = lappend(guc_list_need_sync_global, guc_node);
 		}
 		MemoryContextSwitchTo(oldContext);
 	}
