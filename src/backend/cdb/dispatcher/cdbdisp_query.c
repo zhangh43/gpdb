@@ -1432,7 +1432,7 @@ serializeGUC(int *len_p, bool isDtx)
 		 *
 		 */
 		if (guc != NULL &&
-			(!isDtx || (guc->flags & GUC_GPDB_DTX)))
+			(true || !isDtx || (guc->flags & GUC_GPDB_DTX)))
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc, entry->source, entry->context);
