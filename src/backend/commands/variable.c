@@ -854,7 +854,12 @@ assign_session_authorization(const char *newval, void *extra)
 {
 	role_auth_extra *myextra = (role_auth_extra *) extra;
 
-	/* Do nothing for the boot_val default of NULL */
+	/*
+	 * Do nothing for the boot_val default of NULL
+	 * Also session/role info will be dispatched to QE from
+	 * QD explicitly, so we should not override them based on GUC.
+	 *
+	 */
 	if (!myextra || Gp_role != GP_ROLE_DISPATCH)
 		return;
 
@@ -938,6 +943,10 @@ assign_role(const char *newval, void *extra)
 {
 	role_auth_extra *myextra = (role_auth_extra *) extra;
 
+	/*
+	 * role info will be dispatched to QE from QD explicitly
+	 * so we should not override them based on GUC.
+	 */
 	if (Gp_role != GP_ROLE_DISPATCH)
 		return;
 	SetCurrentRoleId(myextra->roleid, myextra->is_superuser);
