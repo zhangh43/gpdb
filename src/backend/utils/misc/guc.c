@@ -3417,17 +3417,6 @@ static struct config_enum ConfigureNamesEnum[] =
 		{"IntervalStyle", PGC_USERSET, CLIENT_CONN_LOCALE,
 			gettext_noop("Sets the display format for interval values."),
 			NULL,
-			GUC_REPORT
-		},
-		&IntervalStyle,
-		INTSTYLE_POSTGRES, intervalstyle_options,
-		NULL, NULL, NULL
-	},
-
-	{
-		{"IntervalStyle", PGC_USERSET, CLIENT_CONN_LOCALE,
-			gettext_noop("Sets the display format for interval values."),
-			NULL,
 			GUC_REPORT | GUC_GPDB_ADDOPT
 		},
 		&IntervalStyle,
