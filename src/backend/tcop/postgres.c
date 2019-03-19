@@ -1475,7 +1475,9 @@ exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 	const char *commandTag = loggingStr;
 
 	/* apply DTM specific GUC from QD */
+	StartTransactionCommand();
 	apply_guc_from_qd(serializedGUC, serializedGUClen);
+	CommitTransactionCommand();
 
 	if (log_statement == LOGSTMT_ALL)
 	{
@@ -1486,9 +1488,7 @@ exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 	elog((Debug_print_full_dtm ? LOG : DEBUG5),"exec_mpp_dtx_protocol_command received the dtxProtocolCommand = %d (%s) gid = %s (gxid = %u, flags = 0x%x)",
 		 dtxProtocolCommand, loggingStr, gid, gxid, flags);
 
-	StartTransactionCommand();
 	set_ps_display(commandTag, false);
-	CommitTransactionCommand();
 
 	if (Debug_dtm_action == DEBUG_DTM_ACTION_FAIL_BEGIN_COMMAND &&
 		CheckDebugDtmActionProtocol(dtxProtocolCommand, contextInfo))
