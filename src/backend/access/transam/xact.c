@@ -3414,7 +3414,8 @@ StartTransactionCommand(void)
 				 */
 				s->blockState = TBLOCK_STARTED;
 
-				apply_guc_from_qd(NULL, 0);
+				if (Gp_role != GP_ROLE_DISPATCH)
+					apply_guc_from_qd(NULL, 0);
 			}
 			break;
 
