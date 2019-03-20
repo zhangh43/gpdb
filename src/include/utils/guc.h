@@ -257,9 +257,8 @@ typedef struct GUCEntry
  * between QD and QE. Need to go through and recheck this flag for
  * each GUCs.
  */
-#define GUC_GPDB_ADDOPT        0x00020000  /* Send by cdbgang */
+#define GUC_GPDB_NEED_SYNC        0x00020000  /* Send by cdbgang */
 #define GUC_DISALLOW_USER_SET  0x00040000 /* Do not allow this GUC to be set by the user */
-#define GUC_GPDB_DTX  0x00080000 /* Distributed transaction related GUCs */
 
 /* GUC lists for gp_guc_list_show().  (List of struct config_generic) */
 extern List    *gp_guc_list_for_explain;

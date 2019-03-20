@@ -996,7 +996,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"log_duration", PGC_SUSET, LOGGING_WHAT,
 			gettext_noop("Logs the duration of each completed SQL statement."),
 			NULL,
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&log_duration,
 		false,
@@ -1060,7 +1060,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"log_executor_stats", PGC_SUSET, STATS_MONITORING,
 			gettext_noop("Writes executor performance statistics to the server log."),
 			NULL,
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&log_executor_stats,
 		false,
@@ -1070,7 +1070,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"log_statement_stats", PGC_SUSET, STATS_MONITORING,
 			gettext_noop("Writes cumulative performance statistics to the server log."),
 			NULL,
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&log_statement_stats,
 		false,
@@ -1325,7 +1325,7 @@ static struct config_bool ConfigureNamesBool[] =
 	{
 		{"check_function_bodies", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Check function bodies during CREATE FUNCTION."),
-			NULL, GUC_GPDB_ADDOPT
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&check_function_bodies,
 		true,
@@ -1337,7 +1337,7 @@ static struct config_bool ConfigureNamesBool[] =
 			gettext_noop("When turned on, unquoted NULL in an array input "
 						 "value means a null value; "
 						 "otherwise it is taken literally."),
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&Array_nulls,
 		true,
@@ -1515,7 +1515,7 @@ static struct config_bool ConfigureNamesBool[] =
 		{"allow_system_table_mods", PGC_USERSET, CUSTOM_OPTIONS,
 			gettext_noop("Allows modifications of the structure of system tables."),
 			NULL,
-			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_ADDOPT
+			GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_GPDB_NEED_SYNC
 		},
 		&allowSystemTableMods,
 		false,
@@ -1768,7 +1768,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"temp_buffers", PGC_USERSET, RESOURCES_MEM,
 			gettext_noop("Sets the maximum number of temporary buffers used by each session."),
 			NULL,
-			GUC_UNIT_BLOCKS | GUC_GPDB_ADDOPT
+			GUC_UNIT_BLOCKS | GUC_GPDB_NEED_SYNC
 		},
 		&num_temp_buffers,
 		1024, 100, INT_MAX / 2,
@@ -1820,7 +1820,7 @@ static struct config_int ConfigureNamesInt[] =
 			gettext_noop("This much memory can be used by each internal "
 						 "sort operation and hash table before switching to "
 						 "temporary disk files."),
-			GUC_UNIT_KB | GUC_GPDB_ADDOPT
+			GUC_UNIT_KB | GUC_GPDB_NEED_SYNC
 		},
 		&work_mem,
         32768, 64, MAX_KILOBYTES,
@@ -1831,7 +1831,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"maintenance_work_mem", PGC_USERSET, RESOURCES_MEM,
 			gettext_noop("Sets the maximum memory to be used for maintenance operations."),
 			gettext_noop("This includes operations such as VACUUM and CREATE INDEX."),
-			GUC_UNIT_KB | GUC_GPDB_ADDOPT
+			GUC_UNIT_KB | GUC_GPDB_NEED_SYNC
 		},
 		&maintenance_work_mem,
 		65536, 1024, MAX_KILOBYTES,
@@ -1988,7 +1988,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"statement_timeout", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Sets the maximum allowed duration of any statement."),
 			gettext_noop("A value of 0 turns off the timeout."),
-			GUC_UNIT_MS | GUC_GPDB_ADDOPT
+			GUC_UNIT_MS | GUC_GPDB_NEED_SYNC
 		},
 		&StatementTimeout,
 		0, 0, INT_MAX,
@@ -1999,7 +1999,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"lock_timeout", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Sets the maximum allowed duration of any wait for a lock."),
 			gettext_noop("A value of 0 turns off the timeout."),
-			GUC_UNIT_MS | GUC_GPDB_ADDOPT
+			GUC_UNIT_MS | GUC_GPDB_NEED_SYNC
 		},
 		&LockTimeout,
 		0, 0, INT_MAX,
@@ -2009,7 +2009,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_min_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Minimum age at which VACUUM should freeze a table row."),
-			NULL, GUC_GPDB_ADDOPT
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_freeze_min_age,
 		50000000, 0, 1000000000,
@@ -2019,7 +2019,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Age at which VACUUM should scan whole table to freeze tuples."),
-			NULL, GUC_GPDB_ADDOPT
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2039,7 +2039,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_multixact_freeze_table_age", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Multixact age at which VACUUM should scan whole table to freeze tuples."),
-			NULL, GUC_GPDB_ADDOPT
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_multixact_freeze_table_age,
 		150000000, 0, 2000000000,
@@ -2049,7 +2049,7 @@ static struct config_int ConfigureNamesInt[] =
 	{
 		{"vacuum_defer_cleanup_age", PGC_SIGHUP, REPLICATION_MASTER,
 			gettext_noop("Number of transactions by which VACUUM and HOT cleanup should be deferred, if any."),
-			NULL, GUC_GPDB_ADDOPT
+			NULL, GUC_GPDB_NEED_SYNC
 		},
 		&vacuum_defer_cleanup_age,
 		0, 0, 1000000,
@@ -2218,7 +2218,7 @@ static struct config_int ConfigureNamesInt[] =
 			gettext_noop("Sets the delay in microseconds between transaction commit and "
 						 "flushing WAL to disk."),
 			NULL,
-			GUC_GPDB_ADDOPT | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_DISALLOW_USER_SET
+			GUC_GPDB_NEED_SYNC | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_DISALLOW_USER_SET
 			/* we have no microseconds designation, so can't supply units here */
 		},
 		&CommitDelay,
@@ -2231,7 +2231,7 @@ static struct config_int ConfigureNamesInt[] =
 			gettext_noop("Sets the minimum concurrent open transactions before performing "
 						 "commit_delay."),
 			NULL,
-			GUC_GPDB_ADDOPT | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_DISALLOW_USER_SET
+			GUC_GPDB_NEED_SYNC | GUC_NOT_IN_SAMPLE | GUC_NO_SHOW_ALL | GUC_DISALLOW_USER_SET
 		},
 		&CommitSiblings,
 		5, 0, 1000,
@@ -2255,7 +2255,7 @@ static struct config_int ConfigureNamesInt[] =
 			gettext_noop("Sets the minimum execution time above which "
 						 "statements will be logged."),
 			gettext_noop("Zero prints all queries. -1 turns this feature off."),
-			GUC_UNIT_MS | GUC_GPDB_ADDOPT
+			GUC_UNIT_MS | GUC_GPDB_NEED_SYNC
 		},
 		&log_min_duration_statement,
 		-1, -1, INT_MAX,
@@ -2551,7 +2551,7 @@ static struct config_int ConfigureNamesInt[] =
 		{"gin_fuzzy_search_limit", PGC_USERSET, CLIENT_CONN_OTHER,
 			gettext_noop("Sets the maximum allowed result for exact search by GIN."),
 			NULL,
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&GinFuzzySearchLimit,
 		0, 0, INT_MAX,
@@ -2809,7 +2809,7 @@ static struct config_string ConfigureNamesString[] =
 			gettext_noop("Sets the display format for date and time values."),
 			gettext_noop("Also controls interpretation of ambiguous "
 						 "date inputs."),
-			GUC_LIST_INPUT | GUC_REPORT | GUC_GPDB_ADDOPT
+			GUC_LIST_INPUT | GUC_REPORT | GUC_GPDB_NEED_SYNC
 		},
 		&datestyle_string,
 		"ISO, MDY",
@@ -2922,7 +2922,7 @@ static struct config_string ConfigureNamesString[] =
 			gettext_noop("Sets the locale for formatting numbers."),
 			NULL,
 			/* Please don't remove GUC_GPDB_ADDOPT or lc_numeric won't work correctly */
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&locale_numeric,
 		"C",
@@ -2976,7 +2976,7 @@ static struct config_string ConfigureNamesString[] =
 		{"search_path", PGC_USERSET, CLIENT_CONN_STATEMENT,
 			gettext_noop("Sets the schema search order for names that are not schema-qualified."),
 			NULL,
-			GUC_LIST_INPUT | GUC_LIST_QUOTE | GUC_GPDB_ADDOPT
+			GUC_LIST_INPUT | GUC_LIST_QUOTE | GUC_GPDB_NEED_SYNC
 		},
 		&namespace_search_path,
 		"\"$user\",public",
@@ -3092,7 +3092,7 @@ static struct config_string ConfigureNamesString[] =
 		{"TimeZone", PGC_USERSET, CLIENT_CONN_LOCALE,
 			gettext_noop("Sets the time zone for displaying and interpreting time stamps."),
 			NULL,
-			GUC_REPORT | GUC_GPDB_ADDOPT
+			GUC_REPORT | GUC_GPDB_NEED_SYNC
 		},
 		&timezone_string,
 		"GMT",
@@ -3373,7 +3373,7 @@ static struct config_enum ConfigureNamesEnum[] =
 			gettext_noop("Sets the message levels that are sent to the client."),
 			gettext_noop("Each level includes all the levels that follow it. The later"
 						 " the level, the fewer messages are sent."),
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&client_min_messages,
 		NOTICE, client_message_level_options,
@@ -3417,7 +3417,7 @@ static struct config_enum ConfigureNamesEnum[] =
 		{"IntervalStyle", PGC_USERSET, CLIENT_CONN_LOCALE,
 			gettext_noop("Sets the display format for interval values."),
 			NULL,
-			GUC_REPORT | GUC_GPDB_ADDOPT
+			GUC_REPORT | GUC_GPDB_NEED_SYNC
 		},
 		&IntervalStyle,
 		INTSTYLE_POSTGRES, intervalstyle_options, NULL, NULL
@@ -3427,7 +3427,7 @@ static struct config_enum ConfigureNamesEnum[] =
 		{"log_error_verbosity", PGC_SUSET, LOGGING_WHAT,
 			gettext_noop("Sets the verbosity of logged messages."),
 			NULL,
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&Log_error_verbosity,
 		PGERROR_DEFAULT, log_error_verbosity_options,
@@ -3439,7 +3439,7 @@ static struct config_enum ConfigureNamesEnum[] =
 			gettext_noop("Sets the message levels that are logged."),
 			gettext_noop("Each level includes all the levels that follow it. The later"
 						 " the level, the fewer messages are sent."),
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&log_min_messages,
 		WARNING, server_message_level_options,
@@ -3451,7 +3451,7 @@ static struct config_enum ConfigureNamesEnum[] =
 			gettext_noop("Causes all statements generating error at or above this level to be logged."),
 			gettext_noop("Each level includes all the levels that follow it. The later"
 						 " the level, the fewer messages are sent."),
-			GUC_GPDB_ADDOPT
+			GUC_GPDB_NEED_SYNC
 		},
 		&log_min_error_statement,
 		ERROR, server_message_level_options,

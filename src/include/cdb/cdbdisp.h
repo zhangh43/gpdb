@@ -45,7 +45,6 @@ typedef struct CdbDispatcherState
 	void *dispatchParams;
 	int	largestGangSize;
 	bool guc_need_sync;
-	bool isNonSyncGUCCommand;
 } CdbDispatcherState;
 
 typedef struct DispatcherInternalFuncs
@@ -181,6 +180,6 @@ char *
 segmentsToContentStr(List *segments);
 
 extern char *
-serializeGUC(int *len_p, bool isDtx);
+serializeGUC(int *len_p);
 
 #endif   /* CDBDISP_H */

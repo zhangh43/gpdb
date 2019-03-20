@@ -3414,6 +3414,11 @@ StartTransactionCommand(void)
 				 */
 				s->blockState = TBLOCK_STARTED;
 			}
+
+			/* QE needs to apply the GUCs passed from QD when StartTransaction()*/
+			if (Gp_role == GP_ROLE_EXECUTE)
+				apply_guc_from_qd(NULL, 0);
+
 			break;
 
 			/*

@@ -499,6 +499,9 @@ extern void ExceptionalCondition(const char *conditionName,
 					 const char *errorType,
 			 const char *fileName, int lineNumber) __attribute__((noreturn));
 
+extern char		globalGucs[];
+extern int		globalGucsLen;
+extern void apply_guc_from_qd(const char *, int);
 
 #ifdef __cplusplus
 }   /* extern "C" */

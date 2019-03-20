@@ -107,8 +107,6 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 	 * Dispatch the command.
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
-	/* dxt commands do not sync all of GUCs */
-	ds->isNonSyncGUCCommand = true;
 
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, twophaseSegments);
 
@@ -254,7 +252,7 @@ buildGpDtxProtocolCommand(DispatchCommandDtxProtocolParms *pDtxProtocolParms,
 	int			gidLen = strlen(gid) + 1;
 
 	if (guc_need_sync)
-		guc = serializeGUC(&guc_len, true);
+		guc = serializeGUC(&guc_len);
 
 	int			total_query_len = 1 /* 'T' */ +
 	sizeof(len) +
