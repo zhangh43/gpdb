@@ -3413,6 +3413,8 @@ StartTransactionCommand(void)
 				 * Normal case.
 				 */
 				s->blockState = TBLOCK_STARTED;
+
+				apply_guc_from_qd(NULL, 0);
 			}
 			break;
 

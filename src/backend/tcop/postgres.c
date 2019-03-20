@@ -120,6 +120,8 @@ int			max_stack_depth = 100;
 /* wait N seconds to allow attach from a debugger */
 int			PostAuthDelay = 0;
 
+char       globalGucs[40960];
+int            globalGucsLen = 0;
 
 /*
  * Hook for extensions, to get notified when query cancel or DIE signal is
@@ -252,7 +254,7 @@ static bool CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag);
 static bool CheckDebugDtmActionProtocol(DtxProtocolCommand dtxProtocolCommand,
 					DtxContextInfo *contextInfo);
 static bool renice_current_process(int nice_level);
-static void apply_guc_from_qd(const char * serializedGUC, int serializedGUClen);
+void apply_guc_from_qd(const char * serializedGUC, int serializedGUClen);
 
 /*
  * Change the priority of the current process to the specified level
@@ -1091,7 +1093,7 @@ exec_mpp_query(const char *query_string,
 	start_xact_command();
 
 	/* apply GUC from QD */
-	apply_guc_from_qd(serializedGUC, serializedGUClen);
+	//apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.	(While not strictly necessary,
@@ -1475,7 +1477,7 @@ exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 	const char *commandTag = loggingStr;
 
 	/* apply DTM specific GUC from QD */
-	apply_guc_from_qd(serializedGUC, serializedGUClen);
+	//apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	if (log_statement == LOGSTMT_ALL)
 	{
@@ -1601,7 +1603,7 @@ exec_simple_query(const char *query_string,
 	start_xact_command();
 
 	/* apply GUC from QD */
-	apply_guc_from_qd(serializedGUC, serializedGUClen);
+	//apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.  (While not strictly necessary,
@@ -5347,7 +5349,11 @@ PostgresMain(int argc, char *argv[],
 						serializedQueryDispatchDesc = pq_getmsgbytes(&input_message,serializedQueryDispatchDesclen);
 
 					if (serializedGUClen > 0)
+					{
 						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
+						/* apply GUC from QD */
+						apply_guc_from_qd(serializedGUC, serializedGUClen);
+					}
 
 					/*
 					 * Always use the same GpIdentity.numsegments with QD on QEs
@@ -5484,7 +5490,11 @@ PostgresMain(int argc, char *argv[],
 					serializedGUClen = pq_getmsgint(&input_message, 4);
 
 					if (serializedGUClen > 0)
+					{
 						serializedGUC = pq_getmsgbytes(&input_message,serializedGUClen);
+						/* apply GUC from QD */
+						apply_guc_from_qd(serializedGUC, serializedGUClen);
+					}
 
 					pq_getmsgend(&input_message);
 
@@ -5930,15 +5940,48 @@ log_disconnections(int code, Datum arg __attribute__((unused)))
 /*
  * Apply GUCs from QD
  */
-static void
+void
 apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 {
-	if (serializedGUC != NULL && serializedGUClen > 0)
+	char *toApply = NULL;
+	int   toApplyLen = 0;
+
+	/* if not in a transaction, do it later */
+	if (!IsTransactionOrTransactionBlock())
+	{
+		/* for later apply */
+		if (serializedGUClen != 0)
+		{
+			memcpy(globalGucs, serializedGUC, serializedGUClen);
+			globalGucsLen = serializedGUClen;
+		}
+		return;
+	}
+
+	/*
+	* we are in a transaction
+	*/
+
+	/* no guc */
+	if (serializedGUC == NULL && globalGucsLen == 0)
+		return;
+	/* new serializedGUC */
+	if (serializedGUClen != 0)
+	{
+		toApply = serializedGUC;
+		toApplyLen = serializedGUClen;
+	}
+	else
+	{
+		toApply = globalGucs;
+		toApplyLen = globalGucsLen;
+	}
+	if (true)
 	{
 		ListCell   *lc;
 		GUCNode *guc;
 
-		List *guc_list = (List *) readNodeFromBinaryString(serializedGUC, serializedGUClen);
+		List *guc_list = (List *) readNodeFromBinaryString(toApply, toApplyLen);
 		Assert(IsA(guc_list, List));
 		foreach (lc, guc_list)
 		{
@@ -5955,4 +5998,5 @@ apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 							0, true, 0);
 		}
 	}
+	globalGucsLen = 0;
 }

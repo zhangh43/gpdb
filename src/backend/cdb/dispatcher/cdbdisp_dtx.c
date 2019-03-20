@@ -108,7 +108,7 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 	 */
 	ds = cdbdisp_makeDispatcherState(false);
 	/* dxt commands do not sync all of GUCs */
-	ds->isNonSyncGUCCommand = true;
+	ds->isNonSyncGUCCommand = false;
 
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, twophaseSegments);
 

@@ -423,7 +423,7 @@ cdbdisp_dispatchCommandInternal(DispatchCommandQueryParms *pQueryParms,
 
 	/* BEGIN commands do not sync GUCs */
 	if (pQueryParms->strCommand && strncmp(pQueryParms->strCommand, "BEGIN", 5) == 0)
-		ds->isNonSyncGUCCommand = true;
+		ds->isNonSyncGUCCommand = false;
 
 	/*
 	 * Allocate a primary QE for every available segDB in the system.
@@ -1431,8 +1431,8 @@ serializeGUC(int *len_p, bool isDtx)
 		 * So if it is dtx comamnd, then we only sync GUC with GUC_GPDB_DTX flags
 		 *
 		 */
-		if (guc != NULL &&
-			(!isDtx || (guc->flags & GUC_GPDB_DTX)))
+		if (guc != NULL)// &&
+			//(!isDtx || (guc->flags & GUC_GPDB_DTX)))
 		{
 			guc_node = makeNode(GUCNode);
 			fillGucNode(guc_node, guc, entry->source, entry->context);
