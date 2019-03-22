@@ -1096,9 +1096,6 @@ exec_mpp_query(const char *query_string,
 	 */
 	start_xact_command();
 
-	/* apply GUC from QD */
-	//apply_guc_from_qd(serializedGUC, serializedGUClen);
-
 	/*
 	 * Zap any pre-existing unnamed statement.	(While not strictly necessary,
 	 * it seems best to define simple-Query mode as if it used the unnamed
@@ -1480,9 +1477,6 @@ exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 	CommandDest dest = whereToSendOutput;
 	const char *commandTag = loggingStr;
 
-	/* apply DTM specific GUC from QD */
-	//apply_guc_from_qd(serializedGUC, serializedGUClen);
-
 	if (log_statement == LOGSTMT_ALL)
 	{
 		elog(LOG,"DTM protocol command '%s' for gid = %s",
@@ -1605,9 +1599,6 @@ exec_simple_query(const char *query_string,
 	 * will normally change current memory context.)
 	 */
 	start_xact_command();
-
-	/* apply GUC from QD */
-	//apply_guc_from_qd(serializedGUC, serializedGUClen);
 
 	/*
 	 * Zap any pre-existing unnamed statement.  (While not strictly necessary,
