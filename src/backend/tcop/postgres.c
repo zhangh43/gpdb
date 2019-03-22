@@ -6001,9 +6001,10 @@ apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 							guc->context, guc->source,
 							GUC_ACTION_SET, true, 0);
 		}
+		/* clear cache when apply succeeded */
+		cachedGUCLen = 0;
+		if (cachedGUC)
+			pfree(cachedGUC);
+		cachedGUC = NULL;
 	}
-	/* clear cache when apply succeeded */
-	cachedGUCLen = 0;
-	pfree(cachedGUC);
-	cachedGUC = NULL;
 }
