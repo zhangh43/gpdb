@@ -3413,10 +3413,12 @@ StartTransactionCommand(void)
 				 * Normal case.
 				 */
 				s->blockState = TBLOCK_STARTED;
-
-				if (Gp_role != GP_ROLE_DISPATCH)
-					apply_guc_from_qd(NULL, 0);
 			}
+
+			/* QE needs to apply the GUCs passed from QD when StartTransaction()*/
+			if (Gp_role == GP_ROLE_EXECUTE)
+				apply_guc_from_qd(NULL, 0);
+
 			break;
 
 			/*

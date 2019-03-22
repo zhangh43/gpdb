@@ -120,8 +120,12 @@ int			max_stack_depth = 100;
 /* wait N seconds to allow attach from a debugger */
 int			PostAuthDelay = 0;
 
-char       globalGucs[40960];
-int            globalGucsLen = 0;
+/*
+ * GUCs passed from QD will firstly be cached on QE
+ * if QE is not in a transaction.
+ */
+char		   *cachedGUC = NULL;
+int			cachedGUCLen = 0;
 
 /*
  * Hook for extensions, to get notified when query cancel or DIE signal is
@@ -5938,13 +5942,13 @@ log_disconnections(int code, Datum arg __attribute__((unused)))
 }
 
 /*
- * Apply GUCs from QD
+ * Apply GUCs passed from QD
  */
 void
 apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 {
-	char *toApply = NULL;
-	int   toApplyLen = 0;
+	char		   *gucToApply = NULL;
+	int			gucToApplyLen = 0;
 
 	/* if not in a transaction, do it later */
 	if (!IsTransactionOrTransactionBlock())
@@ -5952,36 +5956,36 @@ apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 		/* for later apply */
 		if (serializedGUClen != 0)
 		{
-			memcpy(globalGucs, serializedGUC, serializedGUClen);
-			globalGucsLen = serializedGUClen;
+			cachedGUC = palloc(serializedGUClen * sizeof(char));
+			memcpy(cachedGUC, serializedGUC, serializedGUClen);
+			cachedGUCLen = serializedGUClen;
 		}
 		return;
 	}
 
-	/*
-	* we are in a transaction
-	*/
-
-	/* no guc */
-	if (serializedGUC == NULL && globalGucsLen == 0)
+	/* do the real apply GUC work when we are in a transaction */
+	/* return if there is no GUC to sync. */
+	if (serializedGUClen == 0 && cachedGUCLen == 0)
 		return;
+
 	/* new serializedGUC */
-	if (serializedGUClen != 0)
+	if (serializedGUClen != 0 && serializedGUC != NULL)
 	{
-		toApply = serializedGUC;
-		toApplyLen = serializedGUClen;
+		gucToApply = (char *)serializedGUC;
+		gucToApplyLen = serializedGUClen;
 	}
-	else
+	else if (cachedGUCLen != 0 && cachedGUC != NULL)
 	{
-		toApply = globalGucs;
-		toApplyLen = globalGucsLen;
+		gucToApply = cachedGUC;
+		gucToApplyLen = cachedGUCLen;
 	}
-	if (true)
+	if (gucToApplyLen != 0 && gucToApply != NULL)
 	{
 		ListCell   *lc;
 		GUCNode *guc;
+		List *guc_list;
 
-		List *guc_list = (List *) readNodeFromBinaryString(toApply, toApplyLen);
+		guc_list = (List *) readNodeFromBinaryString(gucToApply, gucToApplyLen);
 		Assert(IsA(guc_list, List));
 		foreach (lc, guc_list)
 		{
@@ -5989,14 +5993,17 @@ apply_guc_from_qd(const char * serializedGUC, int serializedGUClen)
 			if (!guc || !IsA(guc, GUCNode))
 				elog(ERROR, "MPPEXEC: receive invalid guc with node tag: %d", guc->type);
 			/*
-			 * Whether to change GUC value is determined at QD side.
-			 * As a result, we just set GucSource to highest value PGC_S_SESSION,
-			 * and set changeVal to True.
+			 * Whether to change GUC values and their life cycles are
+			 * determined at QD side. As a result, we just set
+			 * GucAction to GUC_ACTION_SET and set changeVal to True.
 			 */
 			set_config_option(guc->name, guc->value,
 							guc->context, guc->source,
-							0, true, 0);
+							GUC_ACTION_SET, true, 0);
 		}
 	}
-	globalGucsLen = 0;
+	/* clear cache when apply succeeded */
+	cachedGUCLen = 0;
+	pfree(cachedGUC);
+	cachedGUC = NULL;
 }
