@@ -1049,8 +1049,7 @@ exec_mpp_query(const char *query_string,
 			   const char * serializedQuerytree, int serializedQuerytreelen,
 			   const char * serializedPlantree, int serializedPlantreelen,
 			   const char * serializedParams, int serializedParamslen,
-			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen,
-			   const char * serializedGUC, int serializedGUClen)
+			   const char * serializedQueryDispatchDesc, int serializedQueryDispatchDesclen)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -1471,8 +1470,7 @@ static void
 exec_mpp_dtx_protocol_command(DtxProtocolCommand dtxProtocolCommand,
 							  int flags, const char *loggingStr,
 							  const char *gid, DistributedTransactionId gxid,
-							  DtxContextInfo *contextInfo,
-							  const char * serializedGUC, int serializedGUClen)
+							  DtxContextInfo *contextInfo)
 {
 	CommandDest dest = whereToSendOutput;
 	const char *commandTag = loggingStr;
@@ -1559,9 +1557,7 @@ CheckDebugDtmActionSqlCommandTag(const char *sqlCommandTag)
  * Execute a "simple Query" protocol message.
  */
 static void
-exec_simple_query(const char *query_string,
-				const char * serializedGUC,
-				int serializedGUClen)
+exec_simple_query(const char *query_string)
 {
 	CommandDest dest = whereToSendOutput;
 	MemoryContext oldcontext;
@@ -5255,7 +5251,7 @@ PostgresMain(int argc, char *argv[],
 					else if (am_ftshandler)
 						HandleFtsMessage(query_string);
 					else
-						exec_simple_query(query_string, NULL, 0);
+						exec_simple_query(query_string);
 
 					send_ready_for_query = true;
 				}
@@ -5407,7 +5403,7 @@ PostgresMain(int argc, char *argv[],
 						}
 						else
 						{
-							exec_simple_query(query_string, serializedGUC, serializedGUClen);
+							exec_simple_query(query_string);
 						}
 					}
 					else
@@ -5415,8 +5411,7 @@ PostgresMain(int argc, char *argv[],
 									   serializedQuerytree, serializedQuerytreelen,
 									   serializedPlantree, serializedPlantreelen,
 									   serializedParams, serializedParamslen,
-									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen,
-									   serializedGUC, serializedGUClen);
+									   serializedQueryDispatchDesc, serializedQueryDispatchDesclen);
 
 					SetUserIdAndContext(GetOuterUserId(), false);
 
@@ -5493,8 +5488,7 @@ PostgresMain(int argc, char *argv[],
 
 					pq_getmsgend(&input_message);
 
-					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo,
-											serializedGUC, serializedGUClen);
+					exec_mpp_dtx_protocol_command(dtxProtocolCommand, flags, loggingStr, gid, gxid, &TempDtxContextInfo);
 
 					send_ready_for_query = true;
             	}
