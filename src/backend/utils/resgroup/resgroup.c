@@ -1248,6 +1248,9 @@ ResourceGroupGetQueryMemoryLimit(void)
 		return 0;
 
 	memSpill = slotGetMemSpill(&slot->caps);
+	
+	/* memSpill is already converted to chunks */
+	Assert(memSpill >= 0);
 
 	return memSpill << VmemTracker_GetChunkSizeInBits();
 }
@@ -2033,6 +2036,7 @@ groupGetMemSharedExpected(const ResGroupCaps *caps)
 static int32
 groupGetMemSpillTotal(const ResGroupCaps *caps)
 {
+	//TODO
 	return groupGetMemExpected(caps) * memory_spill_ratio / 100;
 }
 
@@ -2074,6 +2078,7 @@ slotGetMemQuotaOnQE(const ResGroupCaps *caps, ResGroupData *group)
 static int32
 slotGetMemSpill(const ResGroupCaps *caps)
 {
+	//TODO
 	Assert(caps->concurrency != 0);
 	return groupGetMemSpillTotal(caps) / caps->concurrency;
 }
