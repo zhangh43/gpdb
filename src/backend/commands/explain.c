@@ -41,6 +41,7 @@
 #include "utils/metrics_utils.h"
 #include "utils/tuplesort.h"
 #include "utils/tuplesort_mk.h"
+#include "cdb/cdbgang.h"                /* CheckDispatchResult() */
 #include "cdb/cdbdisp.h"                /* CheckDispatchResult() */
 #include "cdb/cdbexplain.h"             /* cdbexplain_recvExecStats */
 #include "cdb/cdbpartition.h"
@@ -1137,7 +1138,19 @@ explain_outNode(StringInfo str,
 
 				/* scale the number of rows by the number of segments sending data */
 				scaleFactor = nSenders;
-
+#if 0
+				ListCell *cell;
+				foreach(cell, slice->primaryProcesses)
+				{
+					CdbProcess *p = (CdbProcess*)lfirst(cell);
+					elog(WARNING,
+						 "slice mid:%d, port:%d contentid:%d,pid:%d",
+						 pMotion->motionID,
+						 p->listenerPort,
+						 p->contentid,
+						 p->pid);
+				}
+#endif
 				switch (pMotion->motionType)
 				{
 					case MOTIONTYPE_HASH:

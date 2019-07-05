@@ -1537,6 +1537,8 @@ void freeGangsForPortal(char *portal_name)
 	Assert (GangContext != NULL);
 	oldContext = MemoryContextSwitchTo(GangContext);
 
+	List *tmpList = NIL;
+
 	cur_item = list_head(allocatedReaderGangsN);
 	while (cur_item != NULL)
 	{
@@ -1553,7 +1555,7 @@ void freeGangsForPortal(char *portal_name)
 
 			/* we only return the gang to the available list if it is good */
 			if (cleanupGang(gp))
-				availableReaderGangsN = lappend(availableReaderGangsN, gp);
+				tmpList = lappend(tmpList, gp);
 			else
 				DisconnectAndDestroyGang(gp);
 
@@ -1569,6 +1571,15 @@ void freeGangsForPortal(char *portal_name)
 		}
 	}
 
+	availableReaderGangsN = list_concat(tmpList,
+										availableReaderGangsN);
+#if 0
+	foreach(cur_item,availableReaderGangsN)
+	{
+		Gang *gp = (Gang *) lfirst(cur_item);
+		elog(WARNING,"available gang:%d",gp->gang_id);
+	}
+#endif
 	prev_item = NULL;
 	cur_item = list_head(allocatedReaderGangs1);
 	while (cur_item != NULL)
