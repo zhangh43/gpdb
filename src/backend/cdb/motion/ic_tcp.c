@@ -1707,6 +1707,10 @@ SetupTCPInterconnect(EState *estate)
 			MemSet(&logbuf, 0, sizeof(logbuf));
 		}
 
+		if (Gp_role == GP_ROLE_DISPATCH)
+		{
+			 checkForCancelFromQD(estate->interconnect_context);
+		}
 		ML_CHECK_FOR_INTERRUPTS(estate->interconnect_context->teardownActive);
 		n = select(highsock + 1, (fd_set *)&rset, (fd_set *)&wset, (fd_set *)&eset, &timeout);
 		ML_CHECK_FOR_INTERRUPTS(estate->interconnect_context->teardownActive);
