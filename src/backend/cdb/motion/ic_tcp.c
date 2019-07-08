@@ -2447,7 +2447,7 @@ waitOnOutbound(ChunkTransportStateEntry *pEntry)
 				MPP_FD_CLR(conn->sockfd, &waitset);
 				/* we may have finished */
 				conn_count--;
-				elog(LOG, "TeardownTCPInterconnect: waitOnOutbound %s: %m", "recv");
+				elog(ERROR, "TeardownTCPInterconnect: waitOnOutbound %s: %m", "recv");
 				continue;
 			}
 		}
