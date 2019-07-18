@@ -51,6 +51,12 @@ typedef struct Gang
 	/* For debugging purposes only. These do not add any actual functionality. */
 	bool allocated;
 
+	/*
+	 * If this field is false, the gang should not be free-ed because
+	 * they have not been dispatched.
+	 */
+	bool dispatched;
+
 	/* should be destroyed if set */
 	bool noReuse;
 

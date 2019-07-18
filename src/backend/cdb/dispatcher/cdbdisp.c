@@ -105,6 +105,7 @@ cdbdisp_dispatchToGang(struct CdbDispatcherState *ds,
 	 * thread related code into a separate file.
 	 */
 	(pDispatchFuncs->dispatchToGang)(ds, gp, sliceIndex, disp_direct);
+	gp->dispatched = true;
 }
 
 /*
