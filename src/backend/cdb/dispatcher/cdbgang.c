@@ -1294,28 +1294,6 @@ static bool cleanupGang(Gang *gp)
 			gp->gang_id, gp->type, gp->size,
 			(gp->portal_name ? gp->portal_name : "(unnamed)"));
 
-	/*
-	 * If a plan involves initplan, it firstly assign gangs for the whole
-	 * plan, and then start a new executor context to run initplan. When
-	 * initplan finishes, it will loop all allocated-gangs (including the
-	 * gangs allocated to parent plan) and may free those gangs and may
-	 * lead to invalid memory reference when later dispatch parent plan.
-	 *
-	 * A flag dispatched is added to the struct Gang. If its value is false,
-	 * the gang will not be free-ed.
-	 *
-	 * The following fault_injector is added to test this case.
-	 */
-	if (!gp->dispatched)
-		return true;
-
-#ifdef FAULT_INJECTOR
-	if (SIMPLE_FAULT_INJECTOR(FreeGangInitPlan) == FaultInjectorTypeSkip &&
-		gp->size == 1 &&
-		gp->type == GANGTYPE_SINGLETON_READER)
-		return false;
-#endif
-
 	if (gp->noReuse)
 		return false;
 
@@ -1571,7 +1549,25 @@ void freeGangsForPortal(char *portal_name)
 		Gang *gp = (Gang *) lfirst(cur_item);
 		ListCell *next_item = lnext(cur_item);
 
-		if (isTargetPortal(gp->portal_name, portal_name))
+		/*
+		 * If a plan involves initplan, it firstly assign gangs for the whole
+		 * plan, and then start a new executor context to run initplan. When
+		 * initplan finishes, it will loop all allocated-gangs (including the
+		 * gangs allocated to parent plan) and may free those gangs and may
+		 * lead to invalid memory reference when later dispatch parent plan.
+		 *
+		 * A flag dispatched is added to the struct Gang. If its value is false,
+		 * the gang will not be free-ed.
+		 *
+		 * The following fault_injector is added to test this case.
+		 */
+#ifdef FAULT_INJECTOR
+		if (SIMPLE_FAULT_INJECTOR(FreeGangInitPlan) == FaultInjectorTypeSkip &&
+				gp->size == 1 &&
+				gp->type == GANGTYPE_SINGLETON_READER)
+			gp->dispatched = true;
+#endif
+		if (isTargetPortal(gp->portal_name, portal_name) && gp->dispatched)
 		{
 			ELOG_DISPATCHER_DEBUG("Returning a reader N-gang to the available list");
 
@@ -1612,7 +1608,25 @@ void freeGangsForPortal(char *portal_name)
 		Gang *gp = (Gang *) lfirst(cur_item);
 		ListCell *next_item = lnext(cur_item);
 
-		if (isTargetPortal(gp->portal_name, portal_name))
+		/*
+		 * If a plan involves initplan, it firstly assign gangs for the whole
+		 * plan, and then start a new executor context to run initplan. When
+		 * initplan finishes, it will loop all allocated-gangs (including the
+		 * gangs allocated to parent plan) and may free those gangs and may
+		 * lead to invalid memory reference when later dispatch parent plan.
+		 *
+		 * A flag dispatched is added to the struct Gang. If its value is false,
+		 * the gang will not be free-ed.
+		 *
+		 * The following fault_injector is added to test this case.
+		 */
+#ifdef FAULT_INJECTOR
+		if (SIMPLE_FAULT_INJECTOR(FreeGangInitPlan) == FaultInjectorTypeSkip &&
+				gp->size == 1 &&
+				gp->type == GANGTYPE_SINGLETON_READER)
+			gp->dispatched = true;
+#endif
+		if (isTargetPortal(gp->portal_name, portal_name) && gp->dispatched)
 		{
 			ELOG_DISPATCHER_DEBUG("Returning a reader 1-gang to the available list");
 
