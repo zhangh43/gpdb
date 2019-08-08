@@ -3348,7 +3348,7 @@ struct config_int ConfigureNamesInt_gp[] =
 			GUC_UNIT_MS | GUC_GPDB_ADDOPT
 		},
 		&Gp_interconnect_timer_period,
-		5, 1, 100,
+		50, 1, 100,
 		NULL, NULL, NULL
 	},
 
