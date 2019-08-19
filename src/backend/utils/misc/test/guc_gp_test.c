@@ -7,6 +7,8 @@
 
 #include "../guc_gp.c"
 
+void init(void );
+
 void init()
 {
 	sync_guc_num = sizeof(sync_guc_names_array)/ sizeof(char *);

@@ -24,6 +24,7 @@ static const char *unsync_guc_names_array[] =
 {
 #include "utils/unsync_guc_name.h"
 };
+void init(void );
 extern int sync_guc_num;
 extern int unsync_guc_num;
 void init()
@@ -110,6 +111,24 @@ test_enum_guc_coverage(void **state)
 
 }
 
+/*
+ * a guc name should only be place once.
+ */
+static void
+test_guc_name_list_mutual_exclusion(void **state)
+{
+	for(int i = 0; i < sync_guc_num; i++)
+	{
+		char *res = (char *) bsearch((void *) &(sync_guc_names_array[i]),
+				(void *) unsync_guc_names_array,
+				unsync_guc_num,
+				sizeof(char *),
+				guc_array_compare);
+
+		assert_true(res == NULL);
+	}
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -121,7 +140,8 @@ main(int argc, char* argv[])
 		unit_test(test_int_guc_coverage),
 		unit_test(test_real_guc_coverage),
 		unit_test(test_string_guc_coverage),
-		unit_test(test_enum_guc_coverage)
+		unit_test(test_enum_guc_coverage),
+		unit_test(test_guc_name_list_mutual_exclusion)
 	};
 
 	return run_tests(tests);
