@@ -232,7 +232,7 @@ struct ResGroupControl
 	bool			loaded;
 
 	int32			totalChunks;	/* total memory chunks on this segment */
-	volatile int32	freeChunks;		/* memory chunks not allocated to any group,
+	pg_atomic_uint32 freeChunks;	/* memory chunks not allocated to any group,
 									will be used for the query which group share
 									memory is not enough*/
 	/* 
@@ -482,8 +482,8 @@ ResGroupControlInit(void)
     pResGroupControl->loaded = false;
     pResGroupControl->nGroups = MaxResourceGroups;
 	pResGroupControl->totalChunks = 0;
-	pResGroupControl->freeChunks = 0;
 	pg_atomic_init_u32(&pResGroupControl->safeChunksThreshold, 0);
+	pg_atomic_init_u32(&pResGroupControl->freeChunks, 0);
 	pResGroupControl->chunkSizeInBits = BITS_IN_MB;
 
 	for (i = 0; i < MaxResourceGroups; i++)
@@ -574,9 +574,9 @@ InitResGroups(void)
 
 	/* These initialization must be done before createGroup() */
 	decideTotalChunks(&pResGroupControl->totalChunks, &pResGroupControl->chunkSizeInBits);
-	pResGroupControl->freeChunks = pResGroupControl->totalChunks;
 	pg_atomic_write_u32(&pResGroupControl->safeChunksThreshold,
 						pResGroupControl->totalChunks * (100 - runaway_detector_activation_percent) / 100);
+	pg_atomic_write_u32(&pResGroupControl->freeChunks, pResGroupControl->totalChunks);
 	if (pResGroupControl->totalChunks == 0)
 		ereport(PANIC,
 				(errcode(ERRCODE_INSUFFICIENT_RESOURCES),
@@ -1398,8 +1398,7 @@ groupIncMemUsage(ResGroupData *group, ResGroupSlotData *slot, int32 chunks)
 		int32 deltaGlobalSharedMemUsage = Max(0, deltaSharedMemUsage - oldSharedFree);
 
 		/* freeChunks -= deltaGlobalSharedMemUsage and get the new value */
-		int32 newFreeChunks = pg_atomic_sub_fetch_u32((pg_atomic_uint32 *)
-													  &pResGroupControl->freeChunks,
+		int32 newFreeChunks = pg_atomic_sub_fetch_u32(&pResGroupControl->freeChunks,
 													  deltaGlobalSharedMemUsage);
 		/* calculate the total over used chunks of global share */
 		globalOveruse = Max(0, 0 - newFreeChunks);
@@ -1450,8 +1449,7 @@ groupDecMemUsage(ResGroupData *group, ResGroupSlotData *slot, int32 chunks)
 		/* calculate the global share usage of current release */
 		int32 deltaGlobalSharedMemUsage = Min(grpTotalGlobalUsage, deltaSharedMemUsage);
 		/* add chunks to global shared memory */
-		pg_atomic_add_fetch_u32((pg_atomic_uint32 *)
-								&pResGroupControl->freeChunks,
+		pg_atomic_add_fetch_u32(&pResGroupControl->freeChunks,
 								deltaGlobalSharedMemUsage);
 		return deltaGlobalSharedMemUsage;
 	}
@@ -1932,14 +1930,12 @@ mempoolReserve(Oid groupId, int32 chunks)
 	/* Compare And Save to avoid concurrency problem without using lock */
 	while (true)
 	{
-		oldFreeChunks = pg_atomic_read_u32((pg_atomic_uint32 *)
-										   &pResGroupControl->freeChunks);
+		oldFreeChunks = pg_atomic_read_u32(&pResGroupControl->freeChunks);
 		reserved = Min(Max(0, oldFreeChunks), chunks);
 		newFreeChunks = oldFreeChunks - reserved;
 		if (reserved == 0)
 			break;
-		if (pg_atomic_compare_exchange_u32((pg_atomic_uint32 *)
-										   &pResGroupControl->freeChunks,
+		if (pg_atomic_compare_exchange_u32(&pResGroupControl->freeChunks,
 										   (uint32 *) &oldFreeChunks,
 										   (uint32) newFreeChunks))
 			break;
@@ -1970,8 +1966,7 @@ mempoolRelease(Oid groupId, int32 chunks)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 	Assert(chunks >= 0);
 
-	newFreeChunks = pg_atomic_add_fetch_u32((pg_atomic_uint32 *)
-											&pResGroupControl->freeChunks,
+	newFreeChunks = pg_atomic_add_fetch_u32(&pResGroupControl->freeChunks,
 											chunks);
 
 	/* also update the safeChunksThreshold which is used in runaway detector */
@@ -2207,7 +2202,7 @@ notifyGroupsOnMem(Oid skipGroupId)
 		if (group->groupMemOps->group_mem_on_notify)
 			group->groupMemOps->group_mem_on_notify(group);
 
-		if (!pResGroupControl->freeChunks)
+		if (!pg_atomic_read_u32(&pResGroupControl->freeChunks))
 			break;
 	}
 }
@@ -3590,7 +3585,7 @@ ResGroupDumpInfo(StringInfo str)
 	appendStringInfo(str, "\"segmentsOnMaster\":%d,", pResGroupControl->segmentsOnMaster);
 	appendStringInfo(str, "\"loaded\":%s,", pResGroupControl->loaded ? "true" : "false");
 	appendStringInfo(str, "\"totalChunks\":%d,", pResGroupControl->totalChunks);
-	appendStringInfo(str, "\"freeChunks\":%d,", pResGroupControl->freeChunks);
+	appendStringInfo(str, "\"freeChunks\":%d,", pg_atomic_read_u32(&pResGroupControl->freeChunks));
 	appendStringInfo(str, "\"chunkSizeInBits\":%d,", pResGroupControl->chunkSizeInBits);
 	
 	/* dump each group */
