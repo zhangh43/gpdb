@@ -1,0 +1,18 @@
+platform: linux
+image_resource:
+  type: docker-image
+inputs:
+  - name: gpdb_src
+  - name: ccp_src
+  - name: cluster_env_files
+outputs:
+  - name: sqldump
+params:
+  DUMP_DB: "false"
+  MAKE_TEST_COMMAND: ""
+  BLDWRAP_POSTGRES_CONF_ADDONS: ""
+  TEST_OS: ""
+  CONFIGURE_FLAGS: ""
+  WITH_MIRRORS:
+run:
+  path: gpdb_src/concourse/scripts/ic_gpdb_ccp.bash
