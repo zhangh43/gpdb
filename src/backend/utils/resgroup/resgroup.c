@@ -131,6 +131,12 @@ struct ResGroupProcData
 	ResGroupCaps	caps;
 
 	int32	memUsage;			/* memory usage of current proc */
+	/* 
+	 * Record current bypass memory limit for each bypass queries.
+	 * For bypass mode, memUsage of current process could accumulate in a session.
+	 * So should limit the memory usage for each query instead of the whole session.
+	 */
+	int32	bypassMemoryLimit;
 };
 
 /*
@@ -1144,10 +1150,7 @@ ResGroupReserveMemory(int32 memoryChunks, int32 overuseChunks, bool *waiverUsed)
 		/*
 		 * Do not allow to allocate more than the per proc limit.
 		 */
-		if ((Gp_role == GP_ROLE_DISPATCH &&
-			 self->memUsage > RESGROUP_BYPASS_MODE_MEMORY_LIMIT_ON_QD) ||
-			(Gp_role == GP_ROLE_EXECUTE &&
-			 self->memUsage > RESGROUP_BYPASS_MODE_MEMORY_LIMIT_ON_QE))
+		if (self->memUsage > self->bypassMemoryLimit)
 		{
 			self->memUsage -= memoryChunks;
 			return false;
@@ -2543,6 +2546,9 @@ AssignResGroupOnMaster(void)
 
 		/* Attach self memory usage to resgroup */
 		groupIncMemUsage(bypassedGroup, &bypassedSlot, self->memUsage);
+		
+		/* Record the bypass memory limit of current query */
+		self->bypassMemoryLimit = self->memUsage + RESGROUP_BYPASS_MODE_MEMORY_LIMIT_ON_QD;
 
 		/* Add into cgroup */
 		ResGroupOps_AssignGroup(bypassedGroup->groupId,
@@ -2704,6 +2710,9 @@ SwitchResGroupOnSegment(const char *buf, int len)
 
 		/* Attach self memory usage to resgroup */
 		groupIncMemUsage(bypassedGroup, &bypassedSlot, self->memUsage);
+		
+		/* Record the bypass memory limit of current query */
+		self->bypassMemoryLimit = self->memUsage + RESGROUP_BYPASS_MODE_MEMORY_LIMIT_ON_QE;
 		return;
 	}
 
