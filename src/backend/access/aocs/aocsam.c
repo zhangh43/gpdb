@@ -48,6 +48,10 @@
 #include "utils/snapmgr.h"
 #include "utils/syscache.h"
 
+#include "utils/vtype.h"
+#include "utils/tuplebatch.h"
+#include "utils/datum.h"
+
 
 static AOCSScanDesc aocs_beginscan_internal(Relation relation,
 						AOCSFileSegInfo **seginfo,
@@ -498,6 +502,7 @@ aocs_beginscan_internal(Relation relation,
 						   relation->rd_appendonly->visimapidxid,
 						   AccessShareLock,
 						   appendOnlyMetaDataSnapshot);
+	scan->scanFinish = false;
 
 	return scan;
 }
@@ -624,11 +629,35 @@ aocs_getnext(AOCSScanDesc scan, ScanDirection direction, TupleTableSlot *slot)
 	int			err = 0;
 	int			i;
 	bool		isSnapshotAny = (scan->snapshot == SnapshotAny);
+	TupleBatch tb = (TupleBatch)slot->PRIVATE_tb;
 
 	Assert(ScanDirectionIsForward(direction));
 
 	ncol = slot->tts_tupleDescriptor->natts;
 	Assert(ncol <= scan->relationTupleDesc->natts);
+
+	if(tb)
+	{
+		/* clear tuplebatch*/
+		tbReset((TupleBatch)slot->PRIVATE_tb);
+		/*
+		 * since PRIVATE_tb may contains unprocessed tuples when the scan is over,
+		 * we use flag scanFinish indicate scan finish, and return empty slot in
+		 * next aocs_getnext() call.
+		 */
+		if (scan->scanFinish)
+		{
+				ExecClearTuple(slot);
+				return false;
+		}
+		/* TODO: optimize to check tbCreateColumn only once. */
+		for (i = 0; i < ncol; i++) {
+			/* TODO: we need to store the corresponding vector type */
+			Oid columnTypeID = slot->tts_tupleDescriptor->attrs[i]->atttypid;
+			if (!tb->datagroup[i])
+				tbCreateColumn(tb, i, columnTypeID);
+		}
+	}
 
 	while (1)
 	{
@@ -642,9 +671,16 @@ ReadNext:
 			if (err < 0)
 			{
 				/* No more seg, we are at the end */
-				ExecClearTuple(slot);
 				scan->cur_seg = -1;
-				return false;
+				/* empty tuple batch */
+				if(!tb || tb->nrows == 0) {
+					ExecClearTuple(slot);
+					return false;
+				}
+				else {
+					scan->scanFinish = true;
+					return true;
+				}
 			}
 			scan->cur_seg_row = 0;
 		}
@@ -718,7 +754,35 @@ ReadNext:
 
 		TupSetVirtualTupleNValid(slot, ncol);
 		slot_set_ctid(slot, &(scan->cdb_fake_ctid));
-		return true;
+
+		if(tb){
+			for (int i = 0; i < tb->ncols; i++) {
+				/* TODO: we need to store the corresponding vector type */
+				Oid columnTypeID = slot->tts_tupleDescriptor->attrs[i]->atttypid;
+				if (!tb->datagroup[i])
+					tbCreateColumn(tb, i, columnTypeID);
+
+				tb->datagroup[i]->values[tb->nrows] = slot_getattr(slot, i + 1,
+						&(tb->datagroup[i]->isnull[tb->nrows]));
+
+				/*
+				 * TODO: support non attbyval type.
+				 * if attribute is a reference, deep copy the data out to prevent ao table buffer free before vectorized scan batch done
+				 */
+				/*
+				if (!slot->tts_mt_bind->tupdesc->attrs[i]->attbyval)
+					tb->datagroup[i]->values[tb->nrows] = datumCopy(
+							tb->datagroup[i]->values[tb->nrows],
+							slot->tts_mt_bind->tupdesc->attrs[i]->attbyval,
+							slot->tts_mt_bind->tupdesc->attrs[i]->attlen);
+				*/
+			}
+			tb->nrows++;
+			if (tb->nrows == tb->batchsize)
+				return true;
+		}
+		else
+			return true;
 	}
 
 	Assert(!"Never here");

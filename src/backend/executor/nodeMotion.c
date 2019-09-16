@@ -31,6 +31,7 @@
 #include "miscadmin.h"
 #include "utils/memutils.h"
 
+#include "utils/tuplebatch.h"
 
 /* #define MEASURE_MOTION_TIME */
 
@@ -328,7 +329,29 @@ execMotionSender(MotionState *node)
 		}
 		else
 		{
-			doSendTuple(motion, node, outerTupleSlot);
+			/*
+			 * motion send tuples in TupleBatch one by one
+			 * TODO: need optimization.
+			 */
+			if(outerTupleSlot->PRIVATE_tb)
+			{
+				int i, j;
+				TupleBatch tb = (TupleBatch)outerTupleSlot->PRIVATE_tb;
+				for (i=0; i < tb->nrows; i++){
+					TupSetVirtualTuple(outerTupleSlot);
+					free_heaptuple_memtuple(outerTupleSlot);
+					for(j=0; j < tb->ncols; j++)
+					{
+						outerTupleSlot->PRIVATE_tts_isnull[j] = tb->datagroup[j]->isnull[i];
+						outerTupleSlot->PRIVATE_tts_values[j] = tb->datagroup[j]->values[i];
+					}
+					doSendTuple(motion, node, outerTupleSlot);
+				}
+			}
+			else
+			{
+				doSendTuple(motion, node, outerTupleSlot);
+			}
 			/* doSendTuple() may have set node->stopRequested as a side-effect */
 
 			if (node->stopRequested)

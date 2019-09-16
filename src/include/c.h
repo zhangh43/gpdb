@@ -471,6 +471,8 @@ typedef signed int Offset;
 /*
  * Common Postgres datatype names (as used in the catalogs)
  */
+typedef int16 int2;
+typedef int32 int4;
 typedef float float4;
 typedef double float8;
 

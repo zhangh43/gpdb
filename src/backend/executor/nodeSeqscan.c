@@ -28,6 +28,8 @@
 #include "executor/execdebug.h"
 #include "executor/nodeSeqscan.h"
 #include "utils/rel.h"
+#include "utils/vtype.h"
+#include "utils/tuplebatch.h"
 
 #include "cdb/cdbappendonlyam.h"
 #include "cdb/cdbaocsam.h"
@@ -273,6 +275,9 @@ ExecInitSeqScanForPartition(SeqScan *node, EState *estate, int eflags,
 	ExecAssignResultTypeFromTL(&scanstate->ps);
 	ExecAssignScanProjectionInfo(scanstate);
 
+	TupleDesc td = scanstate->ss_ScanTupleSlot->tts_tupleDescriptor;
+	if (seqscanstate->ss_currentScanDesc_aocs)
+		scanstate->ss_ScanTupleSlot->PRIVATE_tb = PointerGetDatum(tbGenerate(td->natts,BATCHSIZE));
 	return seqscanstate;
 }
 

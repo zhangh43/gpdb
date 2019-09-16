@@ -126,6 +126,8 @@ typedef struct AOCSScanDescData
 
 	AppendOnlyVisimap visibilityMap;
 
+	bool scanFinish;
+
 }	AOCSScanDescData;
 
 typedef AOCSScanDescData *AOCSScanDesc;
