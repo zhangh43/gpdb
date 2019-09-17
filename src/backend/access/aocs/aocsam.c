@@ -647,8 +647,8 @@ aocs_getnext(AOCSScanDesc scan, ScanDirection direction, TupleTableSlot *slot)
 		 */
 		if (scan->scanFinish)
 		{
-				ExecClearTuple(slot);
-				return false;
+			ExecClearTuple(slot);
+			return false;
 		}
 		/* TODO: optimize to check tbCreateColumn only once. */
 		for (i = 0; i < ncol; i++) {
@@ -679,6 +679,8 @@ ReadNext:
 				}
 				else {
 					scan->scanFinish = true;
+					for(int i = 0;i < tb->ncols ; i++)
+						tb->datagroup[i]->dim = tb->nrows;
 					return true;
 				}
 			}
@@ -779,7 +781,11 @@ ReadNext:
 			}
 			tb->nrows++;
 			if (tb->nrows == tb->batchsize)
+			{
+				for(int i = 0;i < tb->ncols ; i++)
+					tb->datagroup[i]->dim = tb->nrows;
 				return true;
+			}
 		}
 		else
 			return true;

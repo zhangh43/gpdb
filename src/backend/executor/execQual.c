@@ -66,6 +66,8 @@
 #include "utils/typcache.h"
 #include "utils/xml.h"
 
+#include "utils/tuplebatch.h"
+#include "utils/vcheck.h"
 
 /* static function decls */
 static Datum ExecEvalArrayRef(ArrayRefExprState *astate,
@@ -665,7 +667,7 @@ ExecEvalScalarVar(ExprState *exprstate, ExprContext *econtext,
 		/* can't check type if dropped, since atttypid is probably 0 */
 		if (!attr->attisdropped)
 		{
-			if (variable->vartype != attr->atttypid)
+			if (variable->vartype != attr->atttypid && variable->vartype != GetVtype(attr->atttypid))
 				ereport(ERROR,
 						(errcode(ERRCODE_DATATYPE_MISMATCH),
 						 errmsg("attribute %d has wrong type", attnum),
@@ -679,7 +681,17 @@ ExecEvalScalarVar(ExprState *exprstate, ExprContext *econtext,
 	exprstate->evalfunc = ExecEvalScalarVarFast;
 
 	/* Fetch the value from the slot */
-	return slot_getattr(slot, attnum, isNull);
+	if(slot->PRIVATE_tb)
+	{
+		/* Fetch the value from the slot */
+		TupleBatch tb = (TupleBatch )slot->PRIVATE_tb;
+
+		return PointerGetDatum(tb->datagroup[attnum - 1]);
+	}
+	else
+	{
+		return slot_getattr(slot, attnum, isNull);
+	}
 }
 
 /* ----------------------------------------------------------------
@@ -720,8 +732,17 @@ ExecEvalScalarVarFast(ExprState *exprstate, ExprContext *econtext,
 
 	attnum = variable->varattno;
 
-	/* Fetch the value from the slot */
-	return slot_getattr(slot, attnum, isNull);
+	TupleBatch tb = (TupleBatch )slot->PRIVATE_tb;
+
+	if (tb)
+	{
+		return PointerGetDatum(tb->datagroup[attnum - 1]);
+	}
+	else
+	{
+		/* Fetch the value from the slot */
+		return slot_getattr(slot, attnum, isNull);
+	}
 }
 
 /* ----------------------------------------------------------------
@@ -6359,8 +6380,7 @@ ExecCleanTargetListLength(List *targetlist)
 static bool
 ExecTargetList(List *targetlist,
 			   ExprContext *econtext,
-			   Datum *values,
-			   bool *isnull,
+			   TupleTableSlot* slot,
 			   ExprDoneCond *itemIsDone,
 			   ExprDoneCond *isDone)
 {
@@ -6368,6 +6388,13 @@ ExecTargetList(List *targetlist,
 	ListCell   *tl;
 	bool		haveDoneSets;
 
+	Datum *values = slot_get_values(slot);
+	bool *isnull = slot_get_isnull(slot);
+
+	TupleBatch tb = (TupleBatch)slot->PRIVATE_tb;
+	if(tb)
+		tb->ncols = list_length(targetlist);
+	bool isnulls;
 	/*
 	 * Run in short-lived per-tuple context while computing expressions.
 	 */
@@ -6384,10 +6411,22 @@ ExecTargetList(List *targetlist,
 		TargetEntry *tle = (TargetEntry *) gstate->xprstate.expr;
 		AttrNumber	resind = tle->resno - 1;
 
-		values[resind] = ExecEvalExpr(gstate->arg,
-									  econtext,
-									  &isnull[resind],
-									  &itemIsDone[resind]);
+		if(tb)
+		{
+			tb->datagroup[resind] = (vtype*)ExecEvalExpr(gstate->arg,
+												  econtext,
+												  &isnulls,
+												  &itemIsDone[resind]);
+
+		}
+		else
+		{
+			values[resind] = ExecEvalExpr(gstate->arg,
+									  	  econtext,
+									  	  &isnull[resind],
+									  	  &itemIsDone[resind]);
+		}
+
 
 		if (itemIsDone[resind] != ExprSingleResult)
 		{
@@ -6532,6 +6571,7 @@ ExecProject(ProjectionInfo *projInfo, ExprDoneCond *isDone)
 	 */
 	ExecClearTuple(slot);
 
+	TupleBatch tb = (TupleBatch)slot->PRIVATE_tb;
 	/*
 	 * Force extraction of all input values that we'll need.  The
 	 * Var-extraction loops below depend on this, and we are also prefetching
@@ -6558,7 +6598,7 @@ ExecProject(ProjectionInfo *projInfo, ExprDoneCond *isDone)
 		bool	   *isnull = slot_get_isnull(slot);
 		int		   *varSlotOffsets = projInfo->pi_varSlotOffsets;
 		int		   *varNumbers = projInfo->pi_varNumbers;
-		int			i;
+		int			i,j;
 
 		if (projInfo->pi_directMap)
 		{
@@ -6568,9 +6608,27 @@ ExecProject(ProjectionInfo *projInfo, ExprDoneCond *isDone)
 				char	   *slotptr = ((char *) econtext) + varSlotOffsets[i];
 				TupleTableSlot *varSlot = *((TupleTableSlot **) slotptr);
 				int			varNumber = varNumbers[i] - 1;
+				if (tb)
+				{
+					TupleBatch vartb=(TupleBatch)varSlot->PRIVATE_tb;
+					tb->nrows = vartb->nrows;
 
-				values[i] = slot_get_values(varSlot)[varNumber];
-				isnull[i] = slot_get_isnull(varSlot)[varNumber];
+					/* TODO: optimize to check tbCreateColumn only once. */
+					if (!tb->datagroup[i])
+						tbCreateColumn(tb, i, vartb->datagroup[varNumber]->elemtype);
+
+					for (j = 0; j< vartb->nrows; j ++)
+					{
+						tb->datagroup[i]->values[j] = vartb->datagroup[varNumber]->values[j];
+						tb->datagroup[i]->isnull[j] = vartb->datagroup[varNumber]->isnull[j];
+						/*TODO: non byval type*/
+					}
+				}
+				else
+				{
+					values[i] = slot_get_values(varSlot)[varNumber];
+					isnull[i] = slot_get_isnull(varSlot)[varNumber];
+				}
 			}
 		}
 		else
@@ -6587,6 +6645,7 @@ ExecProject(ProjectionInfo *projInfo, ExprDoneCond *isDone)
 
 				values[varOutputCol] = slot_get_values(varSlot)[varNumber];
 				isnull[varOutputCol] = slot_get_isnull(varSlot)[varNumber];
+				/*TODO: batch process for this branch*/
 			}
 		}
 	}
@@ -6601,8 +6660,7 @@ ExecProject(ProjectionInfo *projInfo, ExprDoneCond *isDone)
 	{
 		if (!ExecTargetList(projInfo->pi_targetlist,
 							econtext,
-							slot_get_values(slot),
-							slot_get_isnull(slot),
+							slot,
 							projInfo->pi_itemIsDone,
 							isDone))
 			return slot;		/* no more result rows, return empty slot */

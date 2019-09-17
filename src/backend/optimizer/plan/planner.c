@@ -69,6 +69,7 @@
 #include "storage/lmgr.h"
 #include "utils/guc.h"
 
+#include "utils/vcheck.h"
 
 /* GUC parameter */
 double		cursor_tuple_fraction = DEFAULT_CURSOR_TUPLE_FRACTION;
@@ -453,6 +454,12 @@ standard_planner(Query *parse, int cursorOptions, ParamListInfo boundParams)
 		lfirst(lp) = replace_shareinput_targetlists(root, subplan);
 	}
 	top_plan = replace_shareinput_targetlists(root, top_plan);
+
+	/* 
+	 * replace scalar to vector type, including var oper func etc. 
+	 * TODO: better specify/utilize vector/batch in planner side.
+	 */
+	top_plan =  CheckAndReplacePlanVectorized(root, top_plan);
 
 	/* build the PlannedStmt result */
 	result = makeNode(PlannedStmt);

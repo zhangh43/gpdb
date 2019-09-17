@@ -24,6 +24,8 @@
 #include "miscadmin.h"
 #include "utils/memutils.h"
 
+#include "utils/tuplebatch.h"
+
 
 static bool tlist_matches_tupdesc(PlanState *ps, List *tlist, Index varno, TupleDesc tupdesc);
 
@@ -190,6 +192,8 @@ ExecScan(ScanState *node,
 				 * Form a projection tuple, store it in the result tuple slot
 				 * and return it.
 				 */
+				if(projInfo->pi_slot->PRIVATE_tb && slot->PRIVATE_tb)
+					((TupleBatch)projInfo->pi_slot->PRIVATE_tb)->nrows = ((TupleBatch)slot->PRIVATE_tb)->nrows;
 				return ExecProject(projInfo, NULL);
 			}
 			else

@@ -364,6 +364,7 @@ printtup(TupleTableSlot *slot, DestReceiver *self)
 			{
 				case INT2OID: /* int2 */
 				case INT4OID: /* int4 */
+				case 18768:	/* for vint4, we may make them internal type in future */
 				{
 					/* 
 					 * The standard postgres way is to call the output function, but that involves one or more pallocs,

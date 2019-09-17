@@ -277,7 +277,12 @@ ExecInitSeqScanForPartition(SeqScan *node, EState *estate, int eflags,
 
 	TupleDesc td = scanstate->ss_ScanTupleSlot->tts_tupleDescriptor;
 	if (seqscanstate->ss_currentScanDesc_aocs)
+	{
 		scanstate->ss_ScanTupleSlot->PRIVATE_tb = PointerGetDatum(tbGenerate(td->natts,BATCHSIZE));
+		int targetNum = ExecTargetListLength(scanstate->ps.targetlist);
+		scanstate->ps.ps_ResultTupleSlot->PRIVATE_tb = PointerGetDatum(tbGenerate(targetNum,BATCHSIZE));
+	}
+
 	return seqscanstate;
 }
 

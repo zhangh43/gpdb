@@ -337,6 +337,7 @@ execMotionSender(MotionState *node)
 			{
 				int i, j;
 				TupleBatch tb = (TupleBatch)outerTupleSlot->PRIVATE_tb;
+
 				for (i=0; i < tb->nrows; i++){
 					TupSetVirtualTuple(outerTupleSlot);
 					free_heaptuple_memtuple(outerTupleSlot);
