@@ -32,15 +32,11 @@ const char canary = 0xe7;
 vtype* buildvtype(Oid elemtype,int dim,bool *skip)
 {
     vtype *res;
-    res = palloc0(VTYPESIZE(dim));
+    res = palloc0(sizeof(vtype));
     res->dim = dim;
     res->elemtype = elemtype;
 
-    *CANARYOFFSET(res) = canary;
-    res->isnull = ISNULLOFFSET(res);
     res->skipref = skip;
-
-    SET_VARSIZE(res, VTYPESIZE(dim));
 
     return res;
 }
@@ -148,6 +144,11 @@ v##type1##v##type2##opstr(PG_FUNCTION_ARGS) \
     while(i < size) \
     { \
         res->isnull[i] = arg1->isnull[i] || arg2->isnull[i]; \
+        i++; \
+    } \
+	i=0; \
+    while(i < size) \
+    { \
         if(!res->isnull[i]) \
             res->values[i] = XTYPE1##GetDatum((DatumGet##XTYPE1(arg1->values[i])) opsym (DatumGet##XTYPE2(arg2->values[i]))); \
         i++; \
@@ -175,6 +176,11 @@ v##type##const_type##opstr(PG_FUNCTION_ARGS) \
     while(i < size) \
     { \
         res->isnull[i] = arg1->isnull[i]; \
+		i++; \
+	} \
+	i=0; \
+    while(i < size) \
+    { \
         if(!res->isnull[i]) \
             res->values[i] = XTYPE##GetDatum((DatumGet##XTYPE(arg1->values[i])) opsym ((type)arg2)); \
         i ++ ;\
@@ -202,6 +208,11 @@ const_type##v##type##opstr(PG_FUNCTION_ARGS) \
     while(i < size) \
     { \
         res->isnull[i] = arg2->isnull[i]; \
+        i++; \
+    } \
+	i=0; \
+    while(i < size) \
+    { \
         if(!res->isnull[i]) \
             res->values[i] = XTYPE##GetDatum(((type)arg1) opsym (DatumGet##XTYPE(arg2->values[i]))); \
         i ++ ;\
@@ -231,6 +242,11 @@ v##type1##v##type2##cmpstr(PG_FUNCTION_ARGS) \
     while(i < size) \
     { \
         res->isnull[i] = arg1->isnull[i] || arg2->isnull[i]; \
+        i++; \
+    } \
+	i=0; \
+    while(i < size) \
+    { \
         if(!res->isnull[i]) \
             res->values[i] = BoolGetDatum(DatumGet##XTYPE1(arg1->values[i]) cmpsym (DatumGet##XTYPE2(arg2->values[i]))); \
         i++; \

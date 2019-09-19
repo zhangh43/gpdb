@@ -19,7 +19,7 @@ MODULE_big = vexecutor
 OBJS    = vtype.o \
 
 EXTRA_CLEAN = create_udv.sql
-PG_CXXFLAGS = -Wall  -O3 -g  -msse -msse2 -msse3 -msse4 -march=native -std=c++11
+PG_CXXFLAGS = -Wall  -O3 -g  -msse -msse2 -msse3 -msse4 -march=native -fopt-info-vec
 PG_LIBS = $(libpq_pgport) 
 
 PG_CONFIG = pg_config

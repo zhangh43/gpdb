@@ -23,12 +23,11 @@
 #include "fmgr.h"
 #define BATCHSIZE 1024
 typedef struct vtype {
-    int     _vl_len;
     Oid     elemtype;
     int     dim;
-    bool    *isnull;
+    bool    isnull[1024];
+    Datum   values[1024];
     bool    *skipref;
-    Datum   values[0];
 }vtype;
 
 
