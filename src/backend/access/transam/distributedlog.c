@@ -178,7 +178,7 @@ DistributedLog_AdvanceOldestXmin(TransactionId oldestLocalXmin,
 	TransactionId oldOldestXmin;
 	int			currPage;
 	int			slotno;
-	bool		firstPage = true;
+	bool		DistributedLogControlLockHeldByMe = false;
 	DistributedLogEntry *entries = NULL;
 
 	Assert(!IS_QUERY_DISPATCHER());
@@ -216,10 +216,21 @@ DistributedLog_AdvanceOldestXmin(TransactionId oldestLocalXmin,
 
 		if (page != currPage)
 		{
-			if (!firstPage)
+			/*
+			 * SimpleLruReadPage_ReadOnly will acquire a lwlock, it is the
+			 * caller's responsibility to release this lock.
+			 * But we cannot release the lock immediately in one run of the
+			 * loop, since the entries of current buffer will still be used
+			 * by other items in the same page.
+			 * So we release the lock when encountering a new page.
+			 */
+			if (DistributedLogControlLockHeldByMe)
+			{
+				Assert(LWLockHeldByMe(DistributedLogControlLock));
 				LWLockRelease(DistributedLogControlLock);
+			}
 			slotno = SimpleLruReadPage_ReadOnly(DistributedLogCtl, page, oldestXmin);
-			firstPage = false;
+			DistributedLogControlLockHeldByMe = true;
 			currPage = page;
 			/* entries is protected by the DistributedLogControl shared lock */
 			entries = (DistributedLogEntry *) DistributedLogCtl->shared->page_buffer[slotno];
@@ -238,8 +249,11 @@ DistributedLog_AdvanceOldestXmin(TransactionId oldestLocalXmin,
 
 		TransactionIdAdvance(oldestXmin);
 	}
-	if (!firstPage)
+	if (DistributedLogControlLockHeldByMe)
+	{
+		Assert(LWLockHeldByMe(DistributedLogControlLock));
 		LWLockRelease(DistributedLogControlLock);
+	}
 
 	pg_atomic_write_u32((pg_atomic_uint32 *)&DistributedLogShared->oldestXmin, oldestXmin);
 	LWLockRelease(DistributedLogTruncateLock);
