@@ -449,3 +449,18 @@ analyze aocs_analyze_test;
 select relname, reltuples from pg_class where relname like 'aocs_analyze_test%' order by relname;
 
 reset default_statistics_target;
+
+-- Test analyze without USAGE privilege on schema
+create schema test_ns;
+revoke all on schema test_ns from public;
+create role nsuser1;
+grant create on schema test_ns to nsuser1;
+set search_path to 'test_ns';
+create extension citext;
+create table testid (id int , test citext);
+alter table testid owner to nsuser1;
+analyze testid;
+drop table testid;
+drop extension citext;
+drop schema test_ns;
+drop role nsuser1;
