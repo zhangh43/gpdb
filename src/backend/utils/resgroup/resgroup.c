@@ -4257,7 +4257,7 @@ IsGroupInRedZone(void)
 	 * 
 	 * safe: global shared memory is not in redzone
 	 */
-	remainGlobalSharedMem = (uint32) pg_atomic_read_u32(&pResGroupControl->freeChunks);
+	remainGlobalSharedMem = (uint32) pg_atomic_read_u32((pg_atomic_uint32 *)&pResGroupControl->freeChunks);
 	safeChunksThreshold = (uint32) pg_atomic_read_u32(&pResGroupControl->safeChunksThreshold);
 	if (remainGlobalSharedMem >= safeChunksThreshold)
 		return false;
@@ -4296,7 +4296,7 @@ ResGroupGetMemoryRunawayInfo(StringInfo str)
 	{
 		Assert(selfIsAssigned());
 
-		remainGlobalSharedMem = (uint32) pg_atomic_read_u32(&pResGroupControl->freeChunks);
+		remainGlobalSharedMem = (uint32) pg_atomic_read_u32((pg_atomic_uint32 *)&pResGroupControl->freeChunks);
 		safeChunksThreshold = (uint32) pg_atomic_read_u32(&pResGroupControl->safeChunksThreshold);
 
 		appendStringInfo(str,
