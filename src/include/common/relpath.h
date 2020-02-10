@@ -13,6 +13,8 @@
 #ifndef RELPATH_H
 #define RELPATH_H
 
+#include "storage/block.h"
+
 /*
  * Stuff for fork names.
  *
@@ -58,7 +60,10 @@ extern int	forkname_chars(const char *str, ForkNumber *fork);
 extern char *GetDatabasePath(Oid dbNode, Oid spcNode);
 
 extern char *GetRelationPath(Oid dbNode, Oid spcNode, Oid relNode,
-				int backendId, ForkNumber forkNumber);
+							 int backendId, ForkNumber forkNumber);
+
+extern char *GetRelationFilePath(Oid dbNode, Oid spcNode, Oid relNode,
+								 int backendId, ForkNumber forkNumber, BlockNumber blkno);
 
 /*
  * Wrapper macros for GetRelationPath.  Beware of multiple
@@ -80,5 +85,21 @@ extern char *GetRelationPath(Oid dbNode, Oid spcNode, Oid relNode,
 
 #define aorelpath(rnode, segno) \
 		aorelpathbackend((rnode).node, (rnode).backend, (segno))
+
+/*
+ * File path of a relation given the block number.
+ * Note that a file can contain at most RELSEG_SIZE number
+ * of blocks. We supply relfilepath macro to display the
+ * physical file name for a relation given the block number.
+ */
+
+/* First argument is a RelFileNode */
+#define relfilepathbackend(rnode, backend, forknum, blkno) \
+	GetRelationFilePath((rnode).dbNode, (rnode).spcNode, (rnode).relNode, \
+						backend, forknum, blkno)
+
+/* First argument is a RelFileNodeBackend */
+#define relfilepath(rnode, forknum, blkno) \
+	relfilepathbackend((rnode).node, (rnode).backend, forknum, blkno)
 
 #endif   /* RELPATH_H */

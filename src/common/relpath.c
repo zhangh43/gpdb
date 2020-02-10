@@ -214,3 +214,30 @@ GetRelationPath(Oid dbNode, Oid spcNode, Oid relNode,
 	}
 	return path;
 }
+
+/*
+ * GetRelationFilePath - construct path to a relation's physical file
+ * given its block number.
+ */
+	char *
+GetRelationFilePath(Oid dbNode, Oid spcNode, Oid relNode,
+					int backendId, ForkNumber forkNumber, BlockNumber blkno)
+{
+	char	   *path;
+	char	   *fullpath;
+	BlockNumber	segno;
+
+	path = GetRelationPath(dbNode, spcNode, relNode, backendId, forkNumber);
+
+	segno = blkno / ((BlockNumber) RELSEG_SIZE);
+
+	if (segno > 0)
+	{
+		fullpath = psprintf("%s.%u", path, segno);
+		pfree(path);
+	}
+	else
+		fullpath = path;
+
+	return fullpath;
+}

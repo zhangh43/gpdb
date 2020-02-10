@@ -994,17 +994,20 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 				{
 					ereport(WARNING,
 							(errcode(ERRCODE_DATA_CORRUPTED),
-							 errmsg("invalid page in block %u of relation %s; zeroing out page",
+							 errmsg("invalid page in block %u of relation %s, "
+									"file path %s; zeroing out page",
 									blockNum,
-									relpath(smgr->smgr_rnode, forkNum))));
+									relpath(smgr->smgr_rnode, forkNum),
+									relfilepath(smgr->smgr_rnode, forkNum, blockNum))));
 					MemSet((char *) bufBlock, 0, BLCKSZ);
 				}
 				else
 					ereport(ERROR,
 							(errcode(ERRCODE_DATA_CORRUPTED),
-							 errmsg("invalid page in block %u of relation %s",
+							 errmsg("invalid page in block %u of relation %s, file path %s",
 									blockNum,
-									relpath(smgr->smgr_rnode, forkNum))));
+									relpath(smgr->smgr_rnode, forkNum),
+									relfilepath(smgr->smgr_rnode, forkNum, blockNum))));
 			}
 		}
 	}
