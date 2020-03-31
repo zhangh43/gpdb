@@ -148,6 +148,15 @@ static void EvalPlanQualStart(EPQState *epqstate, EState *parentestate,
 static PartitionNode *BuildPartitionNodeFromRoot(Oid relid);
 static void InitializeQueryPartsMetadata(PlannedStmt *plannedstmt, EState *estate);
 static void AdjustReplicatedTableCounts(EState *estate);
+static bool cdb_eliminate_alien_walker(Plan *node, void *context);
+
+typedef struct EliminateAlienWalkerContext
+{
+	plan_tree_base_prefix base; /* Required prefix for
+								 * plan_tree_walker/mutator */
+	bool eliminateAliens;		/* safe to eliminate alien nodes */
+} EliminateAlienWalkerContext;
+
 
 /*
  * Note that GetUpdatedColumns() also exists in commands/trigger.c.  There does
@@ -496,11 +505,25 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 
 	/*
 	 * We don't eliminate aliens if we don't have an MPP plan
-	 * or we are executing on master.
-	 *
-	 * TODO: eliminate aliens even on master, if not EXPLAIN ANALYZE
+	 * or we are executing explain or explain analyze on master.
 	 */
-	estate->eliminateAliens = execute_pruned_plan && estate->es_sliceTable && estate->es_sliceTable->hasMotions && !IS_QUERY_DISPATCHER();
+	estate->eliminateAliens = execute_pruned_plan && estate->es_sliceTable && estate->es_sliceTable->hasMotions;
+
+	if (estate->eliminateAliens && Gp_role == GP_ROLE_DISPATCH)
+	{
+		if ((eflags & EXEC_FLAG_EXPLAIN_ONLY) || (eflags & EXEC_FLAG_EXPLAIN_ANALYZE))
+			estate->eliminateAliens = false;
+
+		Plan *planTree = queryDesc->plannedstmt->planTree;
+		EliminateAlienWalkerContext ctx;
+		ctx.base.node = (Node *)queryDesc->plannedstmt;
+		ctx.eliminateAliens = true;
+		cdb_eliminate_alien_walker(planTree, &ctx);
+		if (ctx.eliminateAliens)
+			 estate->eliminateAliens = false;;
+
+		estate->eliminateAliens = false;;
+	}
 
 	/* If the interconnect has been set up; we need to catch any
 	 * errors to shut it down -- so we have to wrap InitPlan in a PG_TRY() block. */
@@ -4771,4 +4794,32 @@ AdjustReplicatedTableCounts(EState *estate)
 
 	if (containReplicatedTable)
 		estate->es_processed = estate->es_processed / numsegments;
+}
+
+/*
+ * Walker to check whether it is safe to eliminate alien node on master
+ */
+static bool
+cdb_eliminate_alien_walker(Plan *node,
+					   void *context)
+{
+	Assert(context);
+	EliminateAlienWalkerContext *ctx = (EliminateAlienWalkerContext *) context;
+
+
+	if (node == NULL)
+		return false;
+
+	/*
+	 * plan contains CurrentOfExpr cound not eliminateAliens on master
+	 * It will ......
+	 */
+	if (IsA(node, CurrentOfExpr))
+	{
+		ctx->eliminateAliens = false;
+		return true;	/* found our node; no more visit */
+	}
+
+	/* Continue walking */
+	return plan_tree_walker((Node*)node, cdb_eliminate_alien_walker, ctx, true);
 }
