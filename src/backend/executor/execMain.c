@@ -148,7 +148,7 @@ static void EvalPlanQualStart(EPQState *epqstate, EState *parentestate,
 static PartitionNode *BuildPartitionNodeFromRoot(Oid relid);
 static void InitializeQueryPartsMetadata(PlannedStmt *plannedstmt, EState *estate);
 static void AdjustReplicatedTableCounts(EState *estate);
-static bool cdb_eliminate_alien_walker(Plan *node, void *context);
+static bool cdb_eliminate_alien_walker(Node *node, void *context);
 
 typedef struct EliminateAlienWalkerContext
 {
@@ -513,16 +513,23 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 	{
 		if ((eflags & EXEC_FLAG_EXPLAIN_ONLY) || (eflags & EXEC_FLAG_EXPLAIN_ANALYZE))
 			estate->eliminateAliens = false;
+		if (!(eflags & EXEC_FLAG_PORTAL_START_STAGE))
+			estate->eliminateAliens = false;
 
+		if(queryDesc->portal_name)
+			estate->eliminateAliens = false;
+	
+		if (true)
+		{
 		Plan *planTree = queryDesc->plannedstmt->planTree;
 		EliminateAlienWalkerContext ctx;
 		ctx.base.node = (Node *)queryDesc->plannedstmt;
 		ctx.eliminateAliens = true;
-		cdb_eliminate_alien_walker(planTree, &ctx);
-		if (ctx.eliminateAliens)
+		cdb_eliminate_alien_walker((Node *)planTree, &ctx);
+		if (!ctx.eliminateAliens)
 			 estate->eliminateAliens = false;;
-
-		estate->eliminateAliens = false;;
+		}
+		//estate->eliminateAliens = false;;
 	}
 
 	/* If the interconnect has been set up; we need to catch any
@@ -4800,7 +4807,7 @@ AdjustReplicatedTableCounts(EState *estate)
  * Walker to check whether it is safe to eliminate alien node on master
  */
 static bool
-cdb_eliminate_alien_walker(Plan *node,
+cdb_eliminate_alien_walker(Node *node,
 					   void *context)
 {
 	Assert(context);
@@ -4820,6 +4827,12 @@ cdb_eliminate_alien_walker(Plan *node,
 		return true;	/* found our node; no more visit */
 	}
 
+	if (is_plan_node(node) && ((Plan *)node)->initPlan != NIL )
+	{
+		ctx->eliminateAliens = false;
+		return true;	/* found our node; no more visit */
+	}
+
 	/* Continue walking */
-	return plan_tree_walker((Node*)node, cdb_eliminate_alien_walker, ctx, true);
+	return plan_tree_walker(node, cdb_eliminate_alien_walker, ctx, true);
 }

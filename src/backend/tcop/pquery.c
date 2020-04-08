@@ -700,7 +700,7 @@ PortalStart(Portal portal, ParamListInfo params,
 				if (portal->cursorOptions & CURSOR_OPT_SCROLL)
 					myeflags = eflags | EXEC_FLAG_REWIND | EXEC_FLAG_BACKWARD;
 				else
-					myeflags = eflags;
+					myeflags = eflags | EXEC_FLAG_PORTAL_START_STAGE;
 
 				/*
 				 * Call ExecutorStart to prepare the plan for execution
