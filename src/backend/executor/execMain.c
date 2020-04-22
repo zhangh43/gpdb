@@ -148,14 +148,6 @@ static void EvalPlanQualStart(EPQState *epqstate, EState *parentestate,
 static PartitionNode *BuildPartitionNodeFromRoot(Oid relid);
 static void InitializeQueryPartsMetadata(PlannedStmt *plannedstmt, EState *estate);
 static void AdjustReplicatedTableCounts(EState *estate);
-static bool cdb_eliminate_alien_walker(Node *node, void *context);
-
-typedef struct EliminateAlienWalkerContext
-{
-	plan_tree_base_prefix base;
-	bool eliminateAliens;	/* safe to eliminate alien nodes */
-} EliminateAlienWalkerContext;
-
 
 /*
  * Note that GetUpdatedColumns() also exists in commands/trigger.c.  There does
@@ -507,27 +499,17 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 
 	if (estate->eliminateAliens && Gp_role == GP_ROLE_DISPATCH)
 	{
-		Plan *planTree;
-		EliminateAlienWalkerContext ctx;
-
 		/* Explain or explain analyze needs ExecInitNode all the plan nodes on master */
-		if ((eflags & EXEC_FLAG_EXPLAIN_ONLY) || (eflags & EXEC_FLAG_EXPLAIN))
+		if (eflags & (EXEC_FLAG_EXPLAIN_ONLY | EXEC_FLAG_EXPLAIN))
 			estate->eliminateAliens = false;
 
 		/* For cursor case, should not eliminate alien node on master */
 		if (queryDesc->portal_name || queryDesc->dest != None_Receiver)
 			estate->eliminateAliens = false;
 
-		/* 
-		 * cdb_eliminate_alien_walker to check whether eliminating alien
-		 * nodes should be disabled on master
-		 */
-		planTree = queryDesc->plannedstmt->planTree;
-		ctx.base.node = (Node *)queryDesc->plannedstmt;
-		ctx.eliminateAliens = true;
-		cdb_eliminate_alien_walker((Node *)planTree, &ctx);
-		if (!ctx.eliminateAliens)
-			 estate->eliminateAliens = false;;
+		/* Skip eliminating alien node on master if there exists subplan */
+		if (queryDesc->plannedstmt->subplans)
+			estate->eliminateAliens = false;
 	}
 
 	/* If the interconnect has been set up; we need to catch any
@@ -4799,29 +4781,4 @@ AdjustReplicatedTableCounts(EState *estate)
 
 	if (containReplicatedTable)
 		estate->es_processed = estate->es_processed / numsegments;
-}
-
-/*
- * Walker to check whether it is safe to eliminate alien node on master
- * Currently we only check if there is initplan in plan node
- */
-static bool
-cdb_eliminate_alien_walker(Node *node,
-					   void *context)
-{
-	EliminateAlienWalkerContext *ctx = (EliminateAlienWalkerContext *) context;
-
-	Assert(context);
-	if (node == NULL)
-		return false;
-
-	/* If plan contains initPlan, we should not eliminate alien node on master */
-	if (is_plan_node(node) && ((Plan *)node)->initPlan != NIL )
-	{
-		ctx->eliminateAliens = false;
-		return true;	/* found our node; no more visit */
-	}
-
-	/* Continue walking */
-	return plan_tree_walker(node, cdb_eliminate_alien_walker, ctx, true);
 }
