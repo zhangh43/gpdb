@@ -31,6 +31,9 @@ addons:
             - ssh
 
 matrix:
+    allow_failures:
+        - arch: arm64
+    fast_finish: true
     include:
         # OS and Compiler variations
         # ----------------------------------------------------------------
