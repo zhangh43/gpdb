@@ -6,7 +6,7 @@ language: cpp
 cache: ccache
 
 git:
-  submodules: false
+  submodules: true
 
 addons:
     apt:
@@ -162,8 +162,6 @@ before_install:
 
 install:
     - python -m pip install --user --upgrade pip
-    - python -m pip install --user --pre psutil
-    - python -m pip install --user lockfile
     - python -m pip install --user setuptools
 
 ## ----------------------------------------------------------------------
