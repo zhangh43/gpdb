@@ -36,6 +36,7 @@
 #include "utils/resgroup.h"
 #include "utils/resource_manager.h"
 #include "utils/session_state.h"
+#include "utils/snapmgr.h"
 #include "utils/typcache.h"
 #include "miscadmin.h"
 
@@ -305,12 +306,21 @@ CdbDispatchSetCommand(const char *strCommand, bool cancelOnError)
 	int		queryTextLength;
 	ListCell   *le;
 	ErrorData *qeError = NULL;
+	int			flags = DF_NONE;
 
 	elog((Debug_print_full_dtm ? LOG : DEBUG5),
 		 "CdbDispatchSetCommand for command = '%s'",
 		 strCommand);
 
-	pQueryParms = cdbdisp_buildCommandQueryParms(strCommand, DF_NONE);
+	if (IsolationUsesXactSnapshot())
+	{
+		flags |= DF_WITH_SNAPSHOT;
+
+		if (!ActiveSnapshotSet())
+			PushActiveSnapshot(GetTransactionSnapshot());
+	}
+
+	pQueryParms = cdbdisp_buildCommandQueryParms(strCommand, flags);
 
 	ds = cdbdisp_makeDispatcherState(false);
 
@@ -318,11 +328,11 @@ CdbDispatchSetCommand(const char *strCommand, bool cancelOnError)
 
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, cdbcomponent_getCdbComponentsList());
 
-	/* put all idle segment to a gang so QD can send SET command to them */
+	/* Put all idle segments to a gang so QD can send SET command to them */
 	AllocateGang(ds, GANGTYPE_PRIMARY_READER, formIdleSegmentIdList());
 	
 	cdbdisp_makeDispatchResults(ds, list_length(ds->allocatedGangs), cancelOnError);
-	cdbdisp_makeDispatchParams (ds, list_length(ds->allocatedGangs), queryText, queryTextLength);
+	cdbdisp_makeDispatchParams(ds, list_length(ds->allocatedGangs), queryText, queryTextLength);
 
 	foreach(le, ds->allocatedGangs)
 	{
@@ -357,6 +367,8 @@ CdbDispatchSetCommand(const char *strCommand, bool cancelOnError)
 		ReThrowError(qeError);
 	}
 
+	if (IsolationUsesXactSnapshot())
+		PopActiveSnapshot();
 	cdbdisp_destroyDispatcherState(ds);
 }
 

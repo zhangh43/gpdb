@@ -219,3 +219,41 @@ $$
 $$ language plpythonu;
 
 select run_all_in_one();
+
+-- test for not dispatching GUCs, which may need updates committed, to idle segments
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+
+CREATE TABLE guc_gp_test_table (
+        stringu1        name
+);
+SELECT length(stringu1) FROM guc_gp_test_table GROUP BY length(stringu1);
+
+DROP ROLE IF EXISTS guc_gp_test_role;
+CREATE ROLE guc_gp_test_role;
+SET ROLE guc_gp_test_role;   -- it reported role doesn't exist here
+RESET SESSION AUTHORIZATION;
+DROP ROLE guc_gp_test_role;
+RESET ROLE;
+DROP TABLE guc_gp_test_table;
+
+END;
+
+SET search_path to 'public';
+
+CREATE TABLE guc_gp_t1(c1 int, c2 int);
+INSERT INTO guc_gp_t1 SELECT generate_series(1,100),generate_series(51,150);
+CREATE TABLE guc_gp_t2 AS SELECT * FROM guc_gp_t1;
+
+BEGIN;
+CREATE SCHEMA guc_gp;
+CREATE TABLE guc_gp.guc_gp_t3 AS SELECT * FROM guc_gp_t1;
+CREATE TABLE guc_gp.guc_gp_t4 AS SELECT * FROM guc_gp_t1;
+
+SELECT sum(guc_gp_t1.c1) FROM guc_gp_t1,guc_gp_t2;
+SET search_path to 'guc_gp';
+SELECT sum(guc_gp_t3.c1) FROM guc_gp_t3,guc_gp_t4;
+ROLLBACK;
+
+SELECT sum(guc_gp_t1.c1) FROM guc_gp_t1,guc_gp_t2;
+DROP TABLE guc_gp_t1;
+DROP TABLE guc_gp_t2;
