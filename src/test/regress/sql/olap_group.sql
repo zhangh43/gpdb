@@ -685,3 +685,18 @@ select a, (select b from bar_gset where foo_gset.a = bar_gset.b) from foo_gset g
 
 drop table foo_gset;
 drop table bar_gset;
+
+-- GROUPING SETS not support multiple grouping sets contain references to expressions
+-- where one of which subsumes another in the select targetlist
+create table sale(qty int, i int, j int);
+insert into sale select k, k, k from generate_series(1,10)k;
+
+-- query should fail
+select (sale.qty)  as a1,(sale.qty) as a2 from sale group by grouping sets((1),(2));
+select (sale.qty)  as a1,(sale.qty + 100) as a2 from sale group by grouping sets((1),(2));
+
+-- result expr in CASE statement is in targetlist, so query should fail
+select (sale.qty)  as a1,(case when sale.i = 1 then sale.qty else sale.qty + 1 end) as a2 from sale group by grouping sets((1),(2));
+
+-- condition expr in CASE statement is not in targetlist, so query should succeed
+select (sale.qty)  as a1,(case when sale.qty = 1 then sale.i else sale.i + 1 end) as a2 from sale group by grouping sets((1),(2)) order by a1, a2;

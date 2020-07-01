@@ -5772,6 +5772,8 @@ typedef struct subexpression_matching_context
  */
 static bool subexpression_matching_walker(Node *hayStack, void *context)
 {
+	ListCell   *temp;
+
 	Assert(context);
 	subexpression_matching_context *ctx = (subexpression_matching_context *) context;
 	Assert(ctx->needle);
@@ -5786,7 +5788,28 @@ static bool subexpression_matching_walker(Node *hayStack, void *context)
 		return true;
 	}
 
-	return expression_tree_walker(hayStack, subexpression_matching_walker, (void *) context);
+	/*
+	 * When hayStack is a CaseExpr, it has 'condition' expr and 'result' expr.
+	 * Since we only care about the subexpression relationship in the targetlist,
+	 * we need to skip the 'condition' expr during expression_tree_walker.
+	 */
+	if (nodeTag(hayStack) == T_CaseExpr)
+	{
+		CaseExpr   *caseexpr = (CaseExpr *) hayStack;
+		foreach(temp, caseexpr->args)
+		{
+			CaseWhen   *when = (CaseWhen *) lfirst(temp);
+
+			Assert(IsA(when, CaseWhen));
+			if (subexpression_matching_walker((Node*)when->result, context))
+				return true;
+		}
+		if (subexpression_matching_walker((Node*)caseexpr->defresult, context))
+			return true;
+		return false;
+	}
+	else
+		return expression_tree_walker(hayStack, subexpression_matching_walker, (void *) context);
 }
 
 /**
