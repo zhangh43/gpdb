@@ -1693,9 +1693,7 @@ exec_simple_query(const char *query_string)
 		 * to idle segments, give the idle segments a chance to get the
 		 * dispatched snapshot in this case.
 		 */
-		if (analyze_requires_snapshot(parsetree) ||
-			(nodeTag(parsetree) == T_VariableSetStmt &&
-			 ((VariableSetStmt *)parsetree)->kind != VAR_SET_MULTI))
+		if (analyze_requires_snapshot(parsetree))
 		{
 			PushActiveSnapshot(GetTransactionSnapshot());
 			snapshot_set = true;

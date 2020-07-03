@@ -490,7 +490,20 @@ GetCatalogSnapshot(Oid relid)
 	if (HistoricSnapshotActive())
 		return HistoricSnapshot;
 
-	return GetNonHistoricCatalogSnapshot(relid, DTX_CONTEXT_LOCAL_ONLY);
+	/*
+	 * CatalogSnapshot should also use DistributedTransactionContext. If we use
+	 * DTX_CONTEXT_LOCAL_ONLY, the idle reader gang's local transaction id would
+	 * be zero and it would see inconsistent tuples in catalog table compared
+	 * with writer gangs.
+	 *
+	 * For example:
+	 * select * from t, t t1;
+	 * begin;
+	 * create role guc_gp_test_role;
+	 * -- set command would fail since reader gang cannot see guc_gp_test_role
+	 * set role guc_gp_test_role;
+	 */
+	return GetNonHistoricCatalogSnapshot(relid, DistributedTransactionContext);
 }
 
 /*
