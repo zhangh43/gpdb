@@ -7674,6 +7674,13 @@ ExecSetVariableStmt(VariableSetStmt *stmt, bool isTopLevel)
 			CdbDispatchSetCommand(buffer.data, false);
 		}
 	}
+
+	/* write gang needs to ensure it get the snapsnot */
+	if (Gp_role == GP_ROLE_EXECUTE &&
+		(DistributedTransactionContext == DTX_CONTEXT_QE_TWO_PHASE_EXPLICIT_WRITER ||
+		DistributedTransactionContext == DTX_CONTEXT_QE_TWO_PHASE_IMPLICIT_WRITER ||
+		DistributedTransactionContext == DTX_CONTEXT_QE_AUTO_COMMIT_IMPLICIT))
+		GetTransactionSnapshot();
 }
 
 /*
@@ -7724,6 +7731,12 @@ SetPGVariableOptDispatch(const char *name, List *args, bool is_local, bool gp_di
 
 	if (gp_dispatch)
 		DispatchSetPGVariable(name, args, is_local);
+
+	if (Gp_role == GP_ROLE_EXECUTE &&
+		(DistributedTransactionContext == DTX_CONTEXT_QE_TWO_PHASE_EXPLICIT_WRITER ||
+		DistributedTransactionContext == DTX_CONTEXT_QE_TWO_PHASE_IMPLICIT_WRITER ||
+		DistributedTransactionContext == DTX_CONTEXT_QE_AUTO_COMMIT_IMPLICIT))
+		GetTransactionSnapshot();
 }
 
 static void
