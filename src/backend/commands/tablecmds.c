@@ -4624,14 +4624,11 @@ ATPrepCmd(List **wqueue, Relation rel, AlterTableCmd *cmd,
 			pass = AT_PASS_MISC;
 			break;
 		case AT_ExpandTable:
-			/* External tables can be expanded */
 			ATSimplePermissions(rel, ATT_TABLE | ATT_FOREIGN_TABLE);
 			if (!recursing)
 			{
 				Oid relid = RelationGetRelid(rel);
 				PartStatus ps = rel_part_status(relid);
-
-				ATExternalPartitionCheck(cmd->subtype, rel, recursing);
 
 				if (Gp_role == GP_ROLE_DISPATCH &&
 					rel->rd_cdbpolicy->numsegments == getgpsegmentCount())
@@ -7811,7 +7808,7 @@ ATExecAddColumn(List **wqueue, AlteredTableInfo *tab, Relation rel,
 			c->encoding = TypeNameGetStorageDirective(colDef->typeName);
 			
 			if (!c->encoding)
-				c->encoding = default_column_encoding_clause();
+				c->encoding = default_column_encoding_clause(rel);
 		}
 
 		AddRelationAttributeEncodings(rel, list_make1(c));
@@ -13798,6 +13795,13 @@ ATExecAddInherit(Relation child_rel, Node *node, LOCKMODE lockmode)
 
 	Assert(PointerIsValid(node));
 
+	/* 1. Replicated table cannot inherit a parent */
+	if (child_rel->rd_cdbpolicy &&
+		child_rel->rd_cdbpolicy->ptype == POLICYTYPE_REPLICATED)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("Replicated table cannot inherit a parent")));
+
 	if (IsA(node, InheritPartitionCmd))
 	{
 		parent = ((InheritPartitionCmd *) node)->parent;
@@ -13815,6 +13819,12 @@ ATExecAddInherit(Relation child_rel, Node *node, LOCKMODE lockmode)
 	 */
 	parent_rel = heap_openrv(parent, ShareUpdateExclusiveLock);
 
+	/* 2. Replicated table cannot be inherited */
+	if (parent_rel->rd_cdbpolicy &&
+		parent_rel->rd_cdbpolicy->ptype == POLICYTYPE_REPLICATED)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("Replicated table cannot be inherited")));
 	/*
 	 * Must be owner of both parent and child -- child was checked by
 	 * ATSimplePermissions call in ATPrepCmd
@@ -15249,14 +15259,21 @@ ATExecExpandTable(List **wqueue, Relation rel, AlterTableCmd *cmd)
 			ExtTableEntry *ext = GetExtTableEntry(relid);
 
 			if (!ext->iswritable)
-				ereport(ERROR,
-						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						 errmsg("unsupported ALTER command for external table")));
+			{
+				/* 
+				 * Skip expanding readable external table, since data is not
+				 * located inside gpdb
+				 */
+				relation_close(rel, NoLock);
+				return;
+			}
 		}
 		else
-				ereport(ERROR,
-						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						 errmsg("unsupported ALTER command for foreign table")));
+		{
+			/* Skip expanding foreign table, since data is not located inside gpdb */
+			relation_close(rel, NoLock);
+			return;
+		}
 
 		relation_close(rel, NoLock);
 	}
