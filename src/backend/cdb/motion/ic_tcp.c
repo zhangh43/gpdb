@@ -29,6 +29,10 @@
 #include "cdb/cdbvars.h"
 #include "cdb/cdbdisp.h"
 
+#ifdef ENABLE_IC_PROXY
+#include "ic_proxy_backend.h"
+#endif  /* ENABLE_IC_PROXY */
+
 #include <fcntl.h>
 #include <limits.h>
 #include <unistd.h>
@@ -599,6 +603,30 @@ setupOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportStat
 		closesocket(conn->sockfd);
 		conn->sockfd = -1;
 	}
+
+#ifdef ENABLE_IC_PROXY
+	if (Gp_interconnect_type == INTERCONNECT_TYPE_PROXY)
+	{
+		/* 
+		 * Using libuv pipe to register backend to proxy.
+		 * ic_proxy_backend_connect only appends the connect request into
+		 * connection queue and waits for the libuv_run_loop to handle the queue. 
+		 */
+		ic_proxy_backend_connect(transportStates->proxyContext,
+								 pEntry, conn, true);
+
+		conn->pBuff = palloc(Gp_max_packet_size);
+		conn->recvBytes = 0;
+		conn->msgPos = NULL;
+		conn->msgSize = PACKET_HEADER_SIZE;
+
+		conn->state = mcsStarted;
+		conn->stillActive = true;
+		conn->tupleCount = 0;
+		conn->remoteContentId = conn->cdbProc->contentid;
+		return;
+	}
+#endif  /* ENABLE_IC_PROXY */
 
 	/* Initialize hint structure */
 	MemSet(&hint, 0, sizeof(hint));
@@ -1260,6 +1288,10 @@ SetupTCPInterconnect(EState *estate)
 	interconnect_context->SendChunk = SendChunkTCP;
 	interconnect_context->doSendStopMessage = doSendStopMessageTCP;
 
+#ifdef ENABLE_IC_PROXY
+	ic_proxy_backend_init_context(interconnect_context);
+#endif /* ENABLE_IC_PROXY */
+
 	mySlice = &interconnect_context->sliceTable->slices[sliceTable->localSlice];
 
 	Assert(sliceTable &&
@@ -1272,6 +1304,7 @@ SetupTCPInterconnect(EState *estate)
 	{
 		int			totalNumProcs;
 		int			childId = lfirst_int(cell);
+		ChunkTransportStateEntry *pEntry = NULL;
 
 #ifdef AMS_VERBOSE_LOGGING
 		elog(DEBUG5, "Setting up RECEIVING motion node %d", childId);
@@ -1284,6 +1317,9 @@ SetupTCPInterconnect(EState *estate)
 		 * entries, so we count the entries.
 		 */
 		totalNumProcs = list_length(aSlice->primaryProcesses);
+
+		pEntry = createChunkTransportState(interconnect_context, aSlice, mySlice, totalNumProcs);
+
 		for (i = 0; i < totalNumProcs; i++)
 		{
 			CdbProcess *cdbProc;
@@ -1291,9 +1327,41 @@ SetupTCPInterconnect(EState *estate)
 			cdbProc = list_nth(aSlice->primaryProcesses, i);
 			if (cdbProc)
 				expectedTotalIncoming++;
-		}
 
-		(void) createChunkTransportState(interconnect_context, aSlice, mySlice, totalNumProcs);
+#ifdef ENABLE_IC_PROXY
+			if (Gp_interconnect_type == INTERCONNECT_TYPE_PROXY)
+			{
+				conn = &pEntry->conns[i];
+				conn->cdbProc = list_nth(aSlice->primaryProcesses, i);
+
+				if (conn->cdbProc)
+				{
+					incoming_count++;
+
+					/* 
+					 * Using libuv pipe to register backend to proxy.
+					 * ic_proxy_backend_connect only appends the connect request
+					 * into connection queue and waits for the libuv_run_loop to
+					 * handle the queue. 
+					 */
+					ic_proxy_backend_connect(interconnect_context->proxyContext,
+											 pEntry, conn, false /* isSender */);
+
+					conn->pBuff = palloc(Gp_max_packet_size);
+					conn->recvBytes = 0;
+					conn->msgPos = NULL;
+					conn->msgSize = 0;
+
+					conn->state = mcsStarted;
+					conn->stillActive = true;
+					conn->tupleCount = 0;
+					conn->remoteContentId = conn->cdbProc->contentid;
+
+					conn->remapper = CreateTupleRemapper();
+				}
+			}
+#endif  /* ENABLE_IC_PROXY */
+		}
 	}
 
 	/*
@@ -1306,6 +1374,34 @@ SetupTCPInterconnect(EState *estate)
 	 */
 	if (mySlice->parentIndex != -1)
 		sendingChunkTransportState = startOutgoingConnections(interconnect_context, mySlice, &expectedTotalOutgoing);
+
+#ifdef ENABLE_IC_PROXY
+	if (Gp_interconnect_type == INTERCONNECT_TYPE_PROXY)
+	{
+		for (i = 0; i < expectedTotalOutgoing; i++)
+		{
+			conn = &sendingChunkTransportState->conns[i];
+			setupOutgoingConnection(interconnect_context,
+									sendingChunkTransportState, conn);
+		}
+		outgoing_count = expectedTotalOutgoing;
+	}
+	/*
+	 * Before ic_proxy_backend_run_loop, we have already gone though all the
+	 * incoming and outgoing connections and append them into the connect queue.
+	 * ic_proxy_backend_run_loop will trigger the uv_loop and begin to handle
+	 * the connect event in parallel and asynchronous way.
+	 *
+	 * Note that the domain socket fds are binded to libuv pipe handle, but we
+	 * still depends on ic_tcp code to send/recv interconnect data based on
+	 * these fds and close these fds in teardown function. As a result, we
+	 * should not touch the libuv pipe handles until ic_tcp close all the fds in
+	 * teardown function. In future, we should retire the ic_tcp code in ic_proxy
+	 * backend and use libuv to handle connection setup, data transfer and
+	 * teardown in a unified way.
+	 */
+	ic_proxy_backend_run_loop(interconnect_context->proxyContext);
+#endif  /* ENABLE_IC_PROXY */
 
 	if (expectedTotalIncoming > listenerBacklog)
 		ereport(WARNING, (errmsg("SetupTCPInterconnect: too many expected incoming connections(%d), Interconnect setup might possibly fail", expectedTotalIncoming),
@@ -2028,6 +2124,10 @@ TeardownTCPInterconnect(ChunkTransportState *transportStates, bool hasErrors)
 
 	transportStates->activated = false;
 	transportStates->sliceTable = NULL;
+
+#ifdef ENABLE_IC_PROXY
+	ic_proxy_backend_close_context(transportStates);
+#endif  /* ENABLE_IC_PROXY */
 
 	if (transportStates->states != NULL)
 		pfree(transportStates->states);

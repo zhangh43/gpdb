@@ -51,8 +51,7 @@
 typedef struct FaultInjectorShmem_s {
 	slock_t		lock;
 	
-	int			faultInjectorSlots;	
-		/* number of fault injection set */
+	int			numActiveFaults; /* number of fault injections set */
 	
 	HTAB		*hash;
 } FaultInjectorShmem_s;
@@ -60,6 +59,14 @@ typedef struct FaultInjectorShmem_s {
 bool am_faulthandler = false;
 
 static	FaultInjectorShmem_s *faultInjectorShmem = NULL;
+
+/*
+ * faultInjectorSlots_ptr points to this until shmem is initialized. Just to
+ * keep any FaultInjector_InjectFaultIfSet calls from crashing.
+ */
+static int dummy = 0;
+
+int *numActiveFaults_ptr = &dummy;
 
 static void FiLockAcquire(void);
 static void FiLockRelease(void);
@@ -199,6 +206,8 @@ FaultInjector_ShmemInit(void)
 				(errcode(ERRCODE_OUT_OF_MEMORY),
 				 (errmsg("not enough shared memory for fault injector"))));
 	}	
+
+	numActiveFaults_ptr = &faultInjectorShmem->numActiveFaults;
 	
 	if (! foundPtr) 
 	{
@@ -207,7 +216,7 @@ FaultInjector_ShmemInit(void)
 	
 	SpinLockInit(&faultInjectorShmem->lock);
 	
-	faultInjectorShmem->faultInjectorSlots = 0;
+	faultInjectorShmem->numActiveFaults = 0;
 	
 	MemSet(&hash_ctl, 0, sizeof(hash_ctl));
 	hash_ctl.keysize = FAULT_NAME_MAX_LENGTH;
@@ -230,7 +239,7 @@ FaultInjector_ShmemInit(void)
 }
 
 FaultInjectorType_e
-FaultInjector_InjectFaultIfSet(
+FaultInjector_InjectFaultIfSet_out_of_line(
 							   const char*				 faultName,
 							   DDLStatement_e			 ddlStatement,
 							   const char*				 databaseName,
@@ -279,7 +288,7 @@ FaultInjector_InjectFaultIfSet(
 	 * Although this is a race condition without lock, a false negative is
 	 * ok given this framework is purely for dev/testing.
 	 */
-	if (faultInjectorShmem->faultInjectorSlots == 0)
+	if (faultInjectorShmem->numActiveFaults == 0)
 		return FaultInjectorTypeNotSpecified;
 
 	snprintf(databaseNameLocal, sizeof(databaseNameLocal), "%s", databaseName);
@@ -614,7 +623,7 @@ FaultInjector_NewHashEntry(
 
 	FiLockAcquire();
 
-	if ((faultInjectorShmem->faultInjectorSlots + 1) >= FAULTINJECTOR_MAX_SLOTS) {
+	if ((faultInjectorShmem->numActiveFaults + 1) >= FAULTINJECTOR_MAX_SLOTS) {
 		FiLockRelease();
 		status = STATUS_ERROR;
 		ereport(WARNING,
@@ -674,7 +683,7 @@ FaultInjector_NewHashEntry(
 		
 	entryLocal->faultInjectorState = FaultInjectorStateWaiting;
 
-	faultInjectorShmem->faultInjectorSlots++;
+	faultInjectorShmem->numActiveFaults++;
 		
 	FiLockRelease();
 	
@@ -761,18 +770,18 @@ FaultInjector_SetFaultInjection(
 				while ((entryLocal = (FaultInjectorEntry_s *) hash_seq_search(&hash_status)) != NULL) {
 					isRemoved = FaultInjector_RemoveHashEntry(entryLocal->faultName);
 					if (isRemoved == TRUE) {
-						faultInjectorShmem->faultInjectorSlots--;
+						faultInjectorShmem->numActiveFaults--;
 					}					
 				}
 				FiLockRelease();
-				Assert(faultInjectorShmem->faultInjectorSlots == 0);
+				Assert(faultInjectorShmem->numActiveFaults == 0);
 			}
 			else
 			{
 				FiLockAcquire();
 				isRemoved = FaultInjector_RemoveHashEntry(entry->faultName);
 				if (isRemoved == TRUE) {
-					faultInjectorShmem->faultInjectorSlots--;
+					faultInjectorShmem->numActiveFaults--;
 				}
 				FiLockRelease();
 			}
@@ -967,6 +976,7 @@ InjectFault(char *faultName, char *type, char *ddlStatement, char *databaseName,
 	faultEntry.extraArg = extraArg;
 	faultEntry.startOccurrence = startOccurrence;
 	faultEntry.endOccurrence = endOccurrence;
+	faultEntry.numTimesTriggered = 0;
 
 	/*
 	 * Validations:

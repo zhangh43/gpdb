@@ -24,10 +24,6 @@
  * prototypes for pathnode.c
  */
 
-extern CdbVisitOpt pathnode_walk_node(Path *path,
-			       CdbVisitOpt (*walker)(Path *path, void *context),
-			       void *context);
-
 extern int compare_path_costs(Path *path1, Path *path2,
 				   CostSelector criterion);
 extern int compare_fractional_path_costs(Path *path1, Path *path2,
@@ -282,10 +278,10 @@ extern ModifyTablePath *create_modifytable_path(PlannerInfo *root,
 						List *is_split_updates,
 						List *rowMarks, OnConflictExpr *onconflict,
 						int epqParam);
-extern LimitPath *create_limit_path(PlannerInfo *root, RelOptInfo *rel,
-				  Path *subpath,
-				  Node *limitOffset, Node *limitCount,
-				  int64 offset_est, int64 count_est);
+extern Path *create_limit_path(PlannerInfo *root, RelOptInfo *rel,
+							   Path *subpath,
+							   Node *limitOffset, Node *limitCount,
+							   int64 offset_est, int64 count_est);
 
 extern Path *reparameterize_path(PlannerInfo *root, Path *path,
 					Relids required_outer,

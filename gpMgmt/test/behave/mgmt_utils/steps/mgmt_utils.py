@@ -544,13 +544,13 @@ def impl(context, table_type, tablename, dbname):
 def impl(context, table_type, tablename, dbname, numrows):
     if not check_table_exists(context, dbname=dbname, table_name=tablename, table_type=table_type):
         raise Exception("Table '%s' of type '%s' does not exist when expected" % (tablename, table_type))
-        conn = dbconn.connect(dbconn.DbURL(dbname=dbname), unsetSearchPath=False)
-        try:
-            rowcount = dbconn.querySingleton(conn, "SELECT count(*) FROM %s" % tablename)
-            if rowcount != numrows:
-                raise Exception("Expected to find %d rows in table %s, found %d" % (numrows, tablename, rowcount))
-        finally:
-            conn.close()
+    conn = dbconn.connect(dbconn.DbURL(dbname=dbname), unsetSearchPath=False)
+    try:
+        rowcount = dbconn.querySingleton(conn, "SELECT count(*) FROM %s" % tablename)
+        if rowcount != int(numrows):
+            raise Exception("Expected to find %d rows in table %s, found %d" % (int(numrows), tablename, rowcount))
+    finally:
+        conn.close()
 
 @then(
     'data for partition table "{table_name}" with partition level "{part_level}" is distributed across all segments on "{dbname}"')
@@ -2646,18 +2646,6 @@ def _get_row_count_per_segment(table, dbname):
         rows = cursor.fetchall()
     conn.close()
     return [row[1] for row in rows] # indices are the gp segment id's, so no need to store them explicitly
-
-@given('set fault inject "{fault}"')
-@then('set fault inject "{fault}"')
-@when('set fault inject "{fault}"')
-def impl(context, fault):
-    os.environ['GPMGMT_FAULT_POINT'] = fault
-
-@given('unset fault inject')
-@then('unset fault inject')
-@when('unset fault inject')
-def impl(context):
-    os.environ['GPMGMT_FAULT_POINT'] = ""
 
 @given('run rollback')
 @then('run rollback')

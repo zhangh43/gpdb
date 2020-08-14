@@ -65,6 +65,7 @@ namespace gpdxl
 		EdxltokenBroadcastThreshold,
 		EdxltokenEnforceConstraintsOnDML,
 		EdxltokenPushGroupByBelowSetopThreshold,
+		EdxltokenMaxStatsBuckets,
 		EdxltokenWindowOids,
 		EdxltokenOidRowNumber,
 		EdxltokenOidRank,
@@ -600,7 +601,8 @@ namespace gpdxl
 		EdxltokenGPDBFuncReturnsSet,
 		EdxltokenGPDBFuncStrict,
 		EdxltokenGPDBFuncNDVPreserving,
-		
+		EdxltokenGPDBFuncIsAllowedForPS,
+
 		EdxltokenGPDBCast,
 		EdxltokenGPDBCastBinaryCoercible,
 		EdxltokenGPDBCastSrcType,

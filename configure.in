@@ -862,6 +862,15 @@ AS_IF([test "$enable_orca" = yes || test "$enable_gpcloud" = yes],
 ]) # fi
 
 #
+# ic-proxy
+#
+PGAC_ARG_BOOL(enable, ic-proxy, no,
+              [enable interconnect proxy mode (requires libuv library)],
+              [AC_DEFINE(ENABLE_IC_PROXY, 1,
+                         [Define to 1 to build with ic-proxy support (--enable-ic-proxy)])])
+AC_SUBST(enable_ic_proxy)
+
+#
 # Include directories
 #
 ac_save_IFS=$IFS
@@ -1465,6 +1474,11 @@ if test "$with_quicklz" = yes; then
                [AC_MSG_ERROR([quicklz library not found.])])
 fi
 
+if test "$enable_ic_proxy" = yes; then
+  AC_CHECK_LIB(uv, uv_default_loop, [],
+               [AC_MSG_ERROR([libuv library not found, it is required by --enable-ic-proxy.])])
+fi
+
 if test "$enable_spinlocks" = yes; then
   AC_DEFINE(HAVE_SPINLOCKS, 1, [Define to 1 if you have spinlocks.])
 else
@@ -1902,6 +1916,7 @@ PGAC_C_BUILTIN_BSWAP32
 PGAC_C_BUILTIN_BSWAP64
 PGAC_C_BUILTIN_CONSTANT_P
 PGAC_C_BUILTIN_UNREACHABLE
+PGAC_C_BUILTIN_FRAME_ADDRESS
 PGAC_C_VA_ARGS
 PGAC_STRUCT_TIMEZONE
 PGAC_UNION_SEMUN
@@ -1926,6 +1941,13 @@ AC_CHECK_TYPES([struct option], [], [],
 [#ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif])
+
+if test x"$pgac_cv__builtin_frame_address" = xno && test "$enable_orca" = yes; then :
+    AC_MSG_ERROR([[
+Built-in function __builtin_frame_address() is required for ORCA.
+Use --disable-orca to disable ORCA support.
+]])
+fi
 
 if test "$with_zlib" = yes; then
   # Check that <zlib.h> defines z_streamp (versions before about 1.0.4

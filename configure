@@ -741,6 +741,7 @@ with_perl
 with_tcl
 enable_thread_safety
 INCLUDES
+enable_ic_proxy
 HAVE_CXX14
 enable_gpcloud
 enable_mapreduce
@@ -862,6 +863,7 @@ enable_cassert
 enable_orca
 enable_mapreduce
 enable_gpcloud
+enable_ic_proxy
 enable_thread_safety
 with_tcl
 with_tclconfig
@@ -1544,6 +1546,8 @@ Optional Features:
   --disable-orca          disable ORCA optimizer
   --enable-mapreduce      enable Greenplum Mapreduce support
   --disable-gpcloud       disable gpcloud support
+  --enable-ic-proxy       enable interconnect proxy mode (requires libuv
+                          library)
   --disable-thread-safety disable thread-safety in client libraries
   --disable-largefile     omit support for large files
 
@@ -7140,6 +7144,36 @@ $as_echo "#define HAVE_CXX14 1" >>confdefs.h
 fi # fi
 
 #
+# ic-proxy
+#
+
+
+# Check whether --enable-ic-proxy was given.
+if test "${enable_ic_proxy+set}" = set; then :
+  enableval=$enable_ic_proxy;
+  case $enableval in
+    yes)
+
+$as_echo "#define ENABLE_IC_PROXY 1" >>confdefs.h
+
+      ;;
+    no)
+      :
+      ;;
+    *)
+      as_fn_error $? "no argument expected for --enable-ic-proxy option" "$LINENO" 5
+      ;;
+  esac
+
+else
+  enable_ic_proxy=no
+
+fi
+
+
+
+
+#
 # Include directories
 #
 ac_save_IFS=$IFS
@@ -11651,6 +11685,56 @@ fi
 
 fi
 
+if test "$enable_ic_proxy" = yes; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uv_default_loop in -luv" >&5
+$as_echo_n "checking for uv_default_loop in -luv... " >&6; }
+if ${ac_cv_lib_uv_uv_default_loop+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-luv  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char uv_default_loop ();
+int
+main ()
+{
+return uv_default_loop ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_uv_uv_default_loop=yes
+else
+  ac_cv_lib_uv_uv_default_loop=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_uv_uv_default_loop" >&5
+$as_echo "$ac_cv_lib_uv_uv_default_loop" >&6; }
+if test "x$ac_cv_lib_uv_uv_default_loop" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUV 1
+_ACEOF
+
+  LIBS="-luv $LIBS"
+
+else
+  as_fn_error $? "libuv library not found, it is required by --enable-ic-proxy." "$LINENO" 5
+fi
+
+fi
+
 if test "$enable_spinlocks" = yes; then
 
 $as_echo "#define HAVE_SPINLOCKS 1" >>confdefs.h
@@ -14607,6 +14691,37 @@ if test x"$pgac_cv__builtin_unreachable" = xyes ; then
 $as_echo "#define HAVE__BUILTIN_UNREACHABLE 1" >>confdefs.h
 
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for __builtin_frame_address" >&5
+$as_echo_n "checking for __builtin_frame_address... " >&6; }
+if ${pgac_cv__builtin_frame_address+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+(void) __builtin_frame_address(0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  pgac_cv__builtin_frame_address=yes
+else
+  pgac_cv__builtin_frame_address=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pgac_cv__builtin_frame_address" >&5
+$as_echo "$pgac_cv__builtin_frame_address" >&6; }
+if test x"$pgac_cv__builtin_frame_address" = xyes ; then
+
+$as_echo "#define HAVE__BUILTIN_FRAME_ADDRESS 1" >>confdefs.h
+
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for __VA_ARGS__" >&5
 $as_echo_n "checking for __VA_ARGS__... " >&6; }
 if ${pgac_cv__va_args+:} false; then :
@@ -15127,6 +15242,13 @@ _ACEOF
 
 fi
 
+
+if test x"$pgac_cv__builtin_frame_address" = xno && test "$enable_orca" = yes; then :
+    as_fn_error $? "
+Built-in function __builtin_frame_address() is required for ORCA.
+Use --disable-orca to disable ORCA support.
+" "$LINENO" 5
+fi
 
 if test "$with_zlib" = yes; then
   # Check that <zlib.h> defines z_streamp (versions before about 1.0.4

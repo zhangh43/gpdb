@@ -177,10 +177,11 @@ static const Oid object_classes[] = {
 	DefaultAclRelationId,		/* OCLASS_DEFACL */
 	ExtensionRelationId,		/* OCLASS_EXTENSION */
 	EventTriggerRelationId,		/* OCLASS_EVENT_TRIGGER */
-	ExtprotocolRelationId,		/* OCLASS_EXTPROTOCOL */
-	CompressionRelationId,		/* OCLASS_COMPRESSION */
 	PolicyRelationId,			/* OCLASS_POLICY */
 	TransformRelationId			/* OCLASS_TRANSFORM */
+
+	,
+	ExtprotocolRelationId		/* OCLASS_EXTPROTOCOL */
 };
 
 
@@ -1332,10 +1333,6 @@ doDeletion(const ObjectAddress *object, int flags)
 			RemoveExtProtocolById(object->objectId);
 			break;
 
-		case OCLASS_COMPRESSION:
-			elog(NOTICE, "dependency: not yet implemented!");
-			break;
-
 		case OCLASS_POLICY:
 			RemovePolicyById(object->objectId);
 			break;
@@ -1372,19 +1369,6 @@ AcquireDeletionLock(const ObjectAddress *object, int flags)
 			LockRelationOid(object->objectId, ShareUpdateExclusiveLock);
 		else
 			LockRelationOid(object->objectId, AccessExclusiveLock);
-		/*
-		 * GPDB: If this was a partition, or some other object for which
-		 * we are careful to always lock the parent object, we don't need
-		 * to keep the lock on the sub-object. This helps to keep the lock
-		 * table size in check, if you e.g. drop a table with thousands
-		 * of partitions. It would be unpleasent if you could not drop
-		 * such a table because the lock table runs out of space.
-		 *
-		 * To provide at least some protection though, we still actuire
-		 * the lock momentarily.
-		 */
-		if (!rel_needs_long_lock(object->objectId))
-			UnlockRelationOid(object->objectId, AccessExclusiveLock);
 	}
 	else
 	{
@@ -1401,16 +1385,7 @@ static void
 ReleaseDeletionLock(const ObjectAddress *object)
 {
 	if (object->classId == RelationRelationId)
-	{
-		/*
-		 * GPDB: Since we might already have released the lock (see
-		 * AcquireDeletionLock), we mustn't try to release it again.
-		 */
-		if (!rel_needs_long_lock(object->objectId))
-			return;
-
 		UnlockRelationOid(object->objectId, AccessExclusiveLock);
-	}
 	else
 		/* assume we should lock the whole object not a sub-object */
 		UnlockDatabaseObject(object->classId, object->objectId, 0,
@@ -2568,10 +2543,6 @@ getObjectClass(const ObjectAddress *object)
 		case ExtprotocolRelationId:
 			Assert(object->objectSubId == 0);
 			return OCLASS_EXTPROTOCOL;
-
-		case CompressionRelationId:
-			Assert(object->objectSubId == 0);
-			return OCLASS_COMPRESSION;
 
 		case PolicyRelationId:
 			return OCLASS_POLICY;

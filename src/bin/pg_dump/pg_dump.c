@@ -4891,6 +4891,7 @@ getTypeStorageOptions(Archive *fout, int *numTypes)
 	{
 		numTypes = 0;
 		tstorageoptions = (TypeStorageOptions *) pg_malloc(0);
+		destroyPQExpBuffer(query);
 		return tstorageoptions;
 	}
 
@@ -12642,6 +12643,7 @@ dumpTransform(Archive *fout, TransformInfo *transform)
 	destroyPQExpBuffer(defqry);
 	destroyPQExpBuffer(delqry);
 	destroyPQExpBuffer(labelq);
+	destroyPQExpBuffer(transformargs);
 }
 
 
@@ -14134,6 +14136,7 @@ dumpAgg(Archive *fout, AggInfo *agginfo)
 		if (aggfullsig)
 			free(aggfullsig);
 
+		free(query);
 		free(aggsig);
 
 		return;
@@ -16092,6 +16095,7 @@ dumpExternal(Archive *fout, TableInfo *tbinfo, PQExpBuffer q, PQExpBuffer delq)
 
 
 		destroyPQExpBuffer(query);
+		free(qualrelname);
 }
 
 /*

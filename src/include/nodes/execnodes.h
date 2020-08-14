@@ -345,7 +345,6 @@ typedef void *RelationDeleteDesc;
  *		ao_segno				the AO segfile we inserted into.
  *		extinsertDesc			???
  *		aosegno					???
- *		aoprocessed				???
  *		partInsertMap			map input attrno to target attrno
  *		partSlot				TupleTableSlot for the target part relation
  *		resultSlot          	TupleTableSlot for the target relation
@@ -2561,12 +2560,6 @@ typedef enum HashAggStatus
 	HASHAGG_STREAMING,
 	HASHAGG_END_OF_PASSES
 } HashAggStatus;
-
-typedef struct SplitAggInfo
-{
-	int             idx;
-	TupleTableSlot  *outerslot;
-} SplitAggInfo;
 
 typedef struct AggState
 {

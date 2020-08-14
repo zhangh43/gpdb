@@ -329,6 +329,7 @@ bool		optimizer_enable_master_only_queries;
 bool		optimizer_enable_hashjoin;
 bool		optimizer_enable_dynamictablescan;
 bool		optimizer_enable_indexscan;
+bool		optimizer_enable_indexonlyscan;
 bool		optimizer_enable_tablescan;
 bool		optimizer_enable_hashagg;
 bool		optimizer_enable_groupagg;
@@ -510,6 +511,9 @@ static const struct config_enum_entry gp_interconnect_fc_methods[] = {
 static const struct config_enum_entry gp_interconnect_types[] = {
 	{"udpifc", INTERCONNECT_TYPE_UDPIFC},
 	{"tcp", INTERCONNECT_TYPE_TCP},
+#ifdef ENABLE_IC_PROXY
+	{"proxy", INTERCONNECT_TYPE_PROXY},
+#endif  /* ENABLE_IC_PROXY */
 	{NULL, 0}
 };
 
@@ -2248,6 +2252,17 @@ struct config_bool ConfigureNamesBool_gp[] =
 		},
 		&optimizer_enable_indexscan,
 		true,
+		NULL, NULL, NULL
+	},
+
+	{
+		{"optimizer_enable_indexonlyscan", PGC_USERSET, DEVELOPER_OPTIONS,
+			gettext_noop("Enables the optimizer's use of plans with index only scan."),
+			NULL,
+			GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+		},
+		&optimizer_enable_indexonlyscan,
+		false,
 		NULL, NULL, NULL
 	},
 
@@ -4355,6 +4370,19 @@ struct config_string ConfigureNamesString_gp[] =
 		NULL, NULL, NULL
 	},
 
+#ifdef ENABLE_IC_PROXY
+	{
+		{"gp_interconnect_proxy_addresses", PGC_SIGHUP, GP_ARRAY_CONFIGURATION,
+			gettext_noop("Sets the ic-proxy addresses as \"content:ip:port ...\", must be ordered by content, the port is ignored at the moment."),
+			gettext_noop("e.g. \"-1:10.0.0.1:2000 0:10.0.0.2:2000 1:10.0.0.2:2001\""),
+			GUC_NO_SHOW_ALL | GUC_GPDB_NO_SYNC
+		},
+		&gp_interconnect_proxy_addresses,
+		"",
+		NULL, NULL, NULL
+	},
+#endif  /* ENABLE_IC_PROXY */
+
 	/* End-of-list marker */
 	{
 		{NULL, 0, 0, NULL, NULL}, NULL, NULL, NULL, NULL
@@ -4509,7 +4537,11 @@ struct config_enum ConfigureNamesEnum_gp[] =
 	{
 		{"gp_interconnect_type", PGC_BACKEND, GP_ARRAY_TUNING,
 			gettext_noop("Sets the protocol used for inter-node communication."),
-			gettext_noop("Valid values are \"tcp\" and \"udpifc\".")
+			gettext_noop("Valid values are \"tcp\", \"udpifc\""
+#ifdef ENABLE_IC_PROXY
+						 " and \"proxy\""
+#endif  /* ENABLE_IC_PROXY */
+						 ".")
 		},
 		&Gp_interconnect_type,
 		INTERCONNECT_TYPE_UDPIFC, gp_interconnect_types,

@@ -1957,15 +1957,12 @@ storage_name(char c)
  * 'supers' is a list of names (as RangeVar nodes) of parent relations.
  * 'relpersistence' is a persistence type of the table.
  * 'is_partition' tells if the table is a partition
- * 'GpPolicy *' is NULL if the distribution policy is not to be updated
  *
  * Output arguments:
  * 'supOids' receives a list of the OIDs of the parent relations.
  * 'supconstr' receives a list of constraints belonging to the parents,
  *		updated as necessary to be valid for the child.
  * 'supOidCount' is set to the number of parents that have OID columns.
- * 'GpPolicy' is updated with the offsets of the distribution
- *      attributes in the new schema
  *
  * Return value:
  * Completed schema list.
@@ -5340,16 +5337,6 @@ ATRewriteCatalogs(List **wqueue, LOCKMODE lockmode)
 				AlterTableCmd	*atc = (AlterTableCmd *) lfirst(lcmd);
 
 				ATExecCmd(wqueue, tab, &rel, atc, lockmode);
-
-				/*
-				 * SET DISTRIBUTED BY() calls RelationForgetRelation(),
-				 * which will scribble on rel, so we must re-open it.
-				 */
-				if (atc->subtype == AT_SetDistributedBy)
-					rel = relation_open(tab->relid, NoLock);
-				/* ATExecExpandTable() may close the relation temporarily */
-				else if (atc->subtype == AT_ExpandTable)
-					rel = relation_open(tab->relid, NoLock);
 			}
 
 			/*
@@ -5379,7 +5366,7 @@ ATAddToastIfNeeded(List **wqueue, LOCKMODE lockmode)
 		if (tab->relkind == RELKIND_RELATION ||
 			tab->relkind == RELKIND_MATVIEW)
 		{
-			bool is_part = !rel_needs_long_lock(tab->relid);
+			bool		is_part;
 
 			/*
 			 * FIXME: we've passed false as is_part_parent to make_new_heap().
@@ -5391,6 +5378,7 @@ ATAddToastIfNeeded(List **wqueue, LOCKMODE lockmode)
 			 * relation's OID, whether an auxiliary table needs valid
 			 * relfrozenxid or not?
 			 */
+			is_part = rel_is_part_child(tab->relid);
 			AlterTableCreateToastTable(tab->relid, (Datum) 0, lockmode,
 									   is_part, false);
 		}
@@ -15264,18 +15252,14 @@ ATExecExpandTable(List **wqueue, Relation rel, AlterTableCmd *cmd)
 				 * Skip expanding readable external table, since data is not
 				 * located inside gpdb
 				 */
-				relation_close(rel, NoLock);
 				return;
 			}
 		}
 		else
 		{
 			/* Skip expanding foreign table, since data is not located inside gpdb */
-			relation_close(rel, NoLock);
 			return;
 		}
-
-		relation_close(rel, NoLock);
 	}
 	else
 	{
@@ -15405,14 +15389,7 @@ ATExecExpandTableCTAS(AlterTableCmd *rootCmd, Relation rel, AlterTableCmd *cmd)
 
 	/*
 	 * Step (f) - swap relfilenodes and MORE !!!
-	 *
-	 * Just lookup the Oid and pass it to swap_relation_files(). To do
-	 * this we must close the rel, since it needs to be forgotten by
-	 * the cache, we keep the lock though. ATRewriteCatalogs() knows
-	 * that we've closed the relation here.
 	 */
-	heap_close(rel, NoLock);
-	rel = NULL;
 	tmprelid = RangeVarGetRelid(tmprv, NoLock, false);
 	swap_relation_files(relid, tmprelid,
 						false, /* target_is_pg_class */
@@ -15600,11 +15577,6 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 				/* only need to rebuild if have new storage options */
 				if (!(DatumGetPointer(newOptions) || force_reorg))
 				{
-					/*
-					 * caller expects ATExecSetDistributedBy() to close rel
-					 * (see the non-random distribution case below for why.
-					 */
-					heap_close(rel, NoLock);
 					lsecond(lprime) = makeNode(SetDistributionCmd);
 					lprime = lappend(lprime, policy);
 					goto l_distro_fini;
@@ -15630,11 +15602,6 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 			if (!DatumGetPointer(newOptions) &&
 				GpPolicyIsReplicated(rel->rd_cdbpolicy))
 			{
-				/*
-				 * caller expects ATExecSetDistributedBy() to close rel
-				 * (see the non-random distribution case below for why.
-				 */
-				heap_close(rel, NoLock);
 				lsecond(lprime) = makeNode(SetDistributionCmd);
 				lprime = lappend(lprime, policy);
 				goto l_distro_fini;
@@ -15789,7 +15756,6 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 								"to force redistribution",
 								RelationGetRelationName(rel),
 								buf.data)));
-						heap_close(rel, NoLock);
 						/* Tell QEs to do nothing */
 						linitial(lprime) = NULL;
 						lsecond(lprime) = makeNode(SetDistributionCmd);
@@ -15944,14 +15910,11 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 		/* Set to random distribution on master with no reorganisation */
 		if (!reorg && qe_data->backendId == 0)
 		{
-			/* caller expects rel to be closed for this AT type */
-			heap_close(rel, NoLock);
 			goto l_distro_fini;			
 		}
 
 		if (!list_member_oid(qe_data->relids, tarrelid))
 		{
-			heap_close(rel, NoLock);
 			goto l_distro_fini;			
 		}
 
@@ -15982,14 +15945,7 @@ ATExecSetDistributedBy(Relation rel, Node *node, AlterTableCmd *cmd)
 
 	/*
 	 * Step (f) - swap relfilenodes and MORE !!!
-	 *
-	 * Just lookup the Oid and pass it to swap_relation_files(). To do
-	 * this we must close the rel, since it needs to be forgotten by
-	 * the cache, we keep the lock though. ATRewriteCatalogs() knows
-	 * that we've closed the relation here.
 	 */
-	heap_close(rel, NoLock);
-	rel = NULL;
 	tmprelid = RangeVarGetRelid(tmprv, NoLock, false);
 	swap_relation_files(tarrelid, tmprelid,
 						false, /* target_is_pg_class */
@@ -16196,22 +16152,22 @@ rel_is_parent(Oid relid)
 }
 
 /*
- * partition children, toast tables and indexes, and indexes on partition
- * children do not need long lived locks because the lock on the partition master
- * protects us.
+ * Is the given relation a partition of a partitioned table?
  */
 bool
-rel_needs_long_lock(Oid relid)
+rel_is_part_child(Oid relid)
 {
-	bool needs_lock = true;
-	Relation rel = relation_open(relid, NoLock);
+	bool		result = false;
+	Relation	rel;
+
+	rel = relation_open(relid, NoLock);
 
 	relid = rel_get_table_oid(rel);
 
 	relation_close(rel, NoLock);
 
 	if (Gp_role == GP_ROLE_DISPATCH)
-		needs_lock = !rel_is_child_partition(relid);
+		result = rel_is_child_partition(relid);
 	else
 	{
 		Relation inhrel;
@@ -16233,12 +16189,12 @@ rel_needs_long_lock(Oid relid)
 								   true, NULL, 2, scankey);
 
 		if (systable_getnext(sscan))
-			needs_lock = false;
+			result = true;
 
 		systable_endscan(sscan);
 		heap_close(inhrel, AccessShareLock);
 	}
-	return needs_lock;
+	return result;
 }
 
 
@@ -16642,15 +16598,8 @@ ATPExecPartAlter(List **wqueue, AlteredTableInfo *tab, Relation *rel,
 	/* execute the command */
 	ATExecCmd(wqueue, tab, (rel2 ? &rel2 : rel), atc, AccessExclusiveLock);
 
-	if (!bPartitionCmd)
-	{
-		/* NOTE: for the case of Set Distro,
-		 * ATExecSetDistributedBy rebuilds the relation, so rel2
-		 * is already gone!
-		 */
-		if (atc->subtype != AT_SetDistributedBy && rel2)
-			heap_close(rel2, NoLock);
-	}
+	if (rel2)
+		heap_close(rel2, NoLock);
 
 	/* MPP-6929: metadata tracking - don't track this! */
 
