@@ -15,6 +15,7 @@
 #include "postgres.h"
 
 #include "postmaster/bgworker.h"
+#include "storage/ipc.h"
 #include "utils/guc.h"
 #include "utils/memutils.h"
 
@@ -40,6 +41,9 @@ static uv_pipe_t	ic_proxy_client_listener;
 static bool			ic_proxy_client_listening;
 
 static int			ic_proxy_server_exit_code = 1;
+
+/* pipe to check whether postmaster is alive */
+static uv_pipe_t	ic_proxy_postmaster_pipe;
 
 /*
  * The peer listener is closed.
@@ -380,6 +384,33 @@ ic_proxy_server_on_signal(uv_signal_t *handle, int signum)
 }
 
 /*
+ * allocate buffer for uv_read of ic_proxy_postmaster_pipe
+ */
+static void
+ic_proxy_server_alloc_buffer(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
+{
+  buf->base = palloc(sizeof(char));
+  buf->len = sizeof(char);
+}
+
+/*
+ * callback when received data from ic_proxy_postmaster_pipe
+ */
+static void
+ic_proxy_server_on_read_postmaster_pipe(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
+{
+	/* nread = 0 means EAGAIN and EWOULDBLOCK, while nread = EOF means postmaster is dead */
+	if (nread == UV_EOF)
+		proc_exit(1);
+	else if (nread < 0)
+		elog(FATAL, "read on postmaster death monitoring pipe failed: %m");
+	else if (nread > 0)
+		elog(FATAL, "unexpected data in postmaster death monitoring pipe");
+
+	pfree(buf->base);
+}
+
+/*
  * The main loop of the ic-proxy.
  */
 int
@@ -419,6 +450,12 @@ ic_proxy_server_main(void)
 	/* TODO: we could stop the timer if all the peers are connected */
 	uv_timer_init(&ic_proxy_server_loop, &ic_proxy_server_timer);
 	uv_timer_start(&ic_proxy_server_timer, ic_proxy_server_on_timer, 100, 1000);
+
+	/* monitor the postmaster pipe to check whether postmaster is still alive */
+	uv_pipe_init(&ic_proxy_server_loop, &ic_proxy_postmaster_pipe, false);
+	uv_pipe_open(&ic_proxy_postmaster_pipe, postmaster_alive_fds[POSTMASTER_FD_WATCH]);
+	uv_read_start((uv_stream_t *)&ic_proxy_postmaster_pipe, ic_proxy_server_alloc_buffer,
+				  ic_proxy_server_on_read_postmaster_pipe);
 
 	ic_proxy_log(LOG, "ic-proxy-server: running");
 
