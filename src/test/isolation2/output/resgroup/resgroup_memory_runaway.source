@@ -285,14 +285,14 @@ ALTER
 1: SET ROLE TO role1_memory_test;
 SET
 1: SELECT hold_memory_by_percent(0.1);
- hold_memory_by_percent 
-------------------------
- 0                      
+hold_memory_by_percent
+----------------------
+0                     
 (1 row)
 1: SELECT hold_memory_by_percent(0.1);
- hold_memory_by_percent 
-------------------------
- 0                      
+hold_memory_by_percent
+----------------------
+0                     
 (1 row)
 1q: ... <quitting>
 
