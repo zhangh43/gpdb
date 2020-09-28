@@ -30,7 +30,8 @@
 #include "cdb/cdbvars.h"
 #include "utils/resowner.h"
 
-static int numNonExtendedDispatcherState = 0;
+//static int numNonExtendedDispatcherState = 0;
+int numNonExtendedDispatcherState = 0;
 
 dispatcher_handle_t *open_dispatcher_handles;
 static void cleanup_dispatcher_handle(dispatcher_handle_t *h);
@@ -278,9 +279,9 @@ cdbdisp_makeDispatcherState(bool isExtendedQuery)
 {
 	dispatcher_handle_t *handle;
 
-	if (!isExtendedQuery)
+/*	if (!isExtendedQuery)
 	{
-		if (numNonExtendedDispatcherState == 1)
+		if (false && numNonExtendedDispatcherState == 1)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -291,7 +292,7 @@ cdbdisp_makeDispatcherState(bool isExtendedQuery)
 		}
 
 		numNonExtendedDispatcherState++;	
-	}
+		}*/
 
 	handle = allocate_dispatcher_handle();
 	handle->dispatcherState->forceDestroyGang = false;
@@ -598,4 +599,25 @@ segmentsToContentStr(List *segments)
 		return segmentsListToString("PARTIAL contents", segments);
 	else
 		return segmentsListToString("ALL contents", segments);
+}
+
+int
+cdbdisp_getNumNonExtendedDispatcherState()
+{
+	return numNonExtendedDispatcherState;
+}
+
+void
+cdbdisp_setNumNonExtendedDispatcherState()
+{
+	if (numNonExtendedDispatcherState == 1)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("query plan with multiple segworker groups is not supported"),
+				 errhint("likely caused by a function that reads or modifies data in a distributed table")));
+
+
+	}
+	numNonExtendedDispatcherState++;
 }

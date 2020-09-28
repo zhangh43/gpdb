@@ -106,6 +106,8 @@ CdbDispatchDtxProtocolCommand(DtxProtocolCommand dtxProtocolCommand,
 
 	Assert(primaryGang);
 
+	cdbdisp_setNumNonExtendedDispatcherState();
+
 	cdbdisp_makeDispatchResults(ds, 1, false);
 	cdbdisp_makeDispatchParams(ds, 1, queryText, queryTextLen);
 

@@ -16,6 +16,7 @@
 #include "cdb/cdbdistributedsnapshot.h"
 #include "cdb/cdblocaldistribxact.h"
 #include "cdb/cdbdtxcontextinfo.h"
+#include "cdb/cdbdisp.h"
 #include "miscadmin.h"
 #include "access/transam.h"
 #include "cdb/cdbvars.h"
@@ -60,7 +61,10 @@ DtxContextInfo_CreateOnMaster(DtxContextInfo *dtxContextInfo, bool inCursor,
 	 * the reader gangs, don't increase 'syncCount' so that all the
 	 * dispatch could share the same snapshot created by 'gp_write_shared_snapshot'.
 	 */
-	dtxContextInfo->segmateSync = inCursor ? syncCount : ++syncCount;
+	dtxContextInfo->segmateSync = (inCursor ||
+									cdbdisp_getNumNonExtendedDispatcherState() > 0)
+									? syncCount : ++syncCount;
+	//dtxContextInfo->segmateSync = inCursor ? syncCount : ++syncCount;
 	if (dtxContextInfo->segmateSync == (~(uint32)0))
 		ereport(FATAL,
 				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),

@@ -191,4 +191,7 @@ void AtSubAbort_DispatcherState(void);
 char *
 segmentsToContentStr(List *segments);
 
+int cdbdisp_getNumNonExtendedDispatcherState();
+void cdbdisp_setNumNonExtendedDispatcherState();
+extern int numNonExtendedDispatcherState;
 #endif   /* CDBDISP_H */

@@ -287,6 +287,15 @@ CdbDispatchSetCommand(const char *strCommand, bool cancelOnError)
 	/* put all idle segment to a gang so QD can send SET command to them */
 	AllocateGang(ds, GANGTYPE_PRIMARY_READER, formIdleSegmentIdList());
 	
+	if (numNonExtendedDispatcherState == 1)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("query plan with multiple segworker groups is not supported"),
+				 errhint("likely caused by a function that reads or modifies data in a distributed table")));
+	}
+	numNonExtendedDispatcherState++;
+
 	cdbdisp_makeDispatchResults(ds, list_length(ds->allocatedGangs), cancelOnError);
 	cdbdisp_makeDispatchParams (ds, list_length(ds->allocatedGangs), queryText, queryTextLength);
 
@@ -435,8 +444,13 @@ cdbdisp_dispatchCommandInternal(DispatchCommandQueryParms *pQueryParms,
 	/*
 	 * Allocate a primary QE for every available segDB in the system.
 	 */
-	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, segments);
+	if (numNonExtendedDispatcherState == 0)
+		primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, segments);
+	else
+		primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_READER, segments);
 	Assert(primaryGang);
+	
+	numNonExtendedDispatcherState++;
 
 	cdbdisp_makeDispatchResults(ds, 1, flags & DF_CANCEL_ON_ERROR);
 	cdbdisp_makeDispatchParams (ds, 1, queryText, queryTextLength);
@@ -1059,9 +1073,11 @@ cdbdisp_dispatchX(QueryDesc* queryDesc,
 		   (rootIdx > sliceTbl->nMotions &&
 			rootIdx <= sliceTbl->nMotions + sliceTbl->nInitPlans));
 
+	//pQueryParms = cdbdisp_buildPlanQueryParms(queryDesc, planRequiresTxn);
 
 	ds = cdbdisp_makeDispatcherState(queryDesc->extended_query);
 
+	//queryText = buildGpQueryString(pQueryParms, &queryTextLength);
 	/*
 	 * Since we intend to execute the plan, inventory the slice tree,
 	 * allocate gangs, and associate them with slices.
@@ -1085,6 +1101,19 @@ cdbdisp_dispatchX(QueryDesc* queryDesc,
 
 	pQueryParms = cdbdisp_buildPlanQueryParms(queryDesc, planRequiresTxn);
 	queryText = buildGpQueryString(pQueryParms, &queryTextLength);
+	
+	if (!queryDesc->extended_query)
+	{
+
+		if (numNonExtendedDispatcherState == 1)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("query plan with multiple segworker groups is not supported"),
+					 errhint("likely caused by a function that reads or modifies data in a distributed table")));
+		}
+		numNonExtendedDispatcherState++;
+	}
 
 	/*
 	 * Allocate result array with enough slots for QEs of primary gangs.
@@ -1443,6 +1472,16 @@ CdbDispatchCopyStart(struct CdbCopy *cdbCopy, Node *stmt, int flags)
 	 */
 	primaryGang = AllocateGang(ds, GANGTYPE_PRIMARY_WRITER, cdbCopy->seglist);
 	Assert(primaryGang);
+
+	if (numNonExtendedDispatcherState == 1)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("query plan with multiple segworker groups is not supported"),
+				 errhint("likely caused by a function that reads or modifies data in a distributed table")));
+	}
+
+	numNonExtendedDispatcherState++;
 
 	cdbdisp_makeDispatchResults(ds, 1, flags & DF_CANCEL_ON_ERROR);
 	cdbdisp_makeDispatchParams (ds, 1, queryText, queryTextLength);
