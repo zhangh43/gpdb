@@ -173,6 +173,8 @@ ic_proxy_peer_unregister(ICProxyPeer *peer)
 		 */
 		ICProxyPeer *placeholder = ic_proxy_peers[peer->dbid];
 
+		ic_proxy_log(LOG, "%s: transfer my pending reqs to a placeholder", peer->name);
+
 		placeholder->reqs = list_concat(placeholder->reqs, peer->reqs);
 		peer->reqs = NIL;
 

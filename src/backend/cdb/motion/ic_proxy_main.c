@@ -416,13 +416,18 @@ ic_proxy_server_drop_legacy_peers(uv_loop_t *loop)
 	 * close the current listener.
 	 */
 	if (!myaddr)
+	{
+		ic_proxy_log(LOG, "ic-proxy-server: my addr is NULL, dropping my peer listener");
 		ic_proxy_server_peer_listener_reinit(loop);
+	}
 
 	foreach(cell, ic_proxy_removed_addrs)
 	{
 		ICProxyAddr *addr = lfirst(cell);
 		ICProxyPeer *peer;
 
+		ic_proxy_log(LOG, "ic-proxy-server: handling removed peer addr: %s:%s, seg%d,dbid%d",
+					 addr->hostname, addr->service, addr->content, addr->dbid);
 		/*
 		 * Also take the chance to check the peer listener.
 		 *
@@ -430,7 +435,10 @@ ic_proxy_server_drop_legacy_peers(uv_loop_t *loop)
 		 * been changed or removed, no need to compare the sockaddrs again.
 		 */
 		if (myaddr && myaddr->dbid == addr->dbid)
+		{
+			ic_proxy_log(LOG, "ic-proxy-server: my addr is deleted, dropping my peer listener");
 			ic_proxy_server_peer_listener_reinit(loop);
+		}
 
 		/*
 		 * Refer to ic_proxy_server_ensure_peers() on why we need below checks.

@@ -85,6 +85,8 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 	ListCell   *lcold;
 	ListCell   *lcnew;
 
+	ic_proxy_log(LOG, "ic-proxy-addr: classifying address");
+
 	ic_proxy_added_addrs = ic_proxy_list_free(ic_proxy_added_addrs);
 	ic_proxy_removed_addrs = ic_proxy_list_free(ic_proxy_removed_addrs);
 
@@ -98,12 +100,20 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 		if (old->dbid < new->dbid)
 		{
 			/* the address is removed */
+			ic_proxy_log(LOG,
+						 "ic-proxy-addr[seg%d,dbid%d %s:%s]: removed",
+						 old->content, old->dbid, old->hostname, old->service);
+
 			ic_proxy_removed_addrs = lappend(ic_proxy_removed_addrs, old);
 			lcold = lnext(lcold);
 		}
 		else if (old->dbid > new->dbid)
 		{
 			/* the address is newly added */
+			ic_proxy_log(LOG,
+						 "ic-proxy-addr[seg%d,dbid%d %s:%s]: added",
+						 new->content, new->dbid, new->hostname, new->service);
+
 			ic_proxy_added_addrs = lappend(ic_proxy_added_addrs, new);
 			lcnew = lnext(lcnew);
 		}
@@ -115,6 +125,11 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 				 strcmp(old->hostname, new->hostname))
 		{
 			/* the address is updated */
+			ic_proxy_log(LOG,
+						 "ic-proxy-addr[seg%d,dbid%d %s:%s]: updated to [seg%d,dbid%d %s:%s",
+						 old->content, old->dbid, old->hostname, old->service,
+						 new->content, new->dbid, new->hostname, new->service);
+
 			ic_proxy_removed_addrs = lappend(ic_proxy_removed_addrs, old);
 			ic_proxy_added_addrs = lappend(ic_proxy_added_addrs, new);
 			lcold = lnext(lcold);
@@ -123,6 +138,10 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 		else
 		{
 			/* the address is unchanged */
+			ic_proxy_log(LOG,
+						 "ic-proxy-addr[seg%d,dbid%d %s:%s]: unchanged",
+						 old->content, old->dbid, old->hostname, old->service);
+
 			lcold = lnext(lcold);
 			lcnew = lnext(lcnew);
 		}
@@ -133,6 +152,10 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 	{
 		ICProxyAddr *old = lfirst(lcold);
 
+		ic_proxy_log(LOG,
+					 "ic-proxy-addr[seg%d,dbid%d %s:%s]: removed",
+					 old->content, old->dbid, old->hostname, old->service);
+
 		ic_proxy_removed_addrs = lappend(ic_proxy_removed_addrs, old);
 	}
 
@@ -140,6 +163,10 @@ ic_proxy_classify_addresses(List *oldaddrs, List *newaddrs)
 	for ( ; lcnew; lcnew = lnext(lcnew))
 	{
 		ICProxyAddr *new = lfirst(lcnew);
+
+		ic_proxy_log(LOG,
+					 "ic-proxy-addr[seg%d,dbid%d %s:%s]: added",
+					 new->content, new->dbid, new->hostname, new->service);
 
 		ic_proxy_added_addrs = lappend(ic_proxy_added_addrs, new);
 	}
@@ -227,7 +254,8 @@ ic_proxy_reload_addresses(uv_loop_t *loop)
 {
 	/*
 	 * save the old addresses to the "prev" list, it is used to know the diffs
-	 * of the addresses.
+	 * of the addresses, however note that the ic_proxy_addrs only contain the
+	 * dns-resolved addresses.
 	 */
 	ic_proxy_prev_addrs = ic_proxy_list_free_deep(ic_proxy_prev_addrs);
 	ic_proxy_prev_addrs = ic_proxy_addrs;
@@ -242,10 +270,14 @@ ic_proxy_reload_addresses(uv_loop_t *loop)
 			ICProxyAddr *addr = lfirst(cell);
 
 			uv_cancel((uv_req_t *) &addr->req);
-			ic_proxy_free(addr);
 		}
 
-		list_free(ic_proxy_unknown_addrs);
+		/*
+		 * the ic_proxy_unknown_addrs contain the dns-unresolved addresses,
+		 * they are also part of the old addresses.
+		 */
+		ic_proxy_prev_addrs = list_concat(ic_proxy_prev_addrs,
+										  ic_proxy_unknown_addrs);
 		ic_proxy_unknown_addrs = NIL;
 
 		ic_proxy_my_addr = NULL;
@@ -302,8 +334,10 @@ ic_proxy_reload_addresses(uv_loop_t *loop)
 		ic_proxy_free(buf);
 	}
 
-	/* sort the new addrs so it's easy to diff */
+	/* sort both the new and old addrs so it's easy to diff */
 	ic_proxy_unknown_addrs = list_qsort(ic_proxy_unknown_addrs,
+										ic_proxy_addr_compare_dbid, NULL);
+	ic_proxy_prev_addrs = list_qsort(ic_proxy_prev_addrs,
 										ic_proxy_addr_compare_dbid, NULL);
 
 	/* the last thing is to classify the addrs */
