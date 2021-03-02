@@ -101,11 +101,14 @@ struct ICProxyClient
 #define IC_PROXY_CLIENT_STATE_PAUSING         0x00000400
 #define IC_PROXY_CLIENT_STATE_PAUSED          0x00000800
 #define IC_PROXY_CLIENT_STATE_REMOTE_PAUSE    0x00001000
+#define IC_PROXY_CLIENT_STATE_REMOTE_BUSY     0x00002000
 
 	int			unconsumed;		/* count of the packets that are unconsumed by
 								 * the backend */
 	int			sending;		/* count of the packets being sent, both c2p &
 								 * p2c, both data & message */
+	int			unAckb2cpkt;
+	int			unAckConsumed;
 
 	ICProxyOBuf	obuf;			/* obuf merges small outgoing packets into
 								 * large ones to reduce network overhead */
@@ -471,6 +474,16 @@ ic_proxy_client_on_c2p_data_pkt(void *opaque, const void *data, uint16 size)
 	ic_proxy_log(LOG, "%s: received B2C PKT [%d bytes] from the backend",
 				 ic_proxy_client_get_name(client), size);
 
+	client->unAckb2cpkt++;
+	if (client->unAckb2cpkt == 1000)
+	{
+		client->state |= IC_PROXY_CLIENT_STATE_PAUSING;
+		client->state |= IC_PROXY_CLIENT_STATE_PAUSED;
+		uv_read_stop((uv_stream_t *) &client->pipe);
+
+		ic_proxy_log(WARNING, "hubert %s: paused by hb", ic_proxy_client_get_name(client));
+		return;
+	}
 	/*
 	 * Send it out, but maybe not immediately.  The obuf helps to merge small
 	 * packets into large ones, which reduces the network overhead
@@ -820,6 +833,8 @@ ic_proxy_client_new(uv_loop_t *loop, bool placeholder)
 	client->state = 0;
 	client->unconsumed = 0;
 	client->sending = 0;
+	client->unAckb2cpkt = 0;
+	client->unAckConsumed = 0;
 	client->successor = NULL;
 	client->name = NULL;
 
@@ -1109,6 +1124,7 @@ ic_proxy_client_on_sent_p2c_data(void *opaque,
 
 	client->unconsumed--;
 	client->sending--;
+	client->unAckConsumed++;
 
 	ic_proxy_client_maybe_request_resume(client);
 }
@@ -1150,11 +1166,20 @@ ic_proxy_client_on_p2c_message(ICProxyClient *client, const ICProxyPkt *pkt,
 		 */
 		ic_proxy_client_maybe_pause(client);
 	}
+	/*else if (ic_proxy_pkt_is(pkt, IC_PROXY_MESSAGE_DATA_ACK)) {
+		client->unAckb2cpkt = 0;
+
+		if (client->state & IC_PROXY_CLIENT_STATE_REMOTE_BUSY)
+			ic_proxy_client_read_data(client);
+
+		ic_proxy_client_maybe_resume(client);
+	}*/
 	else if (ic_proxy_pkt_is(pkt, IC_PROXY_MESSAGE_RESUME))
 	{
 		ic_proxy_log(LOG, "%s: received %s",
 					 ic_proxy_client_get_name(client),
 					 ic_proxy_pkt_to_str(pkt));
+		client->unAckb2cpkt = 0;
 
 		ic_proxy_client_maybe_resume(client);
 	}
@@ -1225,6 +1250,17 @@ ic_proxy_client_on_p2c_data(ICProxyClient *client, ICProxyPkt *pkt,
 			ic_proxy_client_cache_p2c_pkt(client, pkt);
 			return;
 		}
+
+		if (client->state & IC_PROXY_CLIENT_STATE_C2P_SHUTTING)
+		{
+			/*
+			 * drop any data  packet
+			 *
+			 */
+			ic_proxy_pkt_cache_free(pkt);
+			return;
+		}
+
 
 		client->unconsumed++;
 		client->sending++;
@@ -1392,8 +1428,9 @@ ic_proxy_client_maybe_request_resume(ICProxyClient *client)
 	ic_proxy_log(LOG, "%s: %d unconsumed packets to the backend",
 				 ic_proxy_client_get_name(client), client->unconsumed);
 
-	if (client->unconsumed <= IC_PROXY_TRESHOLD_RESUME &&
+	if ((client->unconsumed <= IC_PROXY_TRESHOLD_RESUME &&
 		(client->state & IC_PROXY_CLIENT_STATE_REMOTE_PAUSE))
+		|| (client->unAckConsumed == 100))
 	{
 		ICProxyPkt *pkt = ic_proxy_message_new(IC_PROXY_MESSAGE_RESUME,
 											   &client->key);
@@ -1406,6 +1443,7 @@ ic_proxy_client_maybe_request_resume(ICProxyClient *client)
 		client->state &= ~IC_PROXY_CLIENT_STATE_REMOTE_PAUSE;
 
 		client->sending++;
+		client->unAckConsumed = 0;
 
 		ic_proxy_router_route(client->pipe.loop, pkt,
 							  ic_proxy_client_on_sent_c2p_resume, client);
