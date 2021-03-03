@@ -1227,6 +1227,15 @@ ic_proxy_client_on_p2c_data(ICProxyClient *client, ICProxyPkt *pkt,
 			return;
 		}
 
+		if (client->state & IC_PROXY_CLIENT_STATE_C2P_SHUTTING)
+		{
+			/*
+			 * drop any data packet when client is in C2P SHUTTING state
+			 */
+			ic_proxy_pkt_cache_free(pkt);
+			return;
+		}
+
 		client->unconsumed++;
 		client->sending++;
 
