@@ -15,10 +15,10 @@ SELECT age(relfrozenxid) < 200 * 1000000 FROM pg_class WHERE relname='pg_class';
 
 -- Suspend the autovacuum worker from vacuuming before
 -- ShmemVariableCache->latestCompletedXid is expected to be updated
-SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', '', 'regression', '', 1, -1, 0, 1);
+SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', 1);
 
 -- track that we've updated the row in pg_database for oldest database
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', '', 'regression', '', 1, -1, 0, 1);
+SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', 1);
 
 select test_consume_xids(100 * 1000000);
 select test_consume_xids(100 * 1000000);

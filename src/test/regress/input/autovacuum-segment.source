@@ -18,10 +18,10 @@ SELECT gp_segment_id, age(relfrozenxid) < 200 * 1000000 FROM gp_dist_random('pg_
 
 -- Suspend the autovacuum worker from vacuuming before
 -- ShmemVariableCache->latestCompletedXid is expected to be updated
-SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', '', 'regression', '', 1, -1, 0, dbid) from gp_segment_configuration where content = 0 and role = 'p';
+SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', dbid) from gp_segment_configuration where content = 0 and role = 'p';
 
 -- track that we've updated the row in pg_database for oldest database
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', '', 'regression', '', 1, -1, 0, dbid) from gp_segment_configuration where content = 0 and role = 'p';
+SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', dbid) from gp_segment_configuration where content = 0 and role = 'p';
 
 select test_consume_xids(100 * 1000000) from gp_dist_random('gp_id') where gp_segment_id = 0;
 select test_consume_xids(100 * 1000000) from gp_dist_random('gp_id') where gp_segment_id = 0;

@@ -78,8 +78,6 @@ test: enable_autovacuum
 # Another group of parallel tests
 # Note: the ignore: line does not run random, just mark it as ignorable
 # ----------
-ignore: random
-test: select_into select_distinct select_distinct_on select_implicit select_having subselect union case join aggregates random portals arrays btree_index hash_index update delete
 
 # In PostgreSQL, namespace test is run as part of the previous group, but there
 # are some GPDB additions in it that will show diff if concurrent tests use
@@ -95,70 +93,6 @@ test: namespace
 #test: transactions
 
 # ----------
-# Another group of parallel tests
-# ----------
-test: brin gin gist spgist privileges init_privs security_label collate matview lock replica_identity rowsecurity object_address tablesample groupingsets drop_operator password identity generated join_hash
-
-# ----------
-# Another group of parallel tests
-# ----------
-test: create_table_like alter_generic alter_operator misc async dbsize misc_functions sysviews tsrf tidscan
-
-# rules cannot run concurrently with any test that creates
-# a view or rule in the public schema
-test: psql psql_crosstab amutils stats_ext
-#
-# 'rules' test is disabled in GPDB. Maintaining the list of views in it is
-# too painful, and there are also errors because of cross-segment UPDATEs
-# and functions.
-#
-# GPDB_84_MERGE_FIXME: While disabling this was not really an effect of the 8.4
-# merge, it was done a long time ago, it's time to revisit this so we can re-
-# enable it
-#test: rules
-
-# run by itself so it can run parallel workers
-test: select_parallel
-test: write_parallel
-
-# no relation related tests can be put in this group
-test: publication subscription
-
-# ----------
-# Another group of parallel tests
-# ----------
-test: select_views portals_p2 cluster dependency guc bitmapops combocid tsearch tsdicts foreign_data window xmlmap functional_deps advisory_lock indirect_toast equivclass
-
-# 'foreign_key' test is disabled, because it contains several tables with
-# multiple UNIQUE constraints, which is not supported in GPDB.
-#test: foreign_key
-
-# ----------
-# Another group of parallel tests (JSON related)
-# ----------
-test: json jsonb json_encoding jsonpath jsonpath_encoding jsonb_jsonpath
-
-# ----------
-# Another group of parallel tests
-# NB: temp.sql does a reconnect which transiently uses 2 connections,
-# so keep this parallel group to at most 19 tests
-# ----------
-test: plancache limit plpgsql copy2 temp domain rangefuncs prepare conversion truncate alter_table sequence polymorphism rowtypes returning with xml
-# large objects are not supported by GPDB
-# test: largeobject
-
-test: gp_foreign_data
-
-# ----------
-# Another group of parallel tests
-# ----------
-test: partition_join partition_prune reloptions hash_part indexing partition_aggregate partition_info
-
-# event triggers cannot run concurrently with any test that runs DDL
-test: event_trigger
-# this test also uses event triggers, so likewise run it by itself
-test: fast_default
-
 # run stats by itself because its delay may be insufficient under heavy load
 #
 # 'stats' test has been disabled in GPDB, because it tries to set stats-related
