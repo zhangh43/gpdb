@@ -17,8 +17,8 @@ SELECT age(relfrozenxid) < 200 * 1000000 FROM pg_class WHERE relname='pg_class';
 -- ShmemVariableCache->latestCompletedXid is expected to be updated
 SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', '', 'regression', '', 1, -1, 0, 1);
 
--- track that we've updated the row in pg_database for oldest database
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', '', 'regression', '', 1, -1, 0, 1);
+-- Suspend the autovacuum worker after vacuuming
+SELECT gp_inject_fault('auto_vac_worker_after_do_autovacuum', 'suspend', '', 'regression', '', 1, -1, 0, 1);
 
 select test_consume_xids(100 * 1000000);
 select test_consume_xids(100 * 1000000);
@@ -26,13 +26,15 @@ select test_consume_xids(10 * 1000000);
 
 SELECT age(relfrozenxid) < 200 * 1000000 FROM pg_class WHERE relname='pg_class';
 
--- Wait until autovacuum is triggered
-SELECT gp_wait_until_triggered_fault('auto_vac_worker_before_do_autovacuum', 1, 1);
+-- Note that autovacuum laucher will continue start new worker for the same database
+-- when the old worker is blocked. There are at most 3(autovacuum_max_workers) workers
+-- Wait until the three autovacuum workers are triggered
+SELECT gp_wait_until_triggered_fault('auto_vac_worker_before_do_autovacuum', 3, 1);
 SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'reset', 1);
 
--- wait until autovacuum worker updates pg_database
-SELECT gp_wait_until_triggered_fault('vacuum_update_dat_frozen_xid', 1, 1);
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'reset', 1);
+-- wait until three autovacuum workers finish vacuum
+SELECT gp_wait_until_triggered_fault('auto_vac_worker_after_do_autovacuum', 3, 1);
+SELECT gp_inject_fault('auto_vac_worker_after_do_autovacuum', 'reset', 1);
 
 -- catalog table should be young
 SELECT age(relfrozenxid) < 200 * 1000000 FROM pg_class WHERE relname='pg_class';

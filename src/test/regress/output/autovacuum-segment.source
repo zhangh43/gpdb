@@ -27,8 +27,8 @@ SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'suspend', '', 'r
  Success:
 (1 row)
 
--- track that we've updated the row in pg_database for oldest database
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'skip', '', 'regression', '', 1, -1, 0, dbid) from gp_segment_configuration where content = 0 and role = 'p';
+-- Suspend the autovacuum worker after vacuuming
+SELECT gp_inject_fault('auto_vac_worker_after_do_autovacuum', 'suspend', '', 'regression', '', 1, -1, 0, dbid) from gp_segment_configuration where content = 0 and role = 'p';
  gp_inject_fault 
 -----------------
  Success:
@@ -60,8 +60,10 @@ SELECT gp_segment_id, age(relfrozenxid) < 200 * 1000000 FROM gp_dist_random('pg_
              0 | f
 (3 rows)
 
--- Wait until autovacuum is triggered
-SELECT gp_wait_until_triggered_fault('auto_vac_worker_before_do_autovacuum', 1, dbid) from gp_segment_configuration where content = 0 and role = 'p';
+-- Note that autovacuum laucher will continue start new worker for the same database
+-- when the old worker is blocked. There are at most 3(autovacuum_max_workers) workers
+-- Wait until the three autovacuum workers are triggered
+SELECT gp_wait_until_triggered_fault('auto_vac_worker_before_do_autovacuum', 3, dbid) from gp_segment_configuration where content = 0 and role = 'p';
  gp_wait_until_triggered_fault 
 -------------------------------
  Success:
@@ -73,14 +75,14 @@ SELECT gp_inject_fault('auto_vac_worker_before_do_autovacuum', 'reset', dbid) fr
  Success:
 (1 row)
 
--- wait until autovacuum worker updates pg_database
-SELECT gp_wait_until_triggered_fault('vacuum_update_dat_frozen_xid', 1, dbid) from gp_segment_configuration where content = 0 and role = 'p';
+-- wait until three autovacuum workers finish vacuum
+SELECT gp_wait_until_triggered_fault('auto_vac_worker_after_do_autovacuum', 3, dbid) from gp_segment_configuration where content = 0 and role = 'p';
  gp_wait_until_triggered_fault 
 -------------------------------
  Success:
 (1 row)
 
-SELECT gp_inject_fault('vacuum_update_dat_frozen_xid', 'reset', dbid) from gp_segment_configuration where content = 0 and role = 'p';
+SELECT gp_inject_fault('auto_vac_worker_after_do_autovacuum', 'reset', dbid) from gp_segment_configuration where content = 0 and role = 'p';
  gp_inject_fault 
 -----------------
  Success:
