@@ -8,6 +8,12 @@ set debug_burn_xids=on;
 ALTER SYSTEM SET autovacuum_naptime = 5;
 select * from pg_reload_conf();
 
+-- Vacuum database
+vacuum;
+
+-- Show autovacuum_max_workers
+show autovacuum_max_workers;
+
 -- Autovacuum should take care of anti-XID wraparounds of catalog tables.
 -- Because of that, the age of pg_class should not go much above
 -- autovacuum_freeze_max_age (we assume the default of 200 million here).
