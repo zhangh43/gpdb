@@ -375,6 +375,12 @@ ExecHashJoinImpl(PlanState *pstate, bool parallel)
 					ExecPrefetchJoinQual(&node->js);
 					node->prefetch_joinqual = false;
 				}
+				
+				if (node->prefetch_qual)
+				{
+					ExecPrefetchQual(&node->js);
+					node->prefetch_qual = false;
+				}
 
 				/*
 				 * We just scanned the entire inner side and built the hashtable
@@ -793,6 +799,7 @@ ExecInitHashJoin(HashJoin *node, EState *estate, int eflags)
 	 */
 	hjstate->prefetch_inner = node->join.prefetch_inner;
 	hjstate->prefetch_joinqual = node->join.prefetch_joinqual;
+	hjstate->prefetch_qual = node->join.prefetch_qual;
 
 	if (Test_print_prefetch_joinqual && hjstate->prefetch_joinqual)
 		elog(NOTICE,

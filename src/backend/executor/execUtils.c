@@ -1226,6 +1226,56 @@ ExecPrefetchJoinQual(JoinState *node)
 	econtext->ecxt_outertuple = NULL;
 }
 
+void
+ExecPrefetchQual(JoinState *node)
+{
+	EState	   *estate = node->ps.state;
+	ExprContext *econtext = node->ps.ps_ExprContext;
+	PlanState  *inner = innerPlanState(node);
+	PlanState  *outer = outerPlanState(node);
+	ExprState  *qual = node->ps.qual;
+	TupleTableSlot *innertuple = econtext->ecxt_innertuple;
+
+	ListCell   *lc = NULL;
+	List       *quals = NIL;
+
+	Assert(qual);
+
+	/* Outer tuples should not be fetched before us */
+	Assert(econtext->ecxt_outertuple == NULL);
+
+	/* Build fake inner & outer tuples */
+	econtext->ecxt_innertuple = ExecInitNullTupleSlot(estate,
+													  ExecGetResultType(inner),
+													  &TTSOpsVirtual);
+	econtext->ecxt_outertuple = ExecInitNullTupleSlot(estate,
+													  ExecGetResultType(outer),
+													  &TTSOpsVirtual);
+
+	if (IsA(node->ps.plan, NestLoop))
+	{
+		NestLoop *nl = (NestLoop *) (node->ps.plan);
+		if (nl->nestParams)
+			fake_outer_params(node);
+	}
+
+	quals = flatten_logic_exprs((Node *) qual);
+
+	/* Fetch subplan with the fake inner & outer tuples */
+	foreach(lc, quals)
+	{
+		/*
+		 * Force every joinqual is prefech because
+		 * our target is to materialize motion node.
+		 */
+		ExprState  *clause = (ExprState *) lfirst(lc);
+		(void) ExecQual(clause, econtext);
+	}
+
+	/* Restore previous state */
+	econtext->ecxt_innertuple = innertuple;
+	econtext->ecxt_outertuple = NULL;
+}
 /* ----------------------------------------------------------------
  *		CDB Slice Table utilities
  * ----------------------------------------------------------------
