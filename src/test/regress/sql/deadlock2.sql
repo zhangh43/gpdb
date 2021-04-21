@@ -110,3 +110,8 @@ select count(*) from t_inner right join t_outer on t_inner.c2=t_outer.c2
 select count(*) from t_inner right join t_outer on t_inner.c2=t_outer.c2
    and not exists (select 0 from t_subplan where t_subplan.c2=t_outer.c1)
    and not exists (select 1 from t_subplan where t_subplan.c2=t_outer.c1);
+
+-- Except JoinQual, NonJoinQual has the similar deadlock issue.
+-- Test NonJoinQual which should also be prefetched.
+select count(*) from t_inner right join t_outer on t_inner.c2=t_outer.c2
+	where (t_inner.c1 is null or not exists (select 0 from t_subplan where t_subplan.c2=t_outer.c1));

@@ -131,3 +131,16 @@ NOTICE:  prefetch join qual in slice 1 of plannode 3  (seg2 slice1 127.0.1.1:700
  10000
 (1 row)
 
+-- Except JoinQual, NonJoinQual has the similar deadlock issue.
+-- Test NonJoinQual which should also be prefetched.
+select count(*) from t_inner right join t_outer on t_inner.c2=t_outer.c2
+	where (t_inner.c1 is null or not exists (select 0 from t_subplan where t_subplan.c2=t_outer.c1));
+NOTICE:  prefetch non join qual in slice 0 of plannode 3
+NOTICE:  prefetch non join qual in slice 1 of plannode 3  (seg0 slice1 10.146.0.4:7002 pid=26249)
+NOTICE:  prefetch non join qual in slice 1 of plannode 3  (seg1 slice1 10.146.0.4:7003 pid=26250)
+NOTICE:  prefetch non join qual in slice 1 of plannode 3  (seg2 slice1 10.146.0.4:7004 pid=26251)
+ count 
+-------
+     0
+(1 row)
+
